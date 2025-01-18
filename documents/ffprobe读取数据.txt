@@ -1,0 +1,11 @@
+ffprobe读取媒体数据
+1、使用AVFormatContext打开文件
+2、获取媒体文件中的流，存储每个流的数据
+3、初始化解码器
+4、使用read_frame接口读取packet，存储到本地packet结构中，默认从0位置开始读取
+5、通知UI，展示stream、packet信息
+
+文件操作流程：
+1、选择文件
+2、打开文件，创建AVFormatContext，获取流数据，通知UI填充
+3、设置读取packet的方式后，开始读取packet，通知UI填充packet数据（按GOP通知，还是按照固定packet数量通知？）

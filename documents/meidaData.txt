@@ -1,0 +1,49 @@
+AVStream
+int: index, id(format-specific stream ID)
+int64_t: start_time, duration, nb_frames
+
+AVMediaType: codecpar.code_type  // encode data type
+AVCodecID:	 codecpar.codec.id   // 解码器ID
+uint8_t*:    codecpar.extradata	 // 可能有sps和pps数据
+int:		 codecpar.extradata_size
+
+AVPixelFormat/AVSampleFormat: codecpar.format
+
+audio:
+	int64_t: codecpar.bit_rate
+    int:	 codecpar.bits_per_coded_second, codecpar.bits_per_raw_sample, codecpar.profile, codecpar.level
+	int:     codecpar.frame_size, codecpar.sample_rate, codecpar.block_align, codecpar.initial_padding, codecpar.trailing_padding,codecpar.seek_preroll
+	int:	 codecpar.ch_layout.nb_channels
+	
+video:
+	int: codecpar.width, codecpar.height
+	AVFieldOrder codecpar.field_order
+	AVColorRange: codecpar.color_range
+	AVColorPrimaries: codecpar.color_primaries
+	AVColorTransferCharacteristic: color_trc
+	AVColorSpace: codecpar.color_space
+	AVChromaLocation: chroma_location
+	int: codecpar.video_delay
+
+AVPacket
+int64_t:pts, dts, duration, pos(byte_position)
+int: size
+int: stream_index
+int: flags(AV_PKT_FLAG_KEY包含关键帧)
+
+
+AVFrame
+int: duration,pkt_size
+int64_t: pts,pkt_dts
+	video：
+		int: width,height,,key_frame,interlaced_frame
+		AVPictureType: pict_type(I/B/P frame e.g.)
+		AVPixelFormat: format
+		AVColorRange: color_range		(Visual content value range)色度范围
+		AVColorPrimaries: color_primaries, (Chromaticity(色度))
+		AVColorTransferCharacteristic: color_trc
+		AVColorSpace: colorspace		
+		AVChromaLocation: chroma_location
+	audio:
+		int: nb_samples,sample_rate,ch_layout.nb_channels
+		AVSampleFormat: format
