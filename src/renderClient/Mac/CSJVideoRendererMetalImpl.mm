@@ -34,20 +34,20 @@ CSJVideoRendererMetalImpl::~CSJVideoRendererMetalImpl() {
 bool CSJVideoRendererMetalImpl::init(WId widgetID, int width, int height) {
     //NSView *view = (NSView *)widgetID;
 
-  NSView *view = (__bridge NSView *)((void *)widgetID);
-  if (!view) {
-    return false;
-  }
+    NSView *view = (__bridge NSView *)((void *)widgetID);
+    if (!view) {
+        return false;
+    }
 
-  CGRect rect = {{0, 0}, {(CGFloat)width, (CGFloat)height}};
-  CSJMTKRenderer *renderer = [[CSJMTKRenderer alloc] initWithFrame:rect parent:view];
-  if (!renderer) {
-    return false;
-  }
+    CGRect rect = {{0, 0}, {(CGFloat)width, (CGFloat)height}};
+    CSJMTKRenderer *renderer = [[CSJMTKRenderer alloc] initWithFrame:rect parent:view];
+    if (!renderer) {
+        return false;
+    }
 
-  m_pRenderer = renderer;
+    m_pRenderer = renderer;
 
-  return true;
+    return true;
 }
 
 void CSJVideoRendererMetalImpl::updateSence(double timeStamp) {
@@ -55,17 +55,17 @@ void CSJVideoRendererMetalImpl::updateSence(double timeStamp) {
 }
 
 void CSJVideoRendererMetalImpl::drawSence() {
-  dispatch_queue_t mainQueue = dispatch_get_main_queue();//dispatch_get_global_queue( QOS_CLASS_USER_INITIATED, 0);
+    dispatch_queue_t mainQueue = dispatch_get_main_queue();//dispatch_get_global_queue( QOS_CLASS_USER_INITIATED, 0);
 
-  __weak CSJMTKRenderer *weakRender = m_pRenderer;
-  dispatch_async(mainQueue, ^(){
-  __strong CSJMTKRenderer *renderer = weakRender;
-    if (renderer) {
-      [renderer drawContent];
-    }
-  });
+    __weak CSJMTKRenderer *weakRender = m_pRenderer;
+    dispatch_async(mainQueue, ^(){
+        __strong CSJMTKRenderer *renderer = weakRender;
+        if (renderer) {
+            [renderer drawContent];
+        }
+    });
 
-  //[m_pRenderer drawContent];
+    //[m_pRenderer drawContent];
 }
 
 void CSJVideoRendererMetalImpl::resize(int width, int height) {
@@ -74,17 +74,17 @@ void CSJVideoRendererMetalImpl::resize(int width, int height) {
 
 void CSJVideoRendererMetalImpl::loadVideoComponents(CSJVideoFormatType fmtType,
                                                     int width, int height) {
-  if (!m_pRenderer) {
-    return ;
-  }
+    if (!m_pRenderer) {
+        return ;
+    }
 
-  [m_pRenderer loadVideoComponentWithPixelFmt:fmtType width:width height:height];
+    [m_pRenderer loadVideoComponentWithPixelFmt:fmtType width:width height:height];
 }
 
 void CSJVideoRendererMetalImpl::updateVideoFrame(CSJVideoData *pData) {
-  if (!m_pRenderer) {
-    return ;
-  }
+    if (!m_pRenderer) {
+        return ;
+    }
 
-  [m_pRenderer updateVideoFrameWithData:(void *)pData];
+    [m_pRenderer updateVideoFrameWithData:(void *)pData];
 }
