@@ -23,9 +23,9 @@ CSJVideoRendererMetalImpl::~CSJVideoRendererMetalImpl() {
 #if __has_feature(objc_arc)
 
 #else
-  if (m_pRenderer) {
-    [m_pRenderer release];
-  }
+    if (m_pRenderer) {
+        [m_pRenderer release];
+    }
 #endif
 
 

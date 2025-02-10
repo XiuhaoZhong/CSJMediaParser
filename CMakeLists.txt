@@ -127,7 +127,9 @@ set(PLATFORM_RENDERER_SOURCES
     src/renderClient/Mac/CSJVideoRendererMetalImpl.h
     src/renderClient/Mac/CSJVideoRendererMetalImpl.mm
     src/renderClient/Mac/CSJMTKRenderer.h
-    src/renderClient/Mac/CSJMTKRenderer.mm)
+    src/renderClient/Mac/CSJMTKRenderer.mm
+    src/renderClient/Mac/CSJMediaShaders.metal
+    src/renderClient/Mac/CSJMediaShaderTypes.h)
 
 link_directories(thirdParts/Mac/ffmpeg/libs)
 

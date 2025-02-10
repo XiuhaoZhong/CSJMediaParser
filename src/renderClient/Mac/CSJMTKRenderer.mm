@@ -1,5 +1,7 @@
 #include "CSJRawData/CSJMediaRawData.h"
+#include <Metal/Metal.h>
 
+#import "CSJMediaShaderTypes.h"
 #import "CSJMTKRenderer.h"
 
 @interface CSJMTKRenderer ()
@@ -10,8 +12,9 @@
 @property(nonatomic, assign) NSInteger videoWidth;
 @property(nonatomic, assign) NSInteger videoHeight;
 
-@property(nonatomic, assign) MTLPixelFormat videoPixelFmt;
 @property(nonatomic, strong) MTKView *renderView;
+@property(nonatomic, assign) MTLPixelFormat videoPixelFmt;
+@property(nonatomic, strong) MTLVertexDescriptor         *vertexDescriptor;
 @property(nonatomic, strong) MTLRenderPipelineDescriptor *renderPipeLineDesc;
 
 @property(nonatomic, strong) NSLock *videoDataLock;
@@ -25,10 +28,6 @@
     id<MTLTexture> m_texY;
     id<MTLTexture> m_texU;
     id<MTLTexture> m_texV;
-
-    uint8_t *m_videoBufY;
-    uint8_t *m_videoBufU;
-    uint8_t *m_videoBufV;
 
     CSJVideoFormatType m_videoFmt;
     MTLTextureDescriptor *texDescriptor;
@@ -81,38 +80,7 @@
 }
 
 - (void)releaseResources {
-/*
-    if (_renderPipeLineDesc != nil) {
-        [_renderPipeLineDesc release];
-    }
 
-    if (m_texY != nil) {
-        [m_texY release];
-    }
-
-    if (m_texU != nil) {
-        [m_texU release];
-    }
-
-    if (m_texV != nil) {
-        [m_texV release];
-    }
-
-    if (m_videoBufY != nullptr) {
-        delete[] m_videoBufY;
-        m_videoBufY = nullptr;
-    }
-
-    if (m_videoBufU != nullptr) {
-        delete[] m_videoBufU;
-        m_videoBufU = nullptr;
-    }
-
-    if (m_videoBufV != nullptr) {
-        delete[] m_videoBufV;
-        m_videoBufV = nullptr;
-    }
-*/
 }
 
 - (void)drawContent {
@@ -152,6 +120,23 @@
 // invoked when view's layout changed, including change resolution, size.
 - (void)mtkView:(MTKView *)view drawableSizeWillChange:(CGSize)size {
 
+}
+
+- (void)loadMetalWithView:(nonnull MTKView *)view {
+    view.depthStencilPixelFormat = MTLPixelFormatDepth32Float_Stencil8;
+    view.colorPixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
+
+    _vertexDescriptor = [[MTLVertexDescriptor alloc] init];
+
+    // Position
+    _vertexDescriptor.attributes[VertexAttributePosition].format = MTLVertexFormatFloat3;
+    _vertexDescriptor.attributes[VertexAttributePosition].offset = 0;
+    _vertexDescriptor.attributes[VertexAttributePosition].bufferIndex = CSJMediaVertexBufferIndex;
+
+    // texCoord
+    _vertexDescriptor.attributes[VertexAttributeTexCoord].format = MTLVertexFormatFloat2;
+    _vertexDescriptor.attributes[VertexAttributeTexCoord].offset = 12;
+    _vertexDescriptor.attributes[VertexAttributeTexCoord].bufferIndex = CSJMediaVertexBufferIndex;
 }
 
 - (void)loadVideoComponentWithPixelFmt:(NSInteger)pixelFmt width:(NSInteger)width height:(NSInteger)height {
@@ -220,9 +205,9 @@
     [m_texY replaceRegion:regionY mipmapLevel:0 withBytes:videoData->getyuvY() bytesPerRow:_videoWidth];
 
     MTLRegion regionUV = {{0,0,0}, {(NSUInteger)_videoWidth / 2, (NSUInteger)_videoHeight / 2, 1}};
-    [m_texY replaceRegion:regionUV mipmapLevel:0 withBytes:videoData->getyuvU() bytesPerRow:_videoWidth / 4];
+    [m_texU replaceRegion:regionUV mipmapLevel:0 withBytes:videoData->getyuvU() bytesPerRow:_videoWidth / 4];
 
-    [m_texY replaceRegion:regionUV mipmapLevel:0 withBytes:videoData->getyuvV() bytesPerRow:_videoWidth / 4];
+    [m_texV replaceRegion:regionUV mipmapLevel:0 withBytes:videoData->getyuvV() bytesPerRow:_videoWidth / 4];
 }
 
 - (void)loadRGBAComponentsWithWidth:(NSInteger)width height:(NSInteger)height {
