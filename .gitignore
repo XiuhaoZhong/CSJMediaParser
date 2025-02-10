@@ -33,6 +33,8 @@
 
 *.DS_Store
 
+*.cache
+
 .vscode
 
 build
