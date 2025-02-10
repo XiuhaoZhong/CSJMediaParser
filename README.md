@@ -12,7 +12,7 @@
 
 ## 项目结构
 ```
-CSJVisualScene/
+CSJMediaParser/
 ├── src/                # 源代码目录
 ├── thirdParts/         # 依赖第三方库目录
 ├── documents/          # 相关记录文件
