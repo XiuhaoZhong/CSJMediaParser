@@ -3,6 +3,7 @@
 ## 项目简介
     Windows/macOS多媒体内容分析工具以及播放器。
     UI框架基于QT，使用native的渲染API，Windows下的DX11，macOS下的Metal，多媒体相关解析处理基于FFMpeg。
+    音频播放功能使用native API，Windows下的CoreAudio，macOS下的AudioUnit
 
 ## 功能特性
 1. 支持音视频文件的播放，MP4/MOV/AAC/MP3等等
