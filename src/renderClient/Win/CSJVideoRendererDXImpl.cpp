@@ -295,18 +295,8 @@ void CSJVideoRendererDXImpl::resize(int width, int height) {
     m_pd3dImmediateContext->RSSetViewports(1, &m_ScreenViewport);
 }
 
-void CSJVideoRendererDXImpl::initializeVideoInfo(CSJVideoFormatType fmtType, int width, int height) {
-    m_videoWidth = width;
-    m_videoHeight = height;
-    m_pixelFmt = fmtType;
-
-    switch (m_pixelFmt) {
-    case CSJVIDEO_FMT_YUV420P:
-        initTexturesForYUV420();
-        break;
-    default:
-        break;
-    }
+void CSJVideoRendererDXImpl::loadVideoComponents(CSJVideoFormatType fmtType, 
+                                                 int width, int height) {
 }
 
 void CSJVideoRendererDXImpl::updateVideoFrame(CSJVideoData *videoData) {

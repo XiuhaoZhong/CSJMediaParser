@@ -32,10 +32,8 @@ public:
     void updateSence(double timeStamp) override;
     void drawSence() override;
     void resize(int width, int height) override;
-
-    void initializeVideoInfo(CSJVideoFormatType fmtType,
+    void loadVideoComponents(CSJVideoFormatType fmtType, 
                              int width, int height) override;
-
     void updateVideoFrame(CSJVideoData *videoData) override;
 
 protected:
