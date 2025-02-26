@@ -13,91 +13,28 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-IF (CMAKE_HOST_APPLE)
-#set(CMAKE_OBJCXX_STANDARD Objective C++17)
-#set(CMAKE_OBJCXX_STANDARD_REQUIRED ON)
-ENDIF()
+set(ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+set(SRC_ROOT "${ROOT_DIR}/src")
+
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
 add_subdirectory(CommonTools)
 set(local_libs CSJCommonTools)
 
-set(PROJECT_SOURCES
-        src/main.cpp
-        src/mainwindow.cpp
-        src/mainwindow.h
-        src/CSJMpegHeader.h
-)
-
-set(UIKIT_SOURCES
-    src/CSJUIKit/CSJDialog.h
-    src/CSJUIKit/CSJDialog.cpp
-    src/CSJUIKit/CSJPopupWidget.h
-    src/CSJUIKit/CSJPopupWidget.cpp
-    src/CSJUIKit/CSJMediaPlayerWindow.h
-    src/CSJUIKit/CSJMediaPlayerWindow.cpp
-    src/CSJUIKit/CSJAccordionPage.h
-    src/CSJUIKit/CSJAccordionPage.cpp
-    src/CSJUIKit/CSJAccordionWidget.h
-    src/CSJUIKit/CSJAccordionWidget.cpp
-)
-
-set(UTILS_SOURCES
-    src/Utils/CSJStringUtils.h
-    src/Utils/CSJLockUtils.h
-    src/Utils/CSJLockUtils.cpp
-    src/CSJRawData/CSJMediaRawData.h
-    src/CSJRawData/CSJMediaRawData.cpp
-)
-
-set(PLAYER_SOURCES
-    src/player/CSJPlayerController.h
-    src/player/CSJPlayerController.cpp
-    src/player/CSJPlayerKernelBase.h
-    src/player/CSJPlayerKernelBase.cpp
-    src/player/CSJFFPlayerKernel.h
-    src/player/CSJFFPlayerKernel.cpp
-    src/player/CSJVideoPresentDelegate.h
-)
-
-set(RENDER_SOURCES
-    src/renderClient/CSJVideoRendererWidget.h
-    src/renderClient/CSJVideoRendererWidget.cpp
-)
-
-set(MPEGTOOL_SOURCES
-    src/MpegTool/CSJMpegTool.h
-    src/MpegTool/CSJMpegTool.cpp
-    src/MpegTool/CSJMediaDataManager.h
-    src/MpegTool/CSJMediaDataManager.cpp
-    src/MpegTool/CSJMediaData.h
-    src/MpegTool/CSJMediaData.cpp
-    src/MpegTool/CSJMpegToolWorker.h
-    src/MpegTool/CSJMpegToolWorker.cpp
-    src/MpegTool/CSJMpegInteractions.h
-    src/MpegTool/CSJMpegInteractions.cpp
-)
-
-set(CONTROLLER_SOURCES
-    src/Controllers/CSJMediaSPFDataController.h
-    src/Controllers/CSJMediaSPFDataController.cpp
-    src/Controllers/CSJMediaDetailModule.h
-    src/Controllers/CSJMediaDetailModule.cpp
-)
+file(GLOB MAIN_SOURCE_FILES "${SRC_ROOT}/main/*")
+file(GLOB MPEG_HEADER_FILES "${SRC_ROOT}/MpegHeaders/*")
+file(GLOB UIKIT_SOURCE_FILES "${SRC_ROOT}/CSJUIKit/*")
+file(GLOB MPEGTOOL_SOURCE_FILES "${SRC_ROOT}/MpegTool/*")
+file(GLOB PLAYER_SOURCE_FILES "${SRC_ROOT}/player/*")
+file(GLOB RENDERER_SOURCE_FILES "${SRC_ROOT}/renderClient/*")
+file(GLOB UTIL_SOURCE_FILES "${SRC_ROOT}/Utils/*")
+file(GLOB CONTROLLER_SOURCE_FILES "${SRC_ROOT}/Controllers/*")
 
 IF (CMAKE_HOST_WIN32)
 # settings on Windows
-set(PLATFORM_RENDERER_SOURCES
-    src/renderClient/CSJVideoRenderer.h
-    src/renderClient/CSJVideoRenderer.cpp
-    src/renderClient/Win/CSJVideoRendererDXImpl.h
-    src/renderClient/Win/CSJVideoRendererDXImpl.cpp
-    src/renderClient/Win/DXTrace.h
-    src/renderClient/Win/DXTrace.cpp
-    src/renderClient/Win/d3dUtil.h
-    src/renderClient/Win/d3dUtil.cpp
-)
+file(GLOB RENDERER_IMPL_FILES "${SRC_ROOT}/renderClient/Win/*")
+
 set(NativeRenderLib d3d11 dxgi dxguid d3dcompiler)
 set(OpenCV_Include_DIR thirdParts/Win/opencv-4.9/include)
 set(ffmpeg_inc_dir thirdParts/Win/ffmpeg/include)
@@ -121,6 +58,8 @@ set(OpenCV_Include_DIR ~/technology_space/OpenCv/opencv-4.9.0/libs/include/openc
 set(ffmpeg_inc_dir thirdParts/Mac/ffmpeg/include)
 
 # src on MacOS
+file(GLOB RENDERER_IMPL_FILES "${SRC_ROOT}/renderClient/Mac/*")
+#[[
 set(PLATFORM_RENDERER_SOURCES
     src/renderClient/CSJVideoRenderer.h
     src/renderClient/CSJVideoRenderer.cpp
@@ -129,7 +68,9 @@ set(PLATFORM_RENDERER_SOURCES
     src/renderClient/Mac/CSJMTKRenderer.h
     src/renderClient/Mac/CSJMTKRenderer.mm
     src/renderClient/Mac/CSJMediaShaders.metal
-    src/renderClient/Mac/CSJMediaShaderTypes.h)
+    src/renderClient/Mac/CSJMediaShaderTypes.h
+)
+]]
 
 link_directories(thirdParts/Mac/ffmpeg/libs)
 
@@ -150,20 +91,22 @@ find_library(lib-metalKit MetalKit)
 
 set(ffmpeg_lib avcodec avdevice avfilter avformat avutil swresample swscale)
 
-include_directories(src ${ffmpeg_inc_dir} ${OpenCV_Include_DIR} src/player src/MpegTool CommonTools)
+include_directories(${SRC_ROOT} ${ffmpeg_inc_dir} ${OpenCV_Include_DIR} src/player src/MpegTool CommonTools)
 ENDIF ()
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(${TARGET_NAME}
         MANUAL_FINALIZATION
-        ${PROJECT_SOURCES}
-        ${UIKIT_SOURCES}
-        ${UTILS_SOURCES}
-        ${PLAYER_SOURCES}
+        ${MAIN_SOURCE_FILES}
+        ${MPEG_HEADER_FILES}
+        ${UIKIT_SOURCE_FILES}
+        ${UTIL_SOURCE_FILES}
+        ${PLAYER_SOURCE_FILES}
         ${RENDER_SOURCES}
-        ${MPEGTOOL_SOURCES}
-        ${CONTROLLER_SOURCES}
-        ${PLATFORM_RENDERER_SOURCES}
+        ${MPEGTOOL_SOURCE_FILES}
+        ${CONTROLLER_SOURCE_FILES}
+        ${RENDERER_SOURCE_FILES}
+        ${RENDERER_IMPL_FILES}
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET ${TARGET_NAME} APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -214,7 +157,7 @@ install(TARGETS ${TARGET_NAME}
     BUNDLE DESTINATION .
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
-file(COPY src/DXShaders DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${ROOT_DIR}/resources/DXShaders DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(${TARGET_NAME})

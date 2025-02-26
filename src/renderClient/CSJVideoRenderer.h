@@ -4,7 +4,7 @@
 #include <QWidget>
 #include <memory>
 
-#include "CSJRawData/CSJMediaRawData.h"
+#include "MpegHeaders/CSJMediaRawData.h"
 
 /**
  * This is the base class of video renderer, subclasses which implements
@@ -67,6 +67,11 @@ public:
      * @param videoData the video data will be presented.
      */
     virtual void updateVideoFrame(CSJVideoData *videoData) = 0;
+
+    /**
+     * @brief This function show a default image to test the renderer functionalities.
+     */
+    virtual void showDefaultIamge() {};
 };
 
 using CSJSpVideoRenderer = std::shared_ptr<CSJVideoRenderer>;

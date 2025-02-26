@@ -134,8 +134,8 @@ fail:
 }
 
 int CSJMpegToolWorker::filter_codec_opts(const AVDictionary *opts, AVCodecID codec_id,
-                                   AVFormatContext *s, AVStream *st,
-                                   const AVCodec *codec, AVDictionary **dst) {
+                                         AVFormatContext *s, AVStream *st,
+                                         const AVCodec *codec, AVDictionary **dst) {
     AVDictionary    *ret = NULL;
     const AVDictionaryEntry *t = NULL;
     int            flags = s->oformat ? AV_OPT_FLAG_ENCODING_PARAM :

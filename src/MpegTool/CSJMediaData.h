@@ -1,7 +1,7 @@
 #ifndef __CSJMEDIADATA_H__
 #define __CSJMEDIADATA_H__
 
-#include "CSJMpegHeader.h"
+#include "MpegHeaders/CSJMpegHeader.h"
 
 #include <QSize>
 #include <QRect>

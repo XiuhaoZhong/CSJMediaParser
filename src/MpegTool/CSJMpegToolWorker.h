@@ -3,7 +3,7 @@
 
 #include <QThread>
 
-#include "CSJMpegHeader.h"
+#include "MpegHeaders/CSJMpegHeader.h"
 
 class CSJMpegToolWorker : public QObject {
     Q_OBJECT

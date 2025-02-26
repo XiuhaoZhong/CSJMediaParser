@@ -5,6 +5,7 @@
 #include <windows.h>
 #endif
 
+#include <stdint.h>
 #include <string>
 
 typedef enum {

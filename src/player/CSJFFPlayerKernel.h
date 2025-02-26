@@ -1,4 +1,3 @@
-#include "CSJMpegHeader.h"
 
 #include "CSJPlayerKernelBase.h"
 

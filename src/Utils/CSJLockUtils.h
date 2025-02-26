@@ -3,8 +3,6 @@
 
 #include <QReadWriteLock>
 
-#include <mutex>
-
 typedef enum {
     CSJRWLock_RD = 0,
     CSJRWLock_WR
@@ -25,10 +23,6 @@ public:
         default:
             lock.lockForWrite();
         }
-
-        std::mutex mtx;
-        std::lock_guard<std::mutex> llock(mtx);
-
     }
 
     ~CSJRWLock() {

@@ -1,7 +1,7 @@
 #ifndef __CSJVIDEOPRESENTDELEGATE_H__
 #define __CSJVIDEOPRESENTDELEGATE_H__
 
-#include "CSJRawData/CSJMediaRawData.h"
+#include "MpegHeaders/CSJMediaRawData.h"
 
 /**
  * @brief The CSJVideoPresentDelegate defines interfaces that the player kernel

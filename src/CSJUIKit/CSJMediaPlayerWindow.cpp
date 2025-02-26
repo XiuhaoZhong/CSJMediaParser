@@ -11,7 +11,7 @@
 #include <QLabel>
 #include <QPushButton>
 
-#include "renderClient/CSJVideoRendererWidget.h"
+#include "CSJVideoRendererWidget.h"
 
 CSJMediaPlayerWindow::CSJMediaPlayerWindow(QWidget *parent)
     : QWidget(parent) {
@@ -40,8 +40,11 @@ void CSJMediaPlayerWindow::initUI() {
 
     m_pVideoThumbnailWiget = new QWidget();
     mianLayout->addWidget(m_pVideoThumbnailWiget);
-    QLabel *thumTipLabel = new QLabel(m_pVideoThumbnailWiget);
-    thumTipLabel->setText(QString("Here will show the thumbnails of video frames"));
+    //QLabel *thumTipLabel = new QLabel(m_pVideoThumbnailWiget);
+    //thumTipLabel->setText(QString("Here will show the thumbnails of video frames"));
+
+    QPushButton *imageButton = new QPushButton(m_pVideoThumbnailWiget);
+    imageButton->setText("Show Image");
 
     QVBoxLayout *playerLayout = new QVBoxLayout();
     playerLayout->setSpacing(0);
@@ -52,6 +55,8 @@ void CSJMediaPlayerWindow::initUI() {
 
     m_pDXWidget = new CSJVideoRendererWidget(this);
     playerLayout->addWidget(m_pDXWidget);
+
+    connect(imageButton, SIGNAL(pressed()), m_pDXWidget, SLOT(showDefaultImage()));
 
     QWidget *progressWidget = new QWidget();
     playerLayout->addWidget(progressWidget);

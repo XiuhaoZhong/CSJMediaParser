@@ -1,12 +1,11 @@
 #ifndef __CSJMEDIADATAMANAGER_H__
 #define __CSJMEDIADATAMANAGER_H__
 
-#include "CSJMpegHeader.h"
-
 #include <QMutex>
 #include <QSharedPointer>
 
-#include "CSJMediaData.h"
+#include "MpegHeaders/CSJMpegHeader.h"
+#include "MpegTool/CSJMediaData.h"
 #include "Utils/CSJLockUtils.h"
 
 

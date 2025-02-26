@@ -190,7 +190,6 @@ void MainWindow::onVerActionClicked() {
     //std::shared_ptr<CSJMediaPlayerWindow> playerWindow = std::make_shared<CSJMediaPlayerWindow>();
     CSJMediaPlayerWindow *playerWindow = new CSJMediaPlayerWindow();
     playerWindow->show(true);
-
 }
 
 void MainWindow::onSelectMediaFile() {

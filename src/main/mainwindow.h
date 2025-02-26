@@ -7,6 +7,7 @@ class QLineEdit;
 class QLabel;
 class QPushButton;
 class QVBoxLayout;
+class QWidget;
 class CSJVideoRendererWidget;
 
 class MainWindow : public QMainWindow {
@@ -39,18 +40,17 @@ protected slots:
 
     void onSelectMediaFile();
     void onOpenMediaFile();
+
 private:
     QWidget     *m_pCentrelWidget = nullptr;
-
     QWidget     *m_pBaseOptWiget = nullptr;
     QWidget     *m_pMediaInfoWidget = nullptr;
-
     QPushButton *m_pSelectFileBtn = nullptr;
     QLineEdit   *m_pSourceInputEdit = nullptr;
     QPushButton *m_pOpenFileBtn = nullptr;
 
     QMenuBar    *m_pMenu = nullptr;
 
-    QString     m_selFilePath;
+    QString      m_selFilePath;
 };
 #endif // MAINWINDOW_H

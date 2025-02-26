@@ -15,7 +15,7 @@ class CSJVideoRendererDXImpl : public CSJVideoRenderer {
 public:
     struct VertexPosColor {
         DirectX::XMFLOAT3 pos;
-        DirectX::XMFLOAT4 color;
+        DirectX::XMFLOAT2 texCoord;
         static const D3D11_INPUT_ELEMENT_DESC inputLayout[2];
     };
 
@@ -35,6 +35,7 @@ public:
     void loadVideoComponents(CSJVideoFormatType fmtType, 
                              int width, int height) override;
     void updateVideoFrame(CSJVideoData *videoData) override;
+    void showDefaultIamge() override;
 
 protected:
     bool initShaders(std::wstring & vertShaderFile,
@@ -50,7 +51,22 @@ protected:
                                  LPCSTR shaderModel,
                                  ID3DBlob ** ppBlocbOut);
 
-    void initTexturesForYUV420();
+    void createTextureByFmtType(CSJVideoFormatType fmtType);
+
+    void createTextureForRGBA();
+    void createTexturesForYUV420();
+    void createTextureSampler();
+
+    void updateRGBAFrame(CSJVideoData* videoData);
+    void updateYUV420Frame(CSJVideoData* videoData);
+
+    void bindYUV420TextureResources();
+    void bindRGBATextureResources();
+    void bindTextureResources();
+
+    ComPtr<ID3D11DeviceContext> getCurrentContext();
+    ComPtr<ID3D11Device>        getCurrentDevice();
+    ComPtr<IDXGISwapChain>      getCurrentSwapChain();
 
 private:
     ComPtr<ID3D11VertexShader>  m_pVertexShader;
@@ -58,7 +74,7 @@ private:
 
     ComPtr<ID3D11InputLayout>   m_pVertexLayout;   // input vertex layout;
     ComPtr<ID3D11Buffer>        m_pVertexBuffer;
-    ComPtr<ID3D11Buffer>        m_IndexBuffer;
+    ComPtr<ID3D11Buffer>        m_pIndexBuffer;
     ComPtr<ID3D11Buffer>        m_ConstantBuffer;
 
     HWND    m_hMainWnd;        // 主窗口句柄
@@ -98,6 +114,20 @@ private:
     ComPtr<ID3D11Texture2D>        m_texY;
     ComPtr<ID3D11Texture2D>        m_texU;
     ComPtr<ID3D11Texture2D>        m_texV;
+
+    ComPtr<ID3D11ShaderResourceView> m_pShaderResViewY;
+    ComPtr<ID3D11ShaderResourceView> m_pShaderResViewU;
+    ComPtr<ID3D11ShaderResourceView> m_pShaderResViewV;
+
+    /*********************************************************
+     * Texture for single fmt, such as rgba and so on.
+     *********************************************************/
+    ComPtr<ID3D11Texture2D>          m_singleTex;
+    ComPtr<ID3D11Resource>           m_imageTex;
+    ComPtr<ID3D11ShaderResourceView> m_pShaderResViewRGBA;
+
+    // sampler state
+    ComPtr<ID3D11SamplerState>     m_pSamplerState;
 };
 
 #endif // __CSJVIDEORENDERERDXIMPL_H__

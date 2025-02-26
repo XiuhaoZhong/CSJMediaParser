@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QString>
 
-#include "CSJMpegHeader.h"
+#include "MpegHeaders/CSJMpegHeader.h"
 #include "CSJMpegInteractions.h"
 
 class CSJMpegDataUpdateDelegate;

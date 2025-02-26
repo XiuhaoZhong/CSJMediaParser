@@ -57,6 +57,14 @@ void CSJVideoRendererWidget::updateVideoFrame(CSJVideoData *videoData) {
     m_spVideoRenderer->updateVideoFrame(videoData);
 }
 
+void CSJVideoRendererWidget::showDefaultImage() {
+    if (!m_spVideoRenderer)  {
+        return ;
+    }
+
+    m_spVideoRenderer->showDefaultIamge();
+}
+
 void CSJVideoRendererWidget::resizeEvent(QResizeEvent *event) {
     if (!m_spVideoRenderer) {
         m_spVideoRenderer = CSJVideoRenderer::getRendererInstance();

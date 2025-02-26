@@ -3,7 +3,7 @@
 
 #include <QWidget>
 
-#include "CSJVideoRenderer.h"
+#include "renderClient/CSJVideoRenderer.h"
 
 class CSJVideoRendererView : public QWidget {
     Q_OBJECT

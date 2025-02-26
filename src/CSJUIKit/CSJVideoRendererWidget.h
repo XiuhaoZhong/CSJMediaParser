@@ -6,7 +6,7 @@
 #include <memory>
 #include <thread>
 
-#include "CSJVideoRenderer.h"
+#include "renderClient/CSJVideoRenderer.h"
 #include "player/CSJVideoPresentDelegate.h"
 
 typedef enum {
@@ -48,6 +48,9 @@ public:
                                      int width, int height) override;
 
     void updateVideoFrame(CSJVideoData *videoData) override;
+
+public slots:
+    void showDefaultImage();
 
 protected:
     void resizeEvent(QResizeEvent *event) override;

@@ -1,10 +1,9 @@
 #ifndef __CSJPLAYERKERNELBASE_H__
 #define __CSJPLAYERKERNELBASE_H__
 
-#include "CSJMpegHeader.h"
-
 #include <QString>
 
+#include "MpegHeaders/CSJMpegHeader.h"
 #include "CommonTools/CSJMediaData.h"
 #include "CSJVideoPresentDelegate.h"
 
