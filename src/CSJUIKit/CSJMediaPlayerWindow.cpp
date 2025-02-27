@@ -40,8 +40,6 @@ void CSJMediaPlayerWindow::initUI() {
 
     m_pVideoThumbnailWiget = new QWidget();
     mianLayout->addWidget(m_pVideoThumbnailWiget);
-    //QLabel *thumTipLabel = new QLabel(m_pVideoThumbnailWiget);
-    //thumTipLabel->setText(QString("Here will show the thumbnails of video frames"));
 
     QPushButton *imageButton = new QPushButton(m_pVideoThumbnailWiget);
     imageButton->setText("Show Image");
@@ -85,4 +83,5 @@ void CSJMediaPlayerWindow::show(bool bShow) {
     // }
 
     setVisible(bShow);
+    m_pDXWidget->setRenderType(RENDER_WITH_TIMER);
 }

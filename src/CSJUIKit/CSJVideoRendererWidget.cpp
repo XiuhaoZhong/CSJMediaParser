@@ -14,6 +14,11 @@ CSJVideoRendererWidget::CSJVideoRendererWidget(QWidget *parent)
 
 CSJVideoRendererWidget::~CSJVideoRendererWidget() {
     qDebug() << "CSJVideoRendererWidget destoryed!";
+
+    m_exitRenderThread = true;
+    if (m_pRenderThread->joinable()) {
+        m_pRenderThread->join();
+    }
 }
 
 void CSJVideoRendererWidget::setRenderType(CSJVideoRenderType renderType) {
@@ -119,6 +124,6 @@ void CSJVideoRendererWidget::internalRender() {
 
         m_spVideoRenderer->drawSence();
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(40));
+        std::this_thread::sleep_for(std::chrono::milliseconds(30));
     }
 }
