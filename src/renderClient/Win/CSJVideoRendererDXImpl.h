@@ -126,6 +126,8 @@ private:
     ComPtr<ID3D11Resource>           m_imageTex;
     ComPtr<ID3D11ShaderResourceView> m_pShaderResViewRGBA;
 
+    bool m_bIsBindingResource = false;
+
     // sampler state
     ComPtr<ID3D11SamplerState>     m_pSamplerState;
 };

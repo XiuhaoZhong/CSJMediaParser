@@ -177,17 +177,17 @@ bool CSJVideoRendererDXImpl::init(WId widgetID, int width, int height) {
                                          m_pSwapChain.GetAddressOf()));
     }
 
-   std::wstring vertshaderFile(L"resources\\DXShaders\\DXVertex_VS.hlsl");
-   std::wstring vertCso(L"resources\\DXShaders\\DXVertex_VS.cso");
-   std::wstring pixelShaderFile(L"resources\\DXShaders\\DXPixel_PS.hlsl");
-   std::wstring pixelCso(L"resources\\DXShaders\\DXPixel_PS.cso");
-   if (!initShaders(vertshaderFile, vertCso, pixelShaderFile, pixelCso)) {
-       return false;
-   }
+    std::wstring vertshaderFile(L"resources\\DXShaders\\DXVertexShader.hlsl");
+    std::wstring vertCso(L"resources\\DXShaders\\DXVertexShader.cso");
+    std::wstring pixelShaderFile(L"resources\\DXShaders\\DXRGBAShader.hlsl");
+    std::wstring pixelCso(L"resources\\DXShaders\\DXRGBAShader.cso");
+    if (!initShaders(vertshaderFile, vertCso, pixelShaderFile, pixelCso)) {
+        return false;
+    }
 
-   if (!initRenderData()) {
-       return false;
-   }
+    if (!initRenderData()) {
+        return false;
+    }
 
     m_initSuccess = true;
     return true;
@@ -215,7 +215,8 @@ void CSJVideoRendererDXImpl::drawSence() {
                                       1.0f,
                                       0.0f);
 
-    if (m_pShaderResViewRGBA) {
+    if (!m_bIsBindingResource) {
+        showDefaultIamge();
         UINT stride = sizeof(VertexPosColor);
         UINT offset = 0;
 
@@ -223,12 +224,16 @@ void CSJVideoRendererDXImpl::drawSence() {
         curContext->PSSetShader(m_pPixelShader.Get(), nullptr, 0);
 
         curContext->IASetInputLayout(m_pVertexLayout.Get());
-        curContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+        curContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
         curContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &stride, &offset);
         curContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+        curContext->PSSetSamplers(0, 1, m_pSamplerState.GetAddressOf());
 
         bindRGBATextureResources();
 
+        curContext->DrawIndexed(6, 0, 0);
+        m_bIsBindingResource = true;
+    } else {
         curContext->DrawIndexed(6, 0, 0);
     }
 
@@ -478,6 +483,8 @@ bool CSJVideoRendererDXImpl::initRenderData() {
         return false;
     }
 
+    createTextureSampler();
+
     return true;
 }
 
@@ -663,6 +670,9 @@ void CSJVideoRendererDXImpl::createTextureSampler() {
     ComPtr<ID3D11Device> curDevice = getCurrentDevice();
     assert(curDevice);
     HRESULT hr = curDevice->CreateSamplerState(&samplerDesc, m_pSamplerState.GetAddressOf());
+    if (FAILED(hr)) {
+        // TODO: sampler create failed.
+    }
 }
 
 void CSJVideoRendererDXImpl::updateYUV420Frame(CSJVideoData * videoData) {
@@ -726,7 +736,7 @@ void CSJVideoRendererDXImpl::bindRGBATextureResources() {
     }
 
     if (m_pShaderResViewRGBA) {
-        curContext->PSSetShaderResources(3, 1, &m_pShaderResViewRGBA);
+        curContext->PSSetShaderResources(3, 1, m_pShaderResViewRGBA.GetAddressOf());
     }                                      
 }
 
