@@ -4,6 +4,8 @@
 #include <QWidget>
 #include <memory>
 
+#include <array>
+
 #include "MpegHeaders/CSJMediaRawData.h"
 
 /**
@@ -72,6 +74,9 @@ public:
      * @brief This function show a default image to test the renderer functionalities.
      */
     virtual void showDefaultIamge() {};
+
+    std::array<float, 2> computeVideoArea(int widgetW, int widgetH,
+                                          int videoW, int videoH);
 };
 
 using CSJSpVideoRenderer = std::shared_ptr<CSJVideoRenderer>;

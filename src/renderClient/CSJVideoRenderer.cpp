@@ -14,6 +14,49 @@ CSJSpVideoRenderer CSJVideoRenderer::getRendererInstance() {
 #endif
 }
 
+std::array<float, 2> CSJVideoRenderer::computeVideoArea(int widgetW, int widgetH, int videoW, int videoH) {
+    float resX = 0.0f;
+    float resY = 0.0f;
 
+    if (videoW < widgetW && videoH < widgetH) {
+        if (videoW < videoH) { 
 
+        } else {
 
+        }
+    } else if (videoW >= widgetW && videoH < widgetH) {
+        if (videoW < videoH) { 
+
+        } else {
+            
+        }
+    } else if (videoW < widgetW && videoH >= widgetH) {
+        if (videoW < videoH) { 
+
+        } else {
+            
+        }
+    } else if (videoW > widgetW && videoH > widgetH) {
+        if (videoW < videoH) { 
+
+        } else {
+            
+        }
+    } else {
+        return {0.0f, 0.0f};
+    }
+
+    if (videoW < videoH) {
+        // vertical
+        resY = 1.0f;
+
+        resX = (static_cast<float>(videoW)) * widgetH / videoH;
+    } else {
+        // horizontal
+        resX = 1.0f;
+
+        resY = (static_cast<float>(widgetW)) * videoH / videoW;
+    }
+
+    return {resX, resY};
+}
