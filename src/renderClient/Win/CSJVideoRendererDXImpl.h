@@ -6,6 +6,9 @@
 #include <d3d11_1.h>
 #include <directxmath.h>
 
+#include <mutex>
+#include <array>
+
 #include "renderClient/CSJVideoRenderer.h"
 
 template <typename T>
@@ -29,15 +32,18 @@ public:
     ~CSJVideoRendererDXImpl();
 
     bool init(WId widgetID, int width, int height) override;
-    void updateSence(double timeStamp) override;
+    bool updateSence(double timeStamp) override;
     void drawSence() override;
     void resize(int width, int height) override;
-    void loadVideoComponents(CSJVideoFormatType fmtType, 
-                             int width, int height) override;
+    void initialRenderComponents(CSJVideoFormatType fmtType, 
+                                 int width, int height) override;
     void updateVideoFrame(CSJVideoData *videoData) override;
-    void showDefaultIamge() override;
+
+    void setImage(const QString& imagePath) override;
 
 protected:
+    bool createShaders();
+
     bool initShaders(std::wstring & vertShaderFile,
                      std::wstring & vertCso,
                      std::wstring & pixelShaderFile,
@@ -51,15 +57,30 @@ protected:
                                  LPCSTR shaderModel,
                                  ID3DBlob ** ppBlocbOut);
 
-    void createTextureByFmtType(CSJVideoFormatType fmtType);
+    bool createTextureByFmtType(CSJVideoFormatType fmtType, int width, int height);
 
-    void createTextureForRGBA();
-    void createTexturesForYUV420();
+    bool createD3DTexture(int width, int height, 
+                          DXGI_FORMAT format, 
+                          UINT miplevels, 
+                          UINT arraySize,
+                          D3D11_USAGE usage,
+                          UINT bindFlags,
+                          UINT CPUAccessFlags,
+                          UINT MiscFlags,
+                          ComPtr<ID3D11Texture2D>& tex,
+                          ComPtr<ID3D11ShaderResourceView>& resourceView,
+                          D3D11_SRV_DIMENSION srvDemension = D3D11_SRV_DIMENSION_TEXTURE2D);
+    bool createTextureForRGBA(int width, int height);
+    bool createTexturesForYUV420(int width, int height);
     void createTextureSampler();
 
+    void updateFrameData();
     void updateRGBAFrame(CSJVideoData* videoData);
     void updateYUV420Frame(CSJVideoData* videoData);
 
+    bool updateDynamicResource(ComPtr<ID3D11Resource> resource, rsize_t len, uint8_t* data);
+
+    void bindRenderComponents();
     void bindYUV420TextureResources();
     void bindRGBATextureResources();
     void bindTextureResources();
@@ -71,6 +92,7 @@ protected:
 private:
     ComPtr<ID3D11VertexShader>  m_pVertexShader;
     ComPtr<ID3D11PixelShader>   m_pPixelShader;
+    ComPtr<ID3D11PixelShader>   m_pYuvPixelShader;
 
     ComPtr<ID3D11InputLayout>   m_pVertexLayout;   // input vertex layout;
     ComPtr<ID3D11Buffer>        m_pVertexBuffer;
@@ -107,6 +129,11 @@ private:
     int                            m_videoWidth;
     int                            m_videoHeight;
     CSJVideoFormatType             m_pixelFmt;
+    bool                           m_bShowImage = false;
+
+    std::mutex                     m_videoMtx;
+    CSJVideoData*                  m_curVideoData;
+    QString                        m_curImagePath;
 
     /*********************************************************
      * Textures for YUV
@@ -115,9 +142,13 @@ private:
     ComPtr<ID3D11Texture2D>        m_texU;
     ComPtr<ID3D11Texture2D>        m_texV;
 
+    std::array<ComPtr<ID3D11Texture2D>, 3>          m_texYUV;
+    std::array<ComPtr<ID3D11ShaderResourceView>, 3> m_resourceViewYUV;
+
     ComPtr<ID3D11ShaderResourceView> m_pShaderResViewY;
     ComPtr<ID3D11ShaderResourceView> m_pShaderResViewU;
     ComPtr<ID3D11ShaderResourceView> m_pShaderResViewV;
+    
 
     /*********************************************************
      * Texture for single fmt, such as rgba and so on.
@@ -126,7 +157,7 @@ private:
     ComPtr<ID3D11Resource>           m_imageTex;
     ComPtr<ID3D11ShaderResourceView> m_pShaderResViewRGBA;
 
-    bool m_bIsBindingResource = false;
+    bool                           m_bContentNeedUpdate = false;
 
     // sampler state
     ComPtr<ID3D11SamplerState>     m_pSamplerState;

@@ -1,6 +1,6 @@
 #include "CSJMediaRawData.h"
 
-#ifdef __WIN32
+#ifdef _WIN32
 std::wstring SubTypeToString(GUID& subtype) {
     WCHAR buffer[128];
     StringFromGUID2(subtype, buffer, sizeof(buffer));
@@ -106,6 +106,8 @@ CSJVideoData::CSJVideoData(CSJVideoData && videoData)
 }
 
 CSJVideoData& CSJVideoData::operator=(CSJVideoData && videoData) {
+    CSJVideoData tmp(std::move(*this));
+
     m_fmtType = videoData.m_fmtType;
     m_data = videoData.m_data;
     m_width = videoData.m_width;

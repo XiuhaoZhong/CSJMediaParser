@@ -9,24 +9,23 @@
 #include "renderClient/CSJVideoRenderer.h"
 #include "player/CSJVideoPresentDelegate.h"
 
+/** 
+ * The render mode of CSJVideoRendererWidget. 
+ */
 typedef enum {
+    NONE_RENDERING = -1,
+
     /**
-     * The render function invoked int the paintEvent function
+     * The widget schedules the render loop with a thread, and the defualt FPS is 30.
+     * User can set the FPS if needed. This is the default mode.
      */
-    RENDER_WITH_EVENT = 0,
+    ACTIVE_RENDERING = 0,
     /**
-     * The render function invoked by other controller, such as
-     * a player core, which will invoke the render function when
-     * a video frame should be rendered.
+     * There isn't a render loop, the users just update the content by calling 
+     * updateVideoFrame(...) function.
      */
-    RENDER_WITH_OTHER_CORE,
-    /**
-     * CSJVideoRendererWidget will start a thread to execute the
-     * render function, and users should set the FPS. The default
-     * FPS is 25.
-     */
-    RENDER_WITH_TIMER
-} CSJVideoRenderType;
+    PASSIVE_RENDERING
+} RenderMode;
 
 class CSJVideoRendererWidget : public QWidget
                              , public CSJVideoPresentDelegate {
@@ -39,15 +38,20 @@ public:
         return NULL;
     }
 
-    void setRenderType(CSJVideoRenderType renderType);
+    void setRenderType(RenderMode renderType);
 
     /**********************************************************************
      * Override interfaces from CSJVideoPresentDelegate.
      ***********************************************************************/
     void initializeVideoInfo(CSJVideoFormatType fmtType,
-                                     int width, int height) override;
+                             int width, int height) override;
 
     void updateVideoFrame(CSJVideoData *videoData) override;
+
+    /**
+     * Set the image path of the widget.
+     */
+    void setImagePath(QString& image_path);
 
 public slots:
     void showDefaultImage();
@@ -68,8 +72,9 @@ protected:
 private:
     CSJSpVideoRenderer m_spVideoRenderer = nullptr;
 
-    CSJVideoRenderType m_renderType;
-    bool               m_exitRenderThread = false;
+    RenderMode m_renderType;
+    bool       m_exitRenderThread = false;
+    QString    m_imagePath;
 
     std::unique_ptr<std::thread> m_pRenderThread;
 };

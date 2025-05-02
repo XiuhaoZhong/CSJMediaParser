@@ -83,5 +83,5 @@ void CSJMediaPlayerWindow::show(bool bShow) {
     // }
 
     setVisible(bShow);
-    m_pDXWidget->setRenderType(RENDER_WITH_TIMER);
+    m_pDXWidget->setRenderType(ACTIVE_RENDERING);
 }

@@ -2,9 +2,11 @@
 
 #include <d3dcompiler.h>
 
+#include <iostream>
 #include <vector>
 
 #include "WICTextureLoader11.h"
+#include "DDSTextureLoader11.h"
 #include "DXTrace.h"
 
 const D3D11_INPUT_ELEMENT_DESC CSJVideoRendererDXImpl::VertexPosColor::inputLayout[2] = {
@@ -13,7 +15,8 @@ const D3D11_INPUT_ELEMENT_DESC CSJVideoRendererDXImpl::VertexPosColor::inputLayo
 };
 
 CSJVideoRendererDXImpl::CSJVideoRendererDXImpl() {
-
+    m_pixelFmt = CSJVIDEO_FMT_NONE;
+    m_bContentNeedUpdate = false;
 }
 
 CSJVideoRendererDXImpl::~CSJVideoRendererDXImpl() {
@@ -28,6 +31,7 @@ bool CSJVideoRendererDXImpl::init(WId widgetID, int width, int height) {
 
     m_ClientWidth = width;
     m_ClientHeight = height;
+    m_pixelFmt = CSJVIDEO_FMT_NONE;
 
     HRESULT hr = S_OK;
 
@@ -177,11 +181,7 @@ bool CSJVideoRendererDXImpl::init(WId widgetID, int width, int height) {
                                          m_pSwapChain.GetAddressOf()));
     }
 
-    std::wstring vertshaderFile(L"resources\\DXShaders\\DXVertexShader.hlsl");
-    std::wstring vertCso(L"resources\\DXShaders\\DXVertexShader.cso");
-    std::wstring pixelShaderFile(L"resources\\DXShaders\\DXRGBAShader.hlsl");
-    std::wstring pixelCso(L"resources\\DXShaders\\DXRGBAShader.cso");
-    if (!initShaders(vertshaderFile, vertCso, pixelShaderFile, pixelCso)) {
+    if (!createShaders()) {
         return false;
     }
 
@@ -193,8 +193,61 @@ bool CSJVideoRendererDXImpl::init(WId widgetID, int width, int height) {
     return true;
 }
 
-void CSJVideoRendererDXImpl::updateSence(double timeStamp) {
+bool CSJVideoRendererDXImpl::updateSence(double timeStamp) {
+    // If load the render content successfully or not.
+    bool loadRenderContent = false;
 
+    auto curContext = getCurrentContext();
+    if (!curContext) {
+        return loadRenderContent;
+    }
+
+    std::lock_guard<std::mutex> lock_guard(m_videoMtx);
+
+    // Check if the rendering content needed to update.
+    if (!m_bContentNeedUpdate) {
+        return loadRenderContent;
+    }
+
+    // when pixel format changed or show a image, need to recreate all the resources.
+    if (m_curVideoData->getFmtType() != m_pixelFmt || m_bShowImage) {
+        // Compare pixel format
+        //     a) The pixel format changes
+        //     1. Set the accordance shader
+        //     2. Release the previous texture resources, and create new texture resources
+        //     3. Compute the coordinates, and bind to shader
+        //     4. Record the new pixel format and picture size into class members. 
+        // the pixel format changed, should reallocate all textures, and record the new size and pixel format 
+        loadRenderContent = createTextureByFmtType(m_curVideoData->getFmtType(), 
+                                                   m_curVideoData->getWidth(), 
+                                                   m_curVideoData->getHeight());
+        m_pixelFmt = m_curVideoData->getFmtType();
+        if (loadRenderContent) {
+            bindRenderComponents();
+            bindTextureResources();
+        }
+    } else if (m_curVideoData->getWidth() != m_videoWidth || m_curVideoData->getHeight() != m_videoHeight) {
+        // rendering pixel format is not changed, but the size of rendering content changed, so recreate texture(s).
+        // Don't need to re bind shaders.
+        loadRenderContent = createTextureByFmtType(m_curVideoData->getFmtType(), 
+                                                   m_curVideoData->getWidth(), 
+                                                   m_curVideoData->getHeight());
+
+        if (loadRenderContent) {
+            bindTextureResources();
+        } 
+    } else {
+        // the new videoData's pixel format, width, height are all same with current value, only needs to update the 
+        // texture content.
+        // update texture content with pixel format.
+        updateFrameData();
+    }
+
+    // If load render content failed, set the render pixel format to CSJVIDEO_FMT_NONE, and thus won't render anything.
+    m_pixelFmt = loadRenderContent ? m_pixelFmt : CSJVIDEO_FMT_NONE;
+    m_bContentNeedUpdate = false;
+
+    return loadRenderContent;
 }
 
 void CSJVideoRendererDXImpl::drawSence() {
@@ -215,25 +268,9 @@ void CSJVideoRendererDXImpl::drawSence() {
                                       1.0f,
                                       0.0f);
 
-    if (!m_bIsBindingResource) {
-        showDefaultIamge();
-        UINT stride = sizeof(VertexPosColor);
-        UINT offset = 0;
-
-        curContext->VSSetShader(m_pVertexShader.Get(), nullptr, 0);
-        curContext->PSSetShader(m_pPixelShader.Get(), nullptr, 0);
-
-        curContext->IASetInputLayout(m_pVertexLayout.Get());
-        curContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-        curContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &stride, &offset);
-        curContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-        curContext->PSSetSamplers(0, 1, m_pSamplerState.GetAddressOf());
-
-        bindRGBATextureResources();
-
-        curContext->DrawIndexed(6, 0, 0);
-        m_bIsBindingResource = true;
-    } else {
+    // check shader.  
+    bool need_render = updateSence(0.0);
+    if (m_pixelFmt != CSJVIDEO_FMT_NONE) {
         curContext->DrawIndexed(6, 0, 0);
     }
 
@@ -320,75 +357,45 @@ void CSJVideoRendererDXImpl::resize(int width, int height) {
     curContext->RSSetViewports(1, &m_ScreenViewport);
 }
 
-void CSJVideoRendererDXImpl::loadVideoComponents(CSJVideoFormatType fmtType, 
-                                                 int width, int height) {
+void CSJVideoRendererDXImpl::initialRenderComponents(CSJVideoFormatType fmtType, 
+                                                     int width, int height) {
 }
 
 void CSJVideoRendererDXImpl::updateVideoFrame(CSJVideoData *videoData) {
-    if (videoData->getData() == nullptr || 
-        videoData->getWidth() == 0 || 
-        videoData->getHeight() == 0) {
-        return ;
-    }
-
-    if (videoData->getWidth() != m_videoWidth || 
-        videoData->getHeight() != m_videoHeight ||
-        videoData->getFmtType() != m_pixelFmt) {
-        
-        m_videoWidth = videoData->getWidth();
-        m_videoHeight = videoData->getHeight();
-        m_pixelFmt = videoData->getFmtType();
-        createTextureByFmtType(videoData->getFmtType());
-    }
-
-    switch (m_pixelFmt) {
-    case CSJVIDEO_FMT_YUV420P:
-        updateYUV420Frame(videoData);
-        break;
-    case CSJVIDEO_FMT_RGB24:
-        updateRGBAFrame(videoData);
-        break;
-    default:
-        // TODO: Not supported video fmt.
-        break;
-    }
+    std::lock_guard lock(m_videoMtx);
+    m_curVideoData = std::move(videoData);
+    m_bContentNeedUpdate = true;
 }
 
-void CSJVideoRendererDXImpl::showDefaultIamge() {
+void CSJVideoRendererDXImpl::setImage(const QString & imagePath) {
+    std::lock_guard lock(m_videoMtx);
+    m_curImagePath = imagePath;
 
-    m_pixelFmt = CSJVIDEO_FMT_RGB24;
-    if (!m_pShaderResViewRGBA) {
-        std::wstring imagePath = L"resources/Images/cross_street.jpeg";
-        ComPtr<ID3D11Device> curDevice = getCurrentDevice();
-        assert(curDevice);
-        HRESULT hr = DirectX::CreateWICTextureFromFile(curDevice.Get(), 
-                                                    imagePath.c_str(), 
-                                                    m_imageTex.GetAddressOf(), 
-                                                    m_pShaderResViewRGBA.GetAddressOf(), 
-                                                    0);
+    CSJVideoData *fakeVideoData = new CSJVideoData(CSJVIDEO_FMT_RGB24, nullptr, 0, 0);
+    m_curVideoData = std::move(fakeVideoData);
 
-        if (FAILED(hr)) {
-            return ;
-        }
-    }
+    m_bShowImage = true;
+    m_bContentNeedUpdate = true;
 }
 
-void CSJVideoRendererDXImpl::updateRGBAFrame(CSJVideoData * videoData) {
-    ComPtr<ID3D11DeviceContext> curContext = getCurrentContext();
-    if (!curContext) {
-        return ;
+bool CSJVideoRendererDXImpl::createShaders() {
+    std::wstring vertshaderFile(L"resources\\DXShaders\\DXVertexShader.hlsl");
+    std::wstring vertCso(L"resources\\DXShaders\\DXVertexShader.cso");
+
+    // Create pixel shader with video pixel type, and default is rgba.
+    std::wstring pixelShaderFile(L"resources\\DXShaders\\DXRGBAShader.hlsl");
+    std::wstring pixelCso(L"resources\\DXShaders\\DXRGBAShader.cso");
+
+    if (m_pixelFmt == CSJVIDEO_FMT_YUV420P) {
+        pixelShaderFile = L"resources\\DXShaders\\DXYUVShader.hlsl";
+        pixelCso = L"resources\\DXShaders\\DXYUVShader.cso";
+    }
+    
+    if (!initShaders(vertshaderFile, vertCso, pixelShaderFile, pixelCso)) {
+        return false;
     }
 
-    D3D11_SUBRESOURCE_DATA sourceData{};
-    sourceData.pSysMem = videoData->getRGB24();
-    sourceData.SysMemPitch = m_videoWidth;
-    sourceData.SysMemSlicePitch = 0;
-    curContext->UpdateSubresource(m_singleTex.Get(),
-                                  0, 
-                                  nullptr, 
-                                  sourceData.pSysMem, 
-                                  sourceData.SysMemPitch,
-                                  sourceData.SysMemSlicePitch);
+    return true;
 }
 
 bool CSJVideoRendererDXImpl::initShaders(std::wstring &vertShaderFile,
@@ -412,14 +419,14 @@ bool CSJVideoRendererDXImpl::initShaders(std::wstring &vertShaderFile,
     HR(curDevice->CreateVertexShader(blob->GetBufferPointer(),
                                      blob->GetBufferSize(),
                                      nullptr,
-                                     m_pVertexShader.GetAddressOf()));
+                                     m_pVertexShader.ReleaseAndGetAddressOf()));
 
     /* Creating and Binding layout */
     HR(curDevice->CreateInputLayout(VertexPosColor::inputLayout,
                                     ARRAYSIZE(VertexPosColor::inputLayout),
                                     blob->GetBufferPointer(),
                                     blob->GetBufferSize(),
-                                    m_pVertexLayout.GetAddressOf()));
+                                    m_pVertexLayout.ReleaseAndGetAddressOf()));
 
     /* Creating Pixel shader */
     HR(CreateShaderFromFile(pixelCso.c_str(),
@@ -431,7 +438,7 @@ bool CSJVideoRendererDXImpl::initShaders(std::wstring &vertShaderFile,
     HR(curDevice->CreatePixelShader(blob->GetBufferPointer(),
                                     blob->GetBufferSize(),
                                     nullptr,
-                                    m_pPixelShader.GetAddressOf()));
+                                    m_pPixelShader.ReleaseAndGetAddressOf()));
 
     return true;
 }
@@ -538,59 +545,49 @@ HRESULT CSJVideoRendererDXImpl::CreateShaderFromFile(const WCHAR *csoFileNameOut
     return hr;
 }
 
-void CSJVideoRendererDXImpl::createTextureByFmtType(CSJVideoFormatType fmtType) {
+bool CSJVideoRendererDXImpl::createTextureByFmtType(CSJVideoFormatType fmtType, int width, int height) {
+    bool res = false;
     switch (fmtType) {
     case CSJVIDEO_FMT_YUV420P:
-        createTexturesForYUV420();    
+        res = createTexturesForYUV420(width, height);    
         break;
     case CSJVIDEO_FMT_RGB24:
-        createTextureForRGBA();
+        res = createTextureForRGBA(width, height);
         break;
     default:
         // TODO: Not supported video fmt;
         break;
     }
+
+    return res;
 }
 
-void CSJVideoRendererDXImpl::createTextureForRGBA() {
+bool CSJVideoRendererDXImpl::createD3DTexture(int width, int height, 
+                                              DXGI_FORMAT format, 
+                                              UINT miplevels, 
+                                              UINT arraySize,
+                                              D3D11_USAGE usage,
+                                              UINT bindFlags,
+                                              UINT CPUAccessFlags,
+                                              UINT MiscFlags,
+                                              ComPtr<ID3D11Texture2D>& tex,
+                                              ComPtr<ID3D11ShaderResourceView>& resourceView,
+                                              D3D11_SRV_DIMENSION srvDemension /*= D3D11_SRV_DIMENSION_TEXTURE2D*/) {
     ComPtr<ID3D11Device> curDevice = getCurrentDevice();
     if (!curDevice) {
-        return ;
+        return false;
     }
 
-    D3D11_TEXTURE2D_DESC texDesc{};
-    texDesc.Width = m_videoWidth;
-    texDesc.Height = m_videoHeight;
-    texDesc.MipLevels = 1;
-    texDesc.ArraySize = 1;
-    texDesc.Format = DXGI_FORMAT_R8G8B8A8_UINT;
-    texDesc.Usage = D3D11_USAGE_DEFAULT;
-    texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-    texDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    texDesc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
-
-    HRESULT hr = curDevice->CreateTexture2D(&texDesc, nullptr, &m_singleTex);
-    if (FAILED(hr)) {
-        // TODO: create single texture failed.
-    }
-}
-
-void CSJVideoRendererDXImpl::createTexturesForYUV420() {
-    ComPtr<ID3D11Device> curDevice = getCurrentDevice();
-    if (!curDevice) {
-        return ;
-    }
-
-    D3D11_TEXTURE2D_DESC texDesc{};
-    texDesc.Width = m_videoWidth;
-    texDesc.Height = m_videoHeight;
-    texDesc.MipLevels = 1;
-    texDesc.ArraySize = 1;
-    texDesc.Format = DXGI_FORMAT_R8_UINT;
-    texDesc.Usage = D3D11_USAGE_DEFAULT;
-    texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-    texDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    texDesc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
+    D3D11_TEXTURE2D_DESC    texDesc{};
+    texDesc.Width           = width;
+    texDesc.Height          = height;
+    texDesc.MipLevels       = miplevels;
+    texDesc.ArraySize       = arraySize;
+    texDesc.Format          = format;
+    texDesc.Usage           = usage;
+    texDesc.BindFlags       = bindFlags;
+    texDesc.CPUAccessFlags  = CPUAccessFlags;
+    texDesc.MiscFlags       = MiscFlags;
     if (m_Enable4xMsaa) {
         texDesc.SampleDesc.Count = 4;
         texDesc.SampleDesc.Quality = m_4xMsaaQuality - 1;
@@ -599,62 +596,103 @@ void CSJVideoRendererDXImpl::createTexturesForYUV420() {
         texDesc.SampleDesc.Quality = 0;
     }
 
-    HRESULT hr = curDevice->CreateTexture2D(&texDesc, nullptr, &m_texY);
+    HRESULT hr = curDevice->CreateTexture2D(&texDesc, 
+                                            nullptr, 
+                                            tex.ReleaseAndGetAddressOf());
     if (FAILED(hr)) {
         // texY create failed.
+        return false;
     }
 
-    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc{};
-    srvDesc.Format = texDesc.Format;
-    srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-    srvDesc.Texture2D.MipLevels = texDesc.MipLevels;
+    D3D11_SHADER_RESOURCE_VIEW_DESC   srvDesc{};
+    srvDesc.Format                    = format;
+    srvDesc.ViewDimension             = srvDemension;
+    srvDesc.Texture2D.MipLevels       = miplevels;
     srvDesc.Texture2D.MostDetailedMip = 0;
 
-    hr = curDevice->CreateShaderResourceView(m_texY.Get(), 
+    hr = curDevice->CreateShaderResourceView(tex.Get(),
                                              &srvDesc, 
-                                             m_pShaderResViewY.GetAddressOf());
-    D3D11_TEXTURE2D_DESC uvTexDesc{};
-    uvTexDesc.Width = m_videoWidth / 2;
-    uvTexDesc.Height = m_videoHeight / 2;
-    uvTexDesc.MipLevels = 1;
-    uvTexDesc.ArraySize = 1;
-    uvTexDesc.Format = DXGI_FORMAT_R8_UINT;
-    uvTexDesc.Usage = D3D11_USAGE_DEFAULT;
-    uvTexDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-    uvTexDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-    uvTexDesc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS;
-    if (m_Enable4xMsaa) {
-        uvTexDesc.SampleDesc.Count = 4;
-        uvTexDesc.SampleDesc.Quality = m_4xMsaaQuality - 1;
+                                             resourceView.ReleaseAndGetAddressOf());
+    if (FAILED(hr)) {
+        return false;
+    }
+
+    return true;
+}
+
+bool CSJVideoRendererDXImpl::createTextureForRGBA(int width, int height) {
+    bool res = false;
+
+    ComPtr<ID3D11Device> curDevice = getCurrentDevice();
+    if (!curDevice) {
+        return res;
+    }
+
+    if (m_bShowImage) {
+        std::wstring image = m_curImagePath.toStdWString();
+        ComPtr<ID3D11Device> curDevice = getCurrentDevice();
+        assert(curDevice);
+        HRESULT hr = DirectX::CreateWICTextureFromFile(curDevice.Get(), 
+                                                       image.c_str(), 
+                                                       (ID3D11Resource **)m_singleTex.ReleaseAndGetAddressOf(), 
+                                                       m_pShaderResViewRGBA.ReleaseAndGetAddressOf(), 
+                                                       0);
+
+        if (FAILED(hr)) {
+            return res;
+        }
+
+        D3D11_TEXTURE2D_DESC texDesc;
+        m_singleTex->GetDesc(&texDesc);
+        std::wcout << L"[Log] load image: " << image 
+                   << L"with: " << texDesc.Width 
+                   << L" , height: " << texDesc.Height << std::endl;
+        m_bShowImage = false;
+        res = true;
     } else {
-        uvTexDesc.SampleDesc.Count = 1;
-        uvTexDesc.SampleDesc.Quality = 0;
-    }
-    
-    hr = curDevice->CreateTexture2D(&uvTexDesc, nullptr, &m_texU);
-    if (FAILED(hr)) {
-
-    }
-
-    hr = curDevice->CreateTexture2D(&uvTexDesc, nullptr, &m_texV);
-    if (FAILED(hr)) {
-
+        HRESULT hr = DirectX::CreateDDSTextureFromMemory(curDevice.Get(), 
+                                                         m_curVideoData->getData(), 
+                                                         m_curVideoData->getWidth() * m_curVideoData->getHeight() * 4,
+                                                         (ID3D11Resource **)m_singleTex.ReleaseAndGetAddressOf(), 
+                                                         m_pShaderResViewRGBA.ReleaseAndGetAddressOf(), 
+                                                         0);
+        res = FAILED(hr) ? false : true;
     }
 
-    D3D11_SHADER_RESOURCE_VIEW_DESC uvSrvDesc{};
-    uvSrvDesc.Format = texDesc.Format;
-    uvSrvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-    uvSrvDesc.Texture2D.MipLevels = texDesc.MipLevels;
-    uvSrvDesc.Texture2D.MostDetailedMip = 0;
+    return res;
+}
 
-    hr = curDevice->CreateShaderResourceView(m_texU.Get(), 
-                                             &uvSrvDesc, 
-                                             m_pShaderResViewU.GetAddressOf());
+bool CSJVideoRendererDXImpl::createTexturesForYUV420(int width, int height) {
+    bool res = false;
 
-    hr = curDevice->CreateShaderResourceView(m_texV.Get(), 
-                                             &uvSrvDesc,
-                                             m_pShaderResViewV.GetAddressOf());
+    ComPtr<ID3D11Device> curDevice = getCurrentDevice();
+    if (!curDevice) {
+        return res;
+    }
+
+    for (size_t i = 0; i < m_texYUV.size(); i++) {
+        int w = i > 0 ? width / 2 : width;
+        int h = i > 0 ? height / 2 : height;
+
+        res = createD3DTexture(width, 
+                               height, 
+                               DXGI_FORMAT_R8_UINT,
+                               1,
+                               1,
+                               D3D11_USAGE_DEFAULT, 
+                               D3D11_BIND_SHADER_RESOURCE, 
+                               D3D11_CPU_ACCESS_WRITE,
+                               D3D11_RESOURCE_MISC_GENERATE_MIPS,
+                               m_texYUV[i],
+                               m_resourceViewYUV[i]);
                                 
+        if (!res) {
+            // TODO: create tex and resouce
+            break;
+        }
+    }
+
+    return res;
 }
 
 void CSJVideoRendererDXImpl::createTextureSampler() {
@@ -669,9 +707,48 @@ void CSJVideoRendererDXImpl::createTextureSampler() {
 
     ComPtr<ID3D11Device> curDevice = getCurrentDevice();
     assert(curDevice);
-    HRESULT hr = curDevice->CreateSamplerState(&samplerDesc, m_pSamplerState.GetAddressOf());
+    HRESULT hr = curDevice->CreateSamplerState(&samplerDesc, m_pSamplerState.ReleaseAndGetAddressOf());
     if (FAILED(hr)) {
         // TODO: sampler create failed.
+    }
+}
+
+void CSJVideoRendererDXImpl::updateFrameData() {
+    switch (m_pixelFmt) {
+    case CSJVIDEO_FMT_RGB24:
+        updateRGBAFrame(m_curVideoData);
+        break;
+    case CSJVIDEO_FMT_YUV420P:
+        updateYUV420Frame(m_curVideoData);
+        break;
+    default:
+        std::cout << "[ERROE] Update a unsupported pixel format!" << std::endl;
+        break;
+    }
+}
+
+void CSJVideoRendererDXImpl::updateRGBAFrame(CSJVideoData *videoData) {
+    ComPtr<ID3D11DeviceContext> curContext = getCurrentContext();
+    if (!curContext) {
+        return ;
+    }
+
+    // D3D11_SUBRESOURCE_DATA sourceData{};
+    // sourceData.pSysMem = videoData->getRGB24();
+    // sourceData.SysMemPitch = m_videoWidth;
+    // sourceData.SysMemSlicePitch = 0;
+    // curContext->UpdateSubresource(m_singleTex.Get(),
+    //                               0, 
+    //                               nullptr, 
+    //                               sourceData.pSysMem, 
+    //                               sourceData.SysMemPitch,
+    //                               sourceData.SysMemSlicePitch);
+
+    bool updateState = updateDynamicResource(m_singleTex, 
+                                             videoData->getWidth() * videoData->getHeight(), 
+                                             videoData->getData());
+    if (!updateState) {
+        std::cout << "Update rgba data failed!" << std::endl;
     }
 }
 
@@ -681,33 +758,82 @@ void CSJVideoRendererDXImpl::updateYUV420Frame(CSJVideoData * videoData) {
         return ;
     }
 
-    D3D11_SUBRESOURCE_DATA sourceData{};
-    sourceData.pSysMem = videoData->getyuvY();
-    sourceData.SysMemPitch = m_videoWidth;
-    sourceData.SysMemSlicePitch = 0;
-    curContext->UpdateSubresource(m_texY.Get(), 
-                                  0,
-                                  nullptr, 
-                                  sourceData.pSysMem, 
-                                  sourceData.SysMemPitch,
-                                  sourceData.SysMemSlicePitch);
+    std::cout << "[Log] Update yuv data!" << std::endl;
 
-    sourceData.pSysMem = videoData->getyuvU();
-    sourceData.SysMemPitch = m_videoWidth / 2;
-    curContext->UpdateSubresource(m_texU.Get(), 
-                                  0, 
-                                  nullptr, 
-                                  sourceData.pSysMem, 
-                                  sourceData.SysMemPitch,
-                                  sourceData.SysMemSlicePitch);
+    rsize_t len = m_videoWidth * m_videoHeight;
+    bool updateState = updateDynamicResource(m_texYUV[0], len, videoData->getyuvY());
+    if (!updateState) {
+        std::cout << "[Error] update Y plane data failed!" << std::endl;
+        return ;
+    }
 
-    sourceData.pSysMem = videoData->getyuvV();  
-    curContext->UpdateSubresource(m_texV.Get(), 
-                                  0, 
-                                  nullptr, 
-                                  sourceData.pSysMem, 
-                                  sourceData.SysMemPitch,
-                                  sourceData.SysMemSlicePitch);
+    updateState = updateDynamicResource(m_texYUV[1], len / 4, videoData->getyuvU());
+    if (!updateState) {
+        std::cout << "[Error] update U plane data failed!" << std::endl;
+        return ;
+    }
+
+    updateState = updateDynamicResource(m_texYUV[2], len / 4, videoData->getyuvV());
+    if (!updateState) {
+        std::cout << "[Error] update V plane data failed!" << std::endl;
+        return ;
+    }
+
+    std::cout << "[Log] Update yuv data successfully!" << std::endl;
+}
+
+bool CSJVideoRendererDXImpl::updateDynamicResource(ComPtr<ID3D11Resource> resource, 
+                                                   rsize_t len, 
+                                                   uint8_t * data) {
+    
+    ComPtr<ID3D11DeviceContext> curContext = getCurrentContext();
+    if (!curContext) {
+        std::cout << "[Error] current context is null!" << std::endl;
+        return false;
+    }
+
+    if (!resource || !data) {
+        std::cout << "[Error] resource or data is null!" << std::endl;
+        return false;
+    }
+
+    D3D11_MAPPED_SUBRESOURCE mappedData;
+    HRESULT hr = curContext->Map(resource.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData);
+    if (FAILED(hr)) {
+        // TODO: map texture failed.
+        return false;
+    }
+
+    memcpy_s(mappedData.pData, len, data, len);
+    curContext->Unmap(resource.Get(), 0);
+
+    return true;
+}
+
+void CSJVideoRendererDXImpl::bindRenderComponents() {
+    auto curContext = getCurrentContext();
+
+    switch(m_pixelFmt) {
+    case CSJVIDEO_FMT_RGB24: {
+        UINT stride = sizeof(VertexPosColor);
+        UINT offset = 0;
+
+        curContext->VSSetShader(m_pVertexShader.Get(), nullptr, 0);
+        curContext->PSSetShader(m_pPixelShader.Get(), nullptr, 0);
+
+        curContext->IASetInputLayout(m_pVertexLayout.Get());
+        curContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        curContext->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &stride, &offset);
+        curContext->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+        curContext->PSSetSamplers(0, 1, m_pSamplerState.GetAddressOf());
+    }
+    break;
+    case CSJVIDEO_FMT_NV12:
+    case CSJVIDEO_FMT_YUV420P:
+        // TODO: Bind yuv rendering shaders.
+        break;
+        
+    }
 }
 
 void CSJVideoRendererDXImpl::bindYUV420TextureResources() {
@@ -716,18 +842,10 @@ void CSJVideoRendererDXImpl::bindYUV420TextureResources() {
         return ;
     }
 
-    if (m_pShaderResViewY) {
-        curContext->PSSetShaderResources(0, 1, &m_pShaderResViewY);
+    for (size_t i = 0; i < m_resourceViewYUV.size(); i++) {
+        curContext->PSSetShaderResources(i, 1, m_resourceViewYUV[i].GetAddressOf());    
     }
-
-    if (m_pShaderResViewU) {
-        curContext->PSSetShaderResources(1, 1, &m_pShaderResViewU);
-    }
-
-    if (m_pShaderResViewV) {
-        curContext->PSSetShaderResources(2, 1, &m_pShaderResViewV);
-    }
- }
+}
 
 void CSJVideoRendererDXImpl::bindRGBATextureResources() {
     ComPtr<ID3D11DeviceContext> curContext = getCurrentContext();

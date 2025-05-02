@@ -7,7 +7,7 @@
 
 CSJVideoRendererWidget::CSJVideoRendererWidget(QWidget *parent)
     : QWidget(parent)
-    , m_renderType(RENDER_WITH_EVENT) {
+    , m_renderType(NONE_RENDERING) {
 
     setAttribute(Qt::WA_PaintOnScreen, true);
 }
@@ -21,20 +21,20 @@ CSJVideoRendererWidget::~CSJVideoRendererWidget() {
     }
 }
 
-void CSJVideoRendererWidget::setRenderType(CSJVideoRenderType renderType) {
+void CSJVideoRendererWidget::setRenderType(RenderMode renderType) {
     if (m_renderType == renderType) {
         return ;
     }
 
-    if (m_renderType == RENDER_WITH_TIMER) {
+    if (m_renderType == ACTIVE_RENDERING) {
         m_exitRenderThread = true;
+        if (m_pRenderThread->joinable()) {
+            m_pRenderThread->join();
+        }
     }
 
     switch (renderType) {
-    case RENDER_WITH_EVENT:
-    case RENDER_WITH_OTHER_CORE:
-        break;
-    case RENDER_WITH_TIMER:
+    case ACTIVE_RENDERING:
         m_pRenderThread.reset(new std::thread(&CSJVideoRendererWidget::internalRender, this));
         break;
     }
@@ -47,7 +47,7 @@ void CSJVideoRendererWidget::initializeVideoInfo(CSJVideoFormatType fmtType, int
         return ;
     }
 
-    m_spVideoRenderer->loadVideoComponents(fmtType, width, height);
+    m_spVideoRenderer->initialRenderComponents(fmtType, width, height);
 }
 
 void CSJVideoRendererWidget::updateVideoFrame(CSJVideoData *videoData) {
@@ -60,6 +60,11 @@ void CSJVideoRendererWidget::updateVideoFrame(CSJVideoData *videoData) {
     }
 
     m_spVideoRenderer->updateVideoFrame(videoData);
+    m_spVideoRenderer->drawSence();
+}
+
+void CSJVideoRendererWidget::setImagePath(QString &image_path) {
+    m_imagePath = image_path;
 }
 
 void CSJVideoRendererWidget::showDefaultImage() {
@@ -67,7 +72,7 @@ void CSJVideoRendererWidget::showDefaultImage() {
         return ;
     }
 
-    m_spVideoRenderer->showDefaultIamge();
+    m_spVideoRenderer->setImage("resources/Images/cross_street.jpeg");
 }
 
 void CSJVideoRendererWidget::resizeEvent(QResizeEvent *event) {
@@ -80,11 +85,11 @@ void CSJVideoRendererWidget::resizeEvent(QResizeEvent *event) {
 }
 
 void CSJVideoRendererWidget::paintEvent(QPaintEvent *event) {
-    if (!m_spVideoRenderer || m_renderType != RENDER_WITH_EVENT) {
-        return ;
-    }
+    // if (!m_spVideoRenderer || m_renderType != RENDER_WITH_EVENT) {
+    //     return ;
+    // }
 
-    m_spVideoRenderer->drawSence();
+    // m_spVideoRenderer->drawSence();
 }
 
 void CSJVideoRendererWidget::keyPressEvent(QKeyEvent *event) {
@@ -124,6 +129,6 @@ void CSJVideoRendererWidget::internalRender() {
 
         m_spVideoRenderer->drawSence();
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(30));
+        std::this_thread::sleep_for(std::chrono::milliseconds(33));
     }
 }

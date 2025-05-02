@@ -15,7 +15,7 @@ public:
     void drawSence() override;
     void resize(int width, int height) override;
 
-    virtual void loadVideoComponents(CSJVideoFormatType fmtType,
+    virtual void initialRenderComponents(CSJVideoFormatType fmtType,
                                      int width, int height) override;
 
     virtual void updateVideoFrame(CSJVideoData *videoData) override;

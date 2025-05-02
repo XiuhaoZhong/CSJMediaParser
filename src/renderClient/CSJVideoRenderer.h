@@ -13,6 +13,17 @@
  * the interfaces of this will encasuplate the native renderer, subclasses
  * on windows implement with DirectX API, also, the subclasses on macOS
  * implement these interfaces with Metal API.
+ * 
+ * The pixel formats are supported including rgb, rgba and all kinds of yuv.
+ * 
+ * For rgb and rgba, users can invoke the setImagePath() function to set the 
+ * path of picture, users can aslo invoke updateVideoFrame() function to set 
+ * the image buffer from a memory, and users should create a CSJVideoData 
+ * object with pixel formats, width and height.
+ * 
+ * For yuv series formats, users should invoke updateVideoFrame() function to 
+ * set the yuv buffers with a  CSJVideoData instance, and must include pixel
+ * format, width and height.
  */
 class CSJVideoRenderer {
 public:
@@ -37,7 +48,7 @@ public:
      *
      * @param timeStamp the time stamp of drawing.
      */
-    virtual void updateSence(double timeStamp) = 0;
+    virtual bool updateSence(double timeStamp) = 0;
 
     /**
      * @brief Draw the widget's content.
@@ -46,6 +57,7 @@ public:
 
     /**
      * @brief Resize renderer context when the size of widget changes.
+     * 
      * @param width  new width of the widget.
      * @param height new height of the widget.
      */
@@ -59,8 +71,8 @@ public:
      * @param width   the width of the video frame
      * @param height  the height of the video frame
      */
-    virtual void loadVideoComponents(CSJVideoFormatType fmtType,
-                                     int width, int height) = 0;
+    virtual void initialRenderComponents(CSJVideoFormatType fmtType,
+                                         int width, int height) = 0;
 
     /**
      * @brief Update the video frame, in case the video frame's size change, every
@@ -71,9 +83,10 @@ public:
     virtual void updateVideoFrame(CSJVideoData *videoData) = 0;
 
     /**
-     * @brief This function show a default image to test the renderer functionalities.
+     * @brief Set the picture that will be rendered in this widget.
+     * 
      */
-    virtual void showDefaultIamge() {};
+    virtual void setImage(const QString& imagePath) = 0;
 
     std::array<float, 2> computeVideoArea(int widgetW, int widgetH,
                                           int videoW, int videoH);

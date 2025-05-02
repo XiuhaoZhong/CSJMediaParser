@@ -1,0 +1,35 @@
+## Developing Recordings(Watch this document before develop!)
+
+### 2025-03-31
+#### The key points
+1. Based function checkAndBindResources, every time render the content, should check if the content that will be rendered changed. The changes could be several kinds, including only size changes, only pixel format changes, or both change.
+2. During the rendering, if the changes above happen, should set the relative flags, in the code, m_bNeedUpdateSize/m_bNeedUpdateResources indicate the changes.
+3. The render should hold a CSJVideoData object so that the renderer can keep a frame of video data, and bind the video data into texture when the renderer renders. So there should be a improve that keep a CSJVideoData object rather than updating the texture immediately.
+
+#### Improve results
+Please implement the key points above, and record the details, and if there are some other improvements during the implementing, please record them too.
+
+### 2025-04-16
+#### The key points
+1. Changed the thoughts about update video content during the rendering, I add comments in the code, please implement!
+
+### 2025-04-23
+#### The key points
+1. There is a problem, when I want to render a image, I use DDSTextureLoader to create a texture from a image file, this logic is conflicts with my previous logic that abstract all the picture data as a CSJVideoData object, so I'm going to change the way I use now,
+2. I will add a image load library for loading pictures and I will create the texture by myself. The library should stbi or SOIL2
+
+### 2025-04-24
+#### The Key points
+1. Suddenly, I think about another to solve the image rendering problem, the DDSTextureLoader can load texture from memory, so I don't need to use a image loading library, I can use DDSTextureLoader to load memory.
+2. I have already code the main point of the resolution above, I will complete the rest of the code and test the render function.
+
+### 2025-04-29
+1. I've already sovled the logic that rendering a picture in new function above I mentioned.
+2. I should think about this part of code again and improve it
+3. The next step is that add the new pixel shader to render yuv video data
+
+## Notes:
+1. When I bind the index buffer, I used a wrong type DXGI_FORMAT_R8G8B8A8_UNORM, this type is used to describe pixel data not index data, the right type is DXGI_FORMAT_R32_UINT!!!
+
+### 2025-05-01
+1. I improved the logic of rendering content when the video data changed.
