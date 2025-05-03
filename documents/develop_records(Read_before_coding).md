@@ -33,3 +33,11 @@ Please implement the key points above, and record the details, and if there are 
 
 ### 2025-05-01
 1. I improved the logic of rendering content when the video data changed.
+
+### 2025-05-02
+1. Start to develop video playing window, arrage the player controll module, the mainly work is playing status controll buttons, start/pause/resume/stop/ff/fb buttons, and the playing status switching controlled by these buttons.
+2. Construct the thread model of media player, the mainly work is arraging threads for detail works, such as reading media file, decoding media data(video, audio and maybe subtitles), switching thread status responding with player status.
+
+### 2025-05-03
+1. I've completed the playing control interfaces, and the control buttons functions are ok, playing status switching is OK, but the UI style is very simple, and need to improve the layout and button style.
+2. The player threads need to be developed, and need add a interface to get the playing status in the player kernel class.

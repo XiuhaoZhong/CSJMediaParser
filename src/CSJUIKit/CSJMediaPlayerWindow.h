@@ -6,7 +6,14 @@
 
 #include <QWidget>
 
+class QPushButton;
 class CSJVideoRendererWidget;
+
+typedef enum {
+    PLAYSTATUS_STOP = 0,
+    PLAYSTATUS_PAUSE,
+    PLAYSTATUS_PLAY,
+} PlayStatus;
 
 class CSJMediaPlayerWindow : public QWidget {
     Q_OBJECT
@@ -18,6 +25,15 @@ public:
 
     void show(bool bShow);
 
+public slots:
+    void onPlayBtnClicked();
+    void onStopBtnClicked();
+    void onFastForwardBtnClicked();
+    void onFastBackBtnClicked();
+
+protected:
+    void initControllWidget();
+
 private:
     QWidget *m_pVideoThumbnailWiget = nullptr;
     CSJVideoRendererWidget *m_pDXWidget = nullptr;
@@ -25,6 +41,12 @@ private:
     QWidget *m_pMediaControlWidget = nullptr;
     QWidget *m_pAudioWaveWidget = nullptr;
 
+    QPushButton *m_pPlayBtn;
+    QPushButton *m_pStopBtn;
+    QPushButton *m_pFastForwardBtn;
+    QPushButton *m_pFastBackBtn;
+
+    PlayStatus m_playStatus;
 };
 
 #endif
