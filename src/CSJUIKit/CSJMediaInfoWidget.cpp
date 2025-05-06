@@ -1,0 +1,1 @@
+#include "CSJMediaInfoWidget.h"

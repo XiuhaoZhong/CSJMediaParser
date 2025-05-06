@@ -16,8 +16,30 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(SRC_ROOT "${ROOT_DIR}/src")
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+set(QTDIR $ENV{QTDIR_6_8_0})
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(QTDIR ${QTDIR}/debug)
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(QTDIR ${QTDIR}/release)
+else ()
+    message(FATAL_ERROR "No specific configuration!")
+endif()
+
+# set Qt environment variables
+if (CMAKE_HOST_WIN32)
+set(ENV{PATH} "${QTDIR}/bin${QTDIR}/lib;$ENV{PATH}")
+elseif (CMAKE_HOST_APPLE)
+set(ENV{PATH} "${QTDIR}/bin:${QTDIR}/lib:$ENV{PATH}")
+endif()
+
+set(QT_DIR $ENV{QTDIR}/lib/cmake/Qt6)
+set(QT6_DIR $ENV{QTDIR}/lib/cmake/Qt6)
+
+#list(APPEND CMAKE_PREFIX_PATH $ENV{QT6_8_0_DIR_D}/lib/cmake/Qt6)
+
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Gui)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Gui)
 
 add_subdirectory(CommonTools)
 set(local_libs CSJCommonTools)
