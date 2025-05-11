@@ -41,3 +41,6 @@ Please implement the key points above, and record the details, and if there are 
 ### 2025-05-03
 1. I've completed the playing control interfaces, and the control buttons functions are ok, playing status switching is OK, but the UI style is very simple, and need to improve the layout and button style.
 2. The player threads need to be developed, and need add a interface to get the playing status in the player kernel class.
+
+### 2025-05-04
+1. I get an idea that load icons effeciently, putting all the icons into a big image file, then load the file from QPixmap, and when I need to load an icon, just indicate the location of the icon, at the same time, I can use the QPixMap::setDevicePixelRatio fucntion to garantee the icon will be rendered normal on High resolutions screens. So, I must write an icon manager to archive this idea. 

@@ -121,6 +121,9 @@ void CSJMediaPlayerWindow::onStopBtnClicked() {
 
     m_pStopBtn->setEnabled(false);
     m_pPlayBtn->setText("Play");
+
+    m_pFastForwardBtn->setEnabled(false);
+    m_pFastBackBtn->setEnabled(false);
 }
 
 void CSJMediaPlayerWindow::onFastForwardBtnClicked() {

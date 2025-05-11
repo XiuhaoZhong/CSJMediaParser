@@ -22,6 +22,7 @@ extern "C" {
 #include "libavutil/bprint.h"
 #include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
+#include "libavutil/mem.h"
 
 #include "libavdevice/avdevice.h"
 #include "libswresample/swresample.h"
@@ -174,6 +175,14 @@ typedef struct Decoder {
     std::condition_variable *empty_queue_cond;
 } Decoder;
 
+typedef enum ShowMode {
+    SHOW_MODE_NONE = -1,
+    SHOW_MODE_VIDEO,
+    SHOW_MODE_WAVES,
+    SHOW_MODE_RDFT,
+    SHOW_MODE_NB
+} CSJShowMode;
+
 class CSJFFPlayerKernel : public CSJPlayerKernelBase {
 public:
     CSJFFPlayerKernel();
@@ -319,6 +328,9 @@ protected:
 
     bool stream_open();
 
+    AVDictionary** setup_find_stream_info_opts(AVFormatContext *s,
+                                          AVDictionary *codec_opts);
+
     void stream_component_close(int stream_index);
     void stream_close();
     void do_exit();
@@ -326,115 +338,121 @@ protected:
 private:
     QString                       m_fileName;
     char                         *m_pFileName;
+
+    AVFormatContext              *m_pFormatCtx   = nullptr;
+    AVInputFormat                *m_pInputFormat = nullptr;
+    AVDictionary                 *m_pFormatOpts  = nullptr;
+    AVDictionary                 *m_pCodecOpts   = nullptr;
     std::condition_variable      *m_pContinueReadCond;
     std::unique_ptr<std::thread>  m_pReadThread;
-    AVFormatContext              *m_pFormatCtx = nullptr;
-    AVInputFormat                *m_pInputFormat = nullptr;
+    std::unique_ptr<std::thread>  m_pVideoDecThread;
+    std::unique_ptr<std::thread>  m_pAudioDecThread;
+    std::unique_ptr<std::thread>  m_pSubtitleDecThread;
 
-    std::unique_ptr<std::thread> m_pVideoDecThread;
-    std::unique_ptr<std::thread> m_pAudioDecThread;
-    std::unique_ptr<std::thread> m_pSubtitleDecThread;
+    Clock       m_audClk;
+    Clock       m_vidClk;
+    Clock       m_extClk;
+    CSJShowMode m_showMode;
+    int         m_paused;
+    int         m_realTime;
+    int         m_avSyncType       = AV_SYNC_AUDIO_MASTER;
+    int         m_eof;
+    int         m_inifiteBuffer    = -1;
+    int         m_startupVolume    = 100;
+    bool        m_displayDisable   = false;
+    bool        m_bDisableVideo    = false;
+    bool        m_bDisableAudio    = false;
+    bool        m_bDisableSubtitle = false;
+
+    const char *m_WantedStreamSpec[AVMEDIA_TYPE_NB] = {0};
+
+    int         m_seekReq;
+    int         m_seekFlags;
+    int64_t     m_seekPos;
+    int64_t     m_seekRel;
+    int64_t     m_startTime = AV_NOPTS_VALUE;
+    int64_t     m_duration  = AV_NOPTS_VALUE;
 
     int m_abortRequest;
     int m_forceRrefresh;
-    int m_paused;
     int m_lastPaused;
-    int m_queueAttchmentsReq;
-    int m_seekReq;
-    int m_seekFlags;
-    int64_t m_seekPos;
-    int64_t m_seekRel;
+    int m_queueAttchmentsReq; 
     int m_readPauseReturn;
 
-    int m_realTime;
+    FrameQueue          m_audioFrameQueue;
+    PacketQueue         m_audioPaketQueue;
+    Decoder             m_audDecoder;
 
-    Clock m_audClk;
-    Clock m_vidClk;
-    Clock m_extClk;
+    int                 m_audioStreamIndex;
+    double              m_audioClock;
+    AVStream           *m_pAudioSteam;
+    
+    int                 m_audioHwBufSize;
+    uint8_t            *m_pAudioBuf;
+    uint8_t            *m_pAudioBuf1;
+    unsigned int        m_audioBufSize;
+    unsigned int        m_audioBuf1Size;
+    int                 m_audioBufIndex;
+    struct AudioParams  m_audioSrc;
+    struct AudioParams  m_audioTgt;
+    struct SwrContext  *m_swrCtx;
 
-    FrameQueue m_picTq;
-    FrameQueue m_subPq;
-    FrameQueue m_samPq;
+    int                 m_audioWriteBufSize;
+    int                 m_audioVolume;
+    int                 m_muted;
 
-    Decoder m_audDec;
-    Decoder m_vidDec;
-    Decoder m_subDec;
+    int                 m_subtitleStreamIndex;
+    AVStream           *m_pSubtitleStream;
+    PacketQueue         m_subtitlePacketQueue;
+    FrameQueue          m_subtitleFrameQueue;
+    Decoder             m_subtitleDecoder;
 
-    int m_audioStream;
-    int m_avSyncType;
+    int                 m_width;
+    int                 m_height;
+    int                 m_xleft;
+    int                 m_ytop;
+    int                 m_step;
 
-    double m_audioClock;
-    int m_audioClockSerial;
-    double m_audioDiffCum;
-    double m_audioDiffAvgCoef;
-    double m_audioDiffThreshold;
-    int m_audioDiffAvgCount;
-    AVStream *m_pAudioSt;
-    PacketQueue m_audioQ;
-    int m_audioHwBufSize;
-    uint8_t *m_pAudioBuf;
-    uint8_t *m_pAudioBuf1;
-    unsigned int m_audioBufSize;
-    unsigned int m_audioBuf1Size;
-    int m_audioBufIndex;
-    int m_audioWriteBufSize;
-    int m_audioVolume;
-    int m_muted;
-    struct AudioParams m_audioSrc;
-    struct AudioParams m_audioTgt;
-    struct SwrContext *m_swrCtx;
-    int m_frameDropsEarly;
-    int m_frameDropsLate;
+    int                 m_videoStreamIndex;
+    AVStream           *m_pVideoStream;
+    PacketQueue         m_videoPacketQueue;
+    FrameQueue          m_videoFrameQueue;
+    Decoder             m_videoDecoder;
 
-    enum ShowMode {
-        SHOW_MODE_NONE = -1,
-        SHOW_MODE_VIDEO,
-        SHOW_MODE_WAVES,
-        SHOW_MODE_RDFT,
-        SHOW_MODE_NB
-    } m_showMode;
+    int     m_audioDiffAvgCount;
+    int     m_audioClockSerial;
+    double  m_audioDiffCum;
+    double  m_audioDiffAvgCoef;
+    double  m_audioDiffThreshold;
+    
+    int     m_frameDropsEarly;
+    int     m_frameDropsLate;
 
     int16_t m_sampleArray[SAMPLE_ARRAY_SIZE];
-    int m_sampleArrayIndex;
-    int m_lastIStart;
+    int     m_sampleArrayIndex;
+    int     m_lastIStart;
+
     // 实时离散傅里叶变换上下文
     RDFTContext *m_pRdft;
-    int m_rdftBits;
-    FFTSample *m_pRdftData;
-    double m_rdftSpeed = 0.02;
-    int m_xpos;
-    double m_lastVisTime;
+    FFTSample   *m_pRdftData;
+    int          m_rdftBits;
+    int          m_xpos;
+    double       m_rdftSpeed = 0.02;
+    double       m_lastVisTime;
+    double       m_frameTimer;
+    double       m_frameLastReturnedTime;
+    double       m_frameLastFilterDelay;
+    double       m_maxFrameDuration;
 
-    int m_subtitleStream;
-    AVStream *m_pSubtitleSt;
-    PacketQueue m_subtitleQ;
-
-    double m_frameTimer;
-    double m_frameLastReturnedTime;
-    double m_frameLastFilterDelay;
-    int m_videoStream;
-    AVStream *m_pVideoSt;
-    PacketQueue m_videoQ;
-    double m_maxFrameDuration;
     struct SwsContext *m_pImgConvertCtx;
     struct SwsContext *m_pSubConvertCtx;
-    int m_eof;
 
-    bool m_displayDisable = false;
+    int     m_lastVideoStream;
+    int     m_lastAudioStream;
+    int     m_lastSubtitleStream;
 
-
-    int m_width;
-    int m_height;
-    int m_xleft;
-    int m_ytop;
-    int m_step;
-
-    int m_lastVideoStream;
-    int m_lastAudioStream;
-    int m_lastSubtitleStream;
-
-    int m_decoderReorderPts = -1;
-    int m_frameDrop = -1;
-    int m_showStatus = -1;
+    int     m_decoderReorderPts = -1;
+    int     m_frameDrop         = -1;
+    int     m_showStatus        = -1;
     int64_t m_audioCallbackTime;
 };

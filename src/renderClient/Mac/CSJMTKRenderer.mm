@@ -1,4 +1,4 @@
-#include "CSJRawData/CSJMediaRawData.h"
+#include "MpegHeaders/CSJMediaRawData.h"
 #include <Metal/Metal.h>
 
 #import "CSJMediaShaderTypes.h"

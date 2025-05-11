@@ -16,8 +16,28 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(SRC_ROOT "${ROOT_DIR}/src")
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+set(QTDIR $ENV{QTDIR_6_8_0})
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(QTDIR ${QTDIR}/debug)
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(QTDIR ${QTDIR}/release)
+else ()
+    message(FATAL_ERROR "No specific configuration!")
+endif()
+
+# set Qt environment variables
+if (CMAKE_HOST_WIN32)
+set(ENV{PATH} "${QTDIR}/bin${QTDIR}/lib;$ENV{PATH}")
+elseif (CMAKE_HOST_APPLE)
+set(ENV{PATH} "${QTDIR}/bin:${QTDIR}/lib:$ENV{PATH}")
+endif()
+
+set(QT_DIR $ENV{QTDIR}/lib/cmake/Qt6)
+set(QT6_DIR $ENV{QTDIR}/lib/cmake/Qt6)
+
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Gui)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Gui)
 
 add_subdirectory(CommonTools)
 set(local_libs CSJCommonTools)
@@ -47,6 +67,7 @@ include_directories(src ${ffmpeg_inc_dir} ${OpenCV_Include_DIR}  src/player src/
 ELSEIF (CMAKE_HOST_APPLE)
 # settings on MacOS
 
+# USE ARC
 add_compile_options(-x objective-c++)
 
 # opencv dir
@@ -59,18 +80,6 @@ set(ffmpeg_inc_dir thirdParts/Mac/ffmpeg/include)
 
 # src on MacOS
 file(GLOB RENDERER_IMPL_FILES "${SRC_ROOT}/renderClient/Mac/*")
-#[[
-set(PLATFORM_RENDERER_SOURCES
-    src/renderClient/CSJVideoRenderer.h
-    src/renderClient/CSJVideoRenderer.cpp
-    src/renderClient/Mac/CSJVideoRendererMetalImpl.h
-    src/renderClient/Mac/CSJVideoRendererMetalImpl.mm
-    src/renderClient/Mac/CSJMTKRenderer.h
-    src/renderClient/Mac/CSJMTKRenderer.mm
-    src/renderClient/Mac/CSJMediaShaders.metal
-    src/renderClient/Mac/CSJMediaShaderTypes.h
-)
-]]
 
 link_directories(thirdParts/Mac/ffmpeg/libs)
 
@@ -91,7 +100,13 @@ find_library(lib-metalKit MetalKit)
 
 set(ffmpeg_lib avcodec avdevice avfilter avformat avutil swresample swscale)
 
-include_directories(${SRC_ROOT} ${ffmpeg_inc_dir} ${OpenCV_Include_DIR} src/player src/MpegTool CommonTools)
+include_directories(${SRC_ROOT} 
+                    ${ffmpeg_inc_dir} 
+                    ${OpenCV_Include_DIR} 
+                    src/player 
+                    src/MpegTool 
+                    CommonTools
+                    ${QTDIR}/lib/QtGui.framework/Headers)
 ENDIF ()
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -141,8 +156,7 @@ set_property(TARGET ${TARGET_NAME} APPEND_STRING PROPERTY
              COMPILE_FLAGS "-fobjc-arc")
 
 ELSE()
-target_link_libraries(${TARGET_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
-)
+target_link_libraries(${TARGET_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 ENDIF()
 
 set_target_properties(${TARGET_NAME} PROPERTIES

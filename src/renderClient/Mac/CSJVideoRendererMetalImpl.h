@@ -11,14 +11,16 @@ public:
     ~CSJVideoRendererMetalImpl();
 
     bool init(WId widgetID, int width, int height) override;
-    void updateSence(double timeStamp) override;
+    bool updateSence(double timeStamp) override;
     void drawSence() override;
     void resize(int width, int height) override;
 
     virtual void initialRenderComponents(CSJVideoFormatType fmtType,
-                                     int width, int height) override;
+                                         int width, int height) override;
 
     virtual void updateVideoFrame(CSJVideoData *videoData) override;
+
+    virtual void setImage(const QString& imagePath) {};
 
 private:
     CSJMTKRenderer *m_pRenderer;

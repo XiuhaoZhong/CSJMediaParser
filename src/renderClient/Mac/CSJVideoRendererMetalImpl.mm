@@ -50,8 +50,9 @@ bool CSJVideoRendererMetalImpl::init(WId widgetID, int width, int height) {
     return true;
 }
 
-void CSJVideoRendererMetalImpl::updateSence(double timeStamp) {
-  //[m_pRenderer drawContent];
+bool CSJVideoRendererMetalImpl::updateSence(double timeStamp) {
+    //[m_pRenderer drawContent];
+    return false;
 }
 
 void CSJVideoRendererMetalImpl::drawSence() {
@@ -72,8 +73,8 @@ void CSJVideoRendererMetalImpl::resize(int width, int height) {
 
 }
 
-void CSJVideoRendererMetalImpl::loadVideoComponents(CSJVideoFormatType fmtType,
-                                                    int width, int height) {
+void CSJVideoRendererMetalImpl::initialRenderComponents(CSJVideoFormatType fmtType,
+                                                        int width, int height) {
     if (!m_pRenderer) {
         return ;
     }
