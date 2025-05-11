@@ -872,13 +872,13 @@ void CSJVideoRendererDXImpl::bindTextureResources() {
 }
 
 ComPtr<ID3D11DeviceContext> CSJVideoRendererDXImpl::getCurrentContext() {
-    return m_pd3dImmediateContext1 ? (ComPtr<ID3D11DeviceContext>)m_pd3dImmediateContext1 : m_pd3dImmediateContext;
+    return m_pd3dImmediateContext1 ? m_pd3dImmediateContext1 : m_pd3dImmediateContext;
 }
 
 ComPtr<ID3D11Device> CSJVideoRendererDXImpl::getCurrentDevice() {
-    return m_pd3dDevice1 ? (ComPtr<ID3D11Device>)m_pd3dDevice1 : m_pd3dDevice;
+    return m_pd3dDevice1 ? m_pd3dDevice1 : m_pd3dDevice;
 }
 
 ComPtr<IDXGISwapChain> CSJVideoRendererDXImpl::getCurrentSwapChain() {
-    return m_pSwapChain1 ? (ComPtr<IDXGISwapChain>)m_pSwapChain1 : m_pSwapChain;
+    return m_pSwapChain1 ? m_pSwapChain1 : m_pSwapChain;
 }
