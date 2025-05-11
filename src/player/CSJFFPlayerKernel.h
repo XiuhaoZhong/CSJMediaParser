@@ -22,6 +22,7 @@ extern "C" {
 #include "libavutil/bprint.h"
 #include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
+#include "libavutil/mem.h"
 
 #include "libavdevice/avdevice.h"
 #include "libswresample/swresample.h"
@@ -327,6 +328,9 @@ protected:
 
     bool stream_open();
 
+    AVDictionary** setup_find_stream_info_opts(AVFormatContext *s,
+                                          AVDictionary *codec_opts);
+
     void stream_component_close(int stream_index);
     void stream_close();
     void do_exit();
@@ -335,8 +339,10 @@ private:
     QString                       m_fileName;
     char                         *m_pFileName;
 
-    AVFormatContext              *m_pFormatCtx = nullptr;
+    AVFormatContext              *m_pFormatCtx   = nullptr;
     AVInputFormat                *m_pInputFormat = nullptr;
+    AVDictionary                 *m_pFormatOpts  = nullptr;
+    AVDictionary                 *m_pCodecOpts   = nullptr;
     std::condition_variable      *m_pContinueReadCond;
     std::unique_ptr<std::thread>  m_pReadThread;
     std::unique_ptr<std::thread>  m_pVideoDecThread;
@@ -349,14 +355,23 @@ private:
     CSJShowMode m_showMode;
     int         m_paused;
     int         m_realTime;
-    int         m_avSyncType;
+    int         m_avSyncType       = AV_SYNC_AUDIO_MASTER;
     int         m_eof;
-    bool        m_displayDisable = false;
+    int         m_inifiteBuffer    = -1;
+    int         m_startupVolume    = 100;
+    bool        m_displayDisable   = false;
+    bool        m_bDisableVideo    = false;
+    bool        m_bDisableAudio    = false;
+    bool        m_bDisableSubtitle = false;
+
+    const char *m_WantedStreamSpec[AVMEDIA_TYPE_NB] = {0};
 
     int         m_seekReq;
     int         m_seekFlags;
     int64_t     m_seekPos;
     int64_t     m_seekRel;
+    int64_t     m_startTime = AV_NOPTS_VALUE;
+    int64_t     m_duration  = AV_NOPTS_VALUE;
 
     int m_abortRequest;
     int m_forceRrefresh;
@@ -437,7 +452,7 @@ private:
     int     m_lastSubtitleStream;
 
     int     m_decoderReorderPts = -1;
-    int     m_frameDrop = -1;
-    int     m_showStatus = -1;
+    int     m_frameDrop         = -1;
+    int     m_showStatus        = -1;
     int64_t m_audioCallbackTime;
 };

@@ -229,17 +229,6 @@ end:
 
 static void (*program_exit)(int ret);
 
-AVDictionary *format_opts, *codec_opts;
-static int64_t start_time = AV_NOPTS_VALUE;
-static const char* wanted_stream_spec[AVMEDIA_TYPE_NB] = {0};
-static int audio_disable;
-static int video_disable;
-static int subtitle_disable;
-static int infinite_buffer = -1;
-static int64_t duration = AV_NOPTS_VALUE;
-static int startup_volume = 100;
-static int av_sync_type = AV_SYNC_AUDIO_MASTER;
-
 void register_exit(void (*cb)(int ret)) {
     program_exit = cb;
 }
@@ -318,26 +307,26 @@ AVDictionary *filter_codec_opts(AVDictionary *opts, enum AVCodecID codec_id,
     return ret;
 }
 
-//static AVDictionary **setup_find_stream_info_opts(AVFormatContext *s,
-//                                                  AVDictionary *codec_opts) {
-//    int i;
-//    AVDictionary **opts;
+AVDictionary** CSJFFPlayerKernel::setup_find_stream_info_opts(AVFormatContext *s,
+                                                             AVDictionary *codec_opts) {
+   int i;
+   AVDictionary **opts;
 
-//    if (!s->nb_streams)
-//        return NULL;
-//    opts = av_calloc(s->nb_streams, sizeof(*opts));
-//    if (!opts) {
-//        av_log(NULL, AV_LOG_ERROR,
-//               "Could not alloc memory for stream options.\n");
-//        exit_program(1);
-//    }
-//    for (i = 0; i < s->nb_streams; i++) {
-//        opts[i] = filter_codec_opts(codec_opts, s->streams[i]->codecpar->codec_id,
-//                                    s, s->streams[i], NULL);
-//    }
+   if (!s->nb_streams)
+       return NULL;
+   opts = (AVDictionary **)av_calloc(s->nb_streams, sizeof(*opts));
+   if (!opts) {
+       av_log(NULL, AV_LOG_ERROR,
+              "Could not alloc memory for stream options.\n");
+       exit_program(1);
+   }
+   for (i = 0; i < s->nb_streams; i++) {
+       opts[i] = filter_codec_opts(codec_opts, s->streams[i]->codecpar->codec_id,
+                                   s, s->streams[i], NULL);
+   }
 
-//    return opts;
-//}
+   return opts;
+}
 
 int CSJFFPlayerKernel::packet_queue_put_private(PacketQueue *q, AVPacket *pkt) {
     MyAVPacketList pkt1;
@@ -2118,14 +2107,13 @@ int CSJFFPlayerKernel::read_thread() {
         ic->interrupt_callback.callback = decode_interrupt_cb;
         ic->interrupt_callback.opaque = this;
 
-        AVDictionary *format_opts;
         // scan all the pmt infos for TS
-        if (!av_dict_get(format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE)) {
-            av_dict_set(&format_opts, "scan_all_pmts", "1", AV_DICT_DONT_OVERWRITE);
+        if (!av_dict_get(m_pFormatOpts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE)) {
+            av_dict_set(&m_pFormatOpts, "scan_all_pmts", "1", AV_DICT_DONT_OVERWRITE);
             scan_all_pmts_set = 1;
         }
 
-        err = avformat_open_input(&ic, m_pFileName, m_pInputFormat, &format_opts);
+        err = avformat_open_input(&ic, m_pFileName, m_pInputFormat, &m_pFormatOpts);
         if (err < 0) {
             //print_error(m_pFileName, err);
             ret = -1;
@@ -2133,10 +2121,10 @@ int CSJFFPlayerKernel::read_thread() {
         }
 
         if (scan_all_pmts_set) {
-            av_dict_set(&format_opts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE);
+            av_dict_set(&m_pFormatOpts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE);
         }
 
-        if ((t = av_dict_get(format_opts, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
+        if ((t = av_dict_get(m_pFormatOpts, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
             av_log(NULL, AV_LOG_ERROR, "Option %s not found.\n", t->key);
             ret = AVERROR_OPTION_NOT_FOUND;
             break;
@@ -2149,25 +2137,27 @@ int CSJFFPlayerKernel::read_thread() {
 
         av_format_inject_global_side_data(ic);
 
-//        static int find_stream_info = 1;
-//        if (find_stream_info) {
-//            AVDictionary **opts = setup_find_stream_info_opts(ic, codec_opts);
-//            int orig_nb_streams = ic->nb_streams;
+        static int find_stream_info = 1;
+        AVDictionary *codec_opts;
+        if (find_stream_info) {
+            AVDictionary **opts = setup_find_stream_info_opts(ic, codec_opts);
+            int orig_nb_streams = ic->nb_streams;
 
-//            err = avformat_find_stream_info(ic, opts);
+            err = avformat_find_stream_info(ic, &m_pFormatOpts);
 
-//            for (int i = 0; i < orig_nb_streams; i++) {
-//                av_dict_free(&opts[i]);
-//            }
-//            av_freep(&opts);
+            for (int i = 0; i < orig_nb_streams; i++) {
+                av_dict_free(&opts[i]);
+            }
+            av_freep(&opts);
 
-//            if (err < 0) {
-//                av_log(NULL, AV_LOG_WARNING,
-//                       "%s: could not find codec parameters\n", m_pFileName);
-//                ret = -1;
-//                break;
-//            }
-//        }
+            if (err < 0) {
+                av_log(NULL, AV_LOG_WARNING,
+                      "%s: could not find codec parameters\n", m_pFileName);
+                ret = -1;
+                break;
+            }
+        }
+        m_pCodecOpts = codec_opts;
 
         if (ic->pb) {
             ic->pb->eof_reached = 0; // FIXME hack, ffplay maybe should not use avio_feof() to test for the end
@@ -2186,10 +2176,10 @@ int CSJFFPlayerKernel::read_thread() {
         //        window_title = av_asprintf("%s - %s", t->value, input_filename);
 
         /* if seeking requested, we execute it */
-        if (start_time != AV_NOPTS_VALUE) {
+        if (m_startTime != AV_NOPTS_VALUE) {
             int64_t timestamp;
 
-            timestamp = start_time;
+            timestamp = m_startTime;
             /* add the stream start time */
             if (ic->start_time != AV_NOPTS_VALUE) {
                 timestamp += ic->start_time;
@@ -2212,30 +2202,30 @@ int CSJFFPlayerKernel::read_thread() {
             AVStream *st = ic->streams[i];
             enum AVMediaType type = st->codecpar->codec_type;
             st->discard = AVDISCARD_ALL;
-            if (type >= 0 && wanted_stream_spec[type] && st_index[type] == -1) {
-                if (avformat_match_stream_specifier(ic, st, wanted_stream_spec[type]) > 0) {
+            if (type >= 0 && m_WantedStreamSpec[type] && st_index[type] == -1) {
+                if (avformat_match_stream_specifier(ic, st, m_WantedStreamSpec[type]) > 0) {
                     st_index[type] = i;
                 }
             }
         }
 
         for (int i = 0; i < AVMEDIA_TYPE_NB; i++) {
-            if (wanted_stream_spec[i] && st_index[i] == -1) {
+            if (m_WantedStreamSpec[i] && st_index[i] == -1) {
                 av_log(NULL,
                        AV_LOG_ERROR,
                        "Stream specifier %s does not match any %s stream\n",
-                       wanted_stream_spec[i], av_get_media_type_string((AVMediaType)i));
+                       m_WantedStreamSpec[i], av_get_media_type_string((AVMediaType)i));
                 st_index[i] = INT_MAX;
             }
         }
 
-        if (!video_disable) {
+        if (!m_bDisableVideo) {
             st_index[AVMEDIA_TYPE_VIDEO] =
                     av_find_best_stream(ic, AVMEDIA_TYPE_VIDEO,
                                         st_index[AVMEDIA_TYPE_VIDEO], -1, NULL, 0);
         }
 
-        if (!audio_disable) {
+        if (!m_bDisableAudio) {
             st_index[AVMEDIA_TYPE_AUDIO] =
                     av_find_best_stream(ic, AVMEDIA_TYPE_AUDIO,
                                         st_index[AVMEDIA_TYPE_AUDIO],
@@ -2243,7 +2233,7 @@ int CSJFFPlayerKernel::read_thread() {
                                         NULL, 0);
         }
 
-        if (!video_disable && !subtitle_disable) {
+        if (!m_bDisableVideo && !m_bDisableSubtitle) {
             st_index[AVMEDIA_TYPE_SUBTITLE] =
                     av_find_best_stream(ic, AVMEDIA_TYPE_SUBTITLE,
                                         st_index[AVMEDIA_TYPE_SUBTITLE],
@@ -2287,8 +2277,8 @@ int CSJFFPlayerKernel::read_thread() {
             break;
         }
 
-        if (infinite_buffer < 0 && m_realTime) {
-            infinite_buffer = 1;
+        if (m_inifiteBuffer < 0 && m_realTime) {
+            m_inifiteBuffer = 1;
         }
     } while (false);
 
@@ -2394,7 +2384,7 @@ int CSJFFPlayerKernel::read_thread() {
         }
 
         /* if the queue are full, no need to read more */
-        if (infinite_buffer < 1 &&
+        if (m_inifiteBuffer < 1 &&
             (m_audioPaketQueue.size + m_videoPacketQueue.size + m_subtitlePacketQueue.size > MAX_QUEUE_SIZE
              || (stream_has_enough_packets(m_pAudioSteam, m_audioStreamIndex, &m_audioPaketQueue) &&
                  stream_has_enough_packets(m_pVideoStream, m_videoStreamIndex, &m_videoPacketQueue) &&
@@ -2452,11 +2442,11 @@ int CSJFFPlayerKernel::read_thread() {
         /* check if packet is in play range specified by user, then queue, otherwise discard */
         stream_start_time = m_pFormatCtx->streams[pkt->stream_index]->start_time;
         pkt_ts = pkt->pts == AV_NOPTS_VALUE ? pkt->dts : pkt->pts;
-        pkt_in_play_range = duration == AV_NOPTS_VALUE ||
+        pkt_in_play_range = m_duration == AV_NOPTS_VALUE ||
                             (pkt_ts - (stream_start_time != AV_NOPTS_VALUE ? stream_start_time : 0)) *
                             av_q2d(m_pFormatCtx->streams[pkt->stream_index]->time_base) -
-                (double)(start_time != AV_NOPTS_VALUE ? start_time : 0) / 1000000
-                <= ((double)duration / 1000000);
+                (double)(m_startTime != AV_NOPTS_VALUE ? m_startTime : 0) / 1000000
+                <= ((double)m_duration / 1000000);
         if (pkt->stream_index == m_audioStreamIndex && pkt_in_play_range) {
             packet_queue_put(&m_audioPaketQueue, pkt);
         } else if (pkt->stream_index == m_videoStreamIndex && pkt_in_play_range
@@ -2506,19 +2496,19 @@ bool CSJFFPlayerKernel::stream_open() {
         init_clock(&m_extClk, &m_extClk.serial);
 
         m_audioClockSerial = -1;
-        if (startup_volume < 0) {
-            av_log(NULL, AV_LOG_WARNING, "-volume=%d < 0, setting to 0\n", startup_volume);
+        if (m_startupVolume < 0) {
+            av_log(NULL, AV_LOG_WARNING, "-volume=%d < 0, setting to 0\n", m_startupVolume);
         }
 
-        if (startup_volume > 100) {
-            av_log(NULL, AV_LOG_WARNING, "-volume=%d > 100, setting to 100\n", startup_volume);
+        if (m_startupVolume > 100) {
+            av_log(NULL, AV_LOG_WARNING, "-volume=%d > 100, setting to 100\n", m_startupVolume);
         }
 
-        startup_volume = av_clip(startup_volume, 0, 100);
-        startup_volume = av_clip(SDL_MIX_MAXVOLUME * startup_volume / 100, 0, SDL_MIX_MAXVOLUME);
-        m_audioVolume = startup_volume;
+        m_startupVolume = av_clip(m_startupVolume, 0, 100);
+        m_startupVolume = av_clip(SDL_MIX_MAXVOLUME * m_startupVolume / 100, 0, SDL_MIX_MAXVOLUME);
+        //m_audioVolume = m_startupVolume;
         m_muted = 0;
-        m_avSyncType = av_sync_type;
+        //m_avSyncType = av_sync_type;
 
         m_pReadThread.reset(new std::thread(&CSJFFPlayerKernel::read_thread, this));
         ret = true;
