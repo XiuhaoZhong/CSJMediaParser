@@ -40,6 +40,10 @@
 
 .vscode
 
+# build directory
 build
+
+# output directory
+output
 
 
