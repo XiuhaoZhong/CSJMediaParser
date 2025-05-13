@@ -20,15 +20,23 @@ set(QTDIR $ENV{QTDIR_6_8_0})
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(QTDIR ${QTDIR}/debug)
-elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(OUTPUT_DIR "${ROOT_DIR}/output/Debug/")
+    file(MAKE_DIRECTORY ${OUTPUT_DIR})
+else()
     set(QTDIR ${QTDIR}/release)
-else ()
-    message(FATAL_ERROR "No specific configuration!")
+    set(OUTPUT_DIR "${ROOT_DIR}/output/Release/")
+    file(MAKE_DIRECTORY ${OUTPUT_DIR})
 endif()
+# set the resource directory in the output directory
+set(OUTPUT_RESOURCE_DIR "${OUTPUT_DIR}/resource")
+
+set(DYNAMIC_LIBS "")
 
 # set Qt environment variables
 if (CMAKE_HOST_WIN32)
 set(ENV{PATH} "${QTDIR}/bin${QTDIR}/lib;$ENV{PATH}")
+file(GLOB DYNAMIC_LIBS "${ROOT_DIR}/../CSJMediaParser_attachments/dlls/*.dll"
+                       "${ROOT_DIR}/../CSJMediaParser_attachments/dlls/*.pdb")
 elseif (CMAKE_HOST_APPLE)
 set(ENV{PATH} "${QTDIR}/bin:${QTDIR}/lib:$ENV{PATH}")
 endif()
@@ -167,11 +175,28 @@ set_target_properties(${TARGET_NAME} PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
 
+add_custom_command(TARGET ${TARGET_NAME}
+                   POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${TARGET_NAME}> ${OUTPUT_DIR}
+                   COMMENT "Copy target ${TARGET} to output directory")
+
+if (CMAKE_HOST_WIN32)
+foreach(file ${DYNAMIC_LIBS})
+    add_custom_command(TARGET ${TARGET_NAME}
+                       POST_BUILD
+                       COMMAND ${CMAKE_COMMAND} -E copy ${file} ${OUTPUT_DIR})
+endforeach()
+endif()
+
+file(MAKE_DIRECTORY ${OUTPUT_RESOURCE_DIR})
+add_custom_command(TARGET ${TARGET_NAME}
+                  POST_BUILD
+                  COMMAND ${CMAKE_COMMAND} -E copy_directory ${ROOT_DIR}/resources ${OUTPUT_RESOURCE_DIR}
+                  COMMENT "Copy Resources to output directory")
+
 install(TARGETS ${TARGET_NAME}
     BUNDLE DESTINATION .
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
-
-file(COPY ${ROOT_DIR}/resources/DXShaders DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(${TARGET_NAME})
