@@ -44,3 +44,6 @@ Please implement the key points above, and record the details, and if there are 
 
 ### 2025-05-04
 1. I get an idea that load icons effeciently, putting all the icons into a big image file, then load the file from QPixmap, and when I need to load an icon, just indicate the location of the icon, at the same time, I can use the QPixMap::setDevicePixelRatio fucntion to garantee the icon will be rendered normal on High resolutions screens. So, I must write an icon manager to archive this idea. 
+
+### 2025-05-18
+1. I completed the threads model in the CSJFFPlayerKernel for the first version, then should use the real threads replacing the test threads, and debugging the decoder workflow and improving the thread model.
