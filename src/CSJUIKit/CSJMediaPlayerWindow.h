@@ -6,6 +6,8 @@
 
 #include <QWidget>
 
+#include "player/CSJPlayerController.h"
+
 class QPushButton;
 class CSJVideoRendererWidget;
 
@@ -34,6 +36,8 @@ public slots:
 protected:
     void initControllWidget();
 
+    void initPlayController();
+
 private:
     QWidget *m_pVideoThumbnailWiget = nullptr;
     CSJVideoRendererWidget *m_pDXWidget = nullptr;
@@ -46,7 +50,8 @@ private:
     QPushButton *m_pFastForwardBtn;
     QPushButton *m_pFastBackBtn;
 
-    PlayStatus m_playStatus;
+    CSJUniqPlayerController m_playController;
+    PlayStatus              m_playStatus;
 };
 
 #endif

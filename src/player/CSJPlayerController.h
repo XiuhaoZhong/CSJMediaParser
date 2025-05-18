@@ -17,7 +17,7 @@ public:
      * @brief Create a player controller instance.
      * @return player controller instance.
      */
-    std::unique_ptr<CSJPlayerController> createPlayerController();
+    static std::unique_ptr<CSJPlayerController> createPlayerController();
 
     CSJPlayerController() = default;
     virtual ~CSJPlayerController() {};
@@ -34,6 +34,13 @@ public:
     virtual void pause() = 0;
     virtual void resume() = 0;
     virtual void stop() = 0;
+
+    /**********************************************
+     * Player Status.
+     *********************************************/
+    virtual bool isPlaying() = 0;
+    virtual bool isPausing() = 0;
+    virtual bool isStopping() = 0;
 };
 
 using CSJUniqPlayerController = std::unique_ptr<CSJPlayerController>;

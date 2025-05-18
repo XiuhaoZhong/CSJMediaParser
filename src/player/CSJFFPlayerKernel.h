@@ -252,6 +252,8 @@ protected:
     void   check_external_clock_speed();
     void   stream_toggle_pause();
 
+    void   resetPlayState();
+
     void toggle_mute();
     /*
      * 了解一下 SDL中如何设置音量!!!
@@ -335,6 +337,20 @@ protected:
     void stream_close();
     void do_exit();
 
+    /*
+     * The following three functions are testing functions for the thread model.
+     * 
+     * Current thread model including four threads, reading, video/audio/subtitle
+     * decoding threads.
+     * 
+     * So far, the interfaces play/pause/resume/stop can contorll the work flow.
+     * 
+     * Next, use real threads to replace the test threads.
+     */
+    void threadTestFunc(int thread_type);
+    void threadLog(int thread_type, int log_type);
+    void readThreadTest();
+
 private:
     QString                       m_fileName;
     char                         *m_pFileName;
@@ -354,6 +370,7 @@ private:
     Clock       m_extClk;
     CSJShowMode m_showMode;
     int         m_paused;
+    int         m_abortRequest;
     int         m_realTime;
     int         m_avSyncType       = AV_SYNC_AUDIO_MASTER;
     int         m_eof;
@@ -366,14 +383,28 @@ private:
 
     const char *m_WantedStreamSpec[AVMEDIA_TYPE_NB] = {0};
 
+    std::mutex                   m_pauseMtx;
+    std::condition_variable      m_pauseCond;
+
     int         m_seekReq;
     int         m_seekFlags;
     int64_t     m_seekPos;
     int64_t     m_seekRel;
-    int64_t     m_startTime = AV_NOPTS_VALUE;
-    int64_t     m_duration  = AV_NOPTS_VALUE;
 
-    int m_abortRequest;
+    /* The next two members indicate to play partly of current file.
+     * m_startTime means the start time of the playing, and m_playDuration
+     * means the duration of the playing.
+     * 
+     * m_playDuration must be set if users want to play part ofo the file,
+     * and this means that if users only set the m_playDuration, m_startTime
+     * will be considered as 0.
+     */
+    int64_t     m_startTime    = AV_NOPTS_VALUE;
+    int64_t     m_playDuration = AV_NOPTS_VALUE;
+
+    /* The number of times to play current file, default is 0. */
+    int         m_loopNumber = 0;
+
     int m_forceRrefresh;
     int m_lastPaused;
     int m_queueAttchmentsReq; 

@@ -1,5 +1,7 @@
 #include "CSJFFPlayerKernel.h"
 
+#include <QDebug>
+
 #include <chrono>
 
 /* The operation below is the filters. */
@@ -954,10 +956,6 @@ void CSJFFPlayerKernel::stream_component_close(int stream_index) {
 }
 
 void CSJFFPlayerKernel::stream_close() {
-    if (!m_pFormatCtx) {
-        return ;
-    }
-
     m_abortRequest = 1;
     if (m_pReadThread->joinable()) {
         m_pReadThread->join();
@@ -975,8 +973,10 @@ void CSJFFPlayerKernel::stream_close() {
         stream_component_close(m_subtitleStreamIndex);
     }
 
-    avformat_close_input(&m_pFormatCtx);
-
+    if (m_pFormatCtx) {
+        avformat_close_input(&m_pFormatCtx);
+    }
+    
     packet_queue_destory(&m_videoPacketQueue);
     packet_queue_destory(&m_audioPaketQueue);
     packet_queue_destory(&m_subtitlePacketQueue);
@@ -1001,6 +1001,30 @@ void CSJFFPlayerKernel::stream_toggle_pause() {
 
     set_clock(&m_extClk, get_clock(&m_extClk), m_extClk.serial);
     m_paused = m_audClk.paused = m_vidClk.paused = m_extClk.paused = !m_paused;
+}
+
+void CSJFFPlayerKernel::resetPlayState() {
+    m_abortRequest = 1;
+
+    if (m_paused) {
+        resume();
+    }
+
+    if (m_pReadThread && m_pReadThread->joinable()) {
+        m_pReadThread->join();
+    }
+
+    if (m_pVideoDecThread && m_pVideoDecThread->joinable()) {
+        m_pVideoDecThread->join();
+    }
+
+    if (m_pAudioDecThread && m_pAudioDecThread->joinable()) {
+        m_pAudioDecThread->join();
+    }
+
+    if (m_pSubtitleDecThread && m_pSubtitleDecThread->joinable()) {
+        m_pSubtitleDecThread->join();
+    }
 }
 
 void CSJFFPlayerKernel::toggle_mute() {
@@ -2396,15 +2420,17 @@ int CSJFFPlayerKernel::read_thread() {
             continue;
         }
 
+        // Loop play, 
         if (!m_paused &&
             (!m_pAudioSteam || (m_audDecoder.finished == m_audioPaketQueue.serial && frame_queue_nb_remaining(&m_audioFrameQueue) == 0)) &&
             (!m_pVideoStream || (m_videoDecoder.finished == m_videoPacketQueue.serial && frame_queue_nb_remaining(&m_videoFrameQueue) == 0))) {
-//            if (loop != 1 && (!loop || --loop)) {
-//                stream_seek(is, start_time != AV_NOPTS_VALUE ? start_time : 0, 0, 0);
-//            } else if (autoexit) {
-//                ret = AVERROR_EOF;
-//                goto fail;
-//            }
+           if (m_loopNumber != 1 && (!m_loopNumber || --m_loopNumber)) {
+                // seek the file to beginning.
+                stream_seek(0, 0, 0);
+           } else {
+                // exit current process. 
+                break;
+           }
         }
 
         ret = av_read_frame(m_pFormatCtx, pkt);
@@ -2426,10 +2452,8 @@ int CSJFFPlayerKernel::read_thread() {
             }
 
             if (m_pFormatCtx->pb && m_pFormatCtx->pb->error) {
-//                if (autoexit)
-//                    goto fail;
-//                else
-//                    break;
+
+                break;
             }
             wait_mutex.lock();
             m_pContinueReadCond->wait_for(uniqueLock, std::chrono::milliseconds(10));
@@ -2442,11 +2466,23 @@ int CSJFFPlayerKernel::read_thread() {
         /* check if packet is in play range specified by user, then queue, otherwise discard */
         stream_start_time = m_pFormatCtx->streams[pkt->stream_index]->start_time;
         pkt_ts = pkt->pts == AV_NOPTS_VALUE ? pkt->dts : pkt->pts;
-        pkt_in_play_range = m_duration == AV_NOPTS_VALUE ||
-                            (pkt_ts - (stream_start_time != AV_NOPTS_VALUE ? stream_start_time : 0)) *
-                            av_q2d(m_pFormatCtx->streams[pkt->stream_index]->time_base) -
-                (double)(m_startTime != AV_NOPTS_VALUE ? m_startTime : 0) / 1000000
-                <= ((double)m_duration / 1000000);
+
+        // Check the packet is in the duration that users indicate or not, and if users don't set the 
+        // m_playDuration, means curretn packet is always in right range. 
+        if (m_playDuration == AV_NOPTS_VALUE) {
+            pkt_in_play_range = true;
+        } else {
+            // the duration from current stream's starting.
+            int64_t time_from_stream = (pkt_ts - (stream_start_time != AV_NOPTS_VALUE ? stream_start_time : 0)) *
+                                        av_q2d(m_pFormatCtx->streams[pkt->stream_index]->time_base);
+            // the duration from playing.
+            double time_from_play = (double)(m_startTime != AV_NOPTS_VALUE ? m_startTime : 0) / 1000000;
+
+            double time_diff = time_from_stream - time_from_play;
+
+            pkt_in_play_range = m_playDuration == AV_NOPTS_VALUE || time_diff <= ((double)m_playDuration / 1000000);
+        }
+
         if (pkt->stream_index == m_audioStreamIndex && pkt_in_play_range) {
             packet_queue_put(&m_audioPaketQueue, pkt);
         } else if (pkt->stream_index == m_videoStreamIndex && pkt_in_play_range
@@ -2521,21 +2557,121 @@ void CSJFFPlayerKernel::do_exit() {
     stream_close();
 }
 
+void CSJFFPlayerKernel::threadTestFunc(int t) {
+    while (1) {
+
+        // pause logic;
+        if (m_paused) {
+            std::unique_lock<std::mutex> lock(m_pauseMtx);
+            threadLog(t, 1);
+            m_pauseCond.wait(lock);
+            threadLog(t, 2);
+        }
+
+        if (m_abortRequest) {
+            threadLog(t, 3);
+            break;
+        }
+
+        threadLog(t, 4);
+        
+        // a sleep logic;
+        std::this_thread::sleep_for(std::chrono::milliseconds(33));
+    }
+}
+
+void CSJFFPlayerKernel::threadLog(int thread_type, int log_type) {
+    static QString threadType[] = {
+        "Video decoder thread",
+        "Audio decoder thread",
+        "Subtitle decoder thread",
+        "Reading thread"
+    };
+
+    static QString logString[] = {
+        "start",
+        "pause",
+        "resume",
+        "stop",
+        "decoding packet",
+        "read packet",
+        "exit"
+    };
+
+    QString outputLog = "";
+    outputLog.append("[Thread Debug] ");
+    outputLog.append(threadType[thread_type]);
+    outputLog.append(": ");
+    outputLog.append(logString[log_type]);
+
+    qDebug() << outputLog;
+}
+
+void CSJFFPlayerKernel::readThreadTest() {
+    while (1) {
+
+        // TODO: add pause logic;
+        if (m_paused) {
+            std::unique_lock<std::mutex> lock(m_pauseMtx);
+            threadLog(3, 1);
+            m_pauseCond.wait(lock);
+            threadLog(3, 2);
+        }
+
+        if (m_abortRequest) {
+            threadLog(3, 3);
+            break;
+        }
+
+        threadLog(3, 5);
+
+        // a sleep logic;
+        std::this_thread::sleep_for(std::chrono::milliseconds(33));
+    }
+
+    threadLog(3, 5);
+}
+
 void CSJFFPlayerKernel::play() {
+    if (!m_abortRequest) {
+        qDebug()  << "[Thread Debug] Current status is playing, replay...";
+
+        //  TODO: Stop all the thread and reset all the states.
+        resetPlayState();
+    }
+
+    m_abortRequest = false;
+
+    // m_pRenderThread.reset(new std::thread(&CSJVideoRendererWidget::internalRender, this));
+
+    m_pReadThread.reset(new std::thread(&CSJFFPlayerKernel::readThreadTest, this));
+
+    m_pVideoDecThread.reset(new std::thread(&CSJFFPlayerKernel::threadTestFunc, this, 0));
+    m_pAudioDecThread.reset(new std::thread(&CSJFFPlayerKernel::threadTestFunc, this, 1));
+    m_pSubtitleDecThread.reset(new std::thread(&CSJFFPlayerKernel::threadTestFunc, this, 2));
 
 }
 
 void CSJFFPlayerKernel::pause() {
-    stream_toggle_pause();
-    m_step = 0;
+    // stream_toggle_pause();
+    // m_step = 0;
+
+    m_paused = true;
 }
 
 void CSJFFPlayerKernel::resume() {
+    // stream_toggle_pause();
+    // m_step = 0;
 
+    //std::lock_guard<std::mutex> lock(m_pauseMtx);
+    m_paused = false;
+    m_pauseCond.notify_all();
 }
 
 void CSJFFPlayerKernel::stop() {
-
+    // m_abortRequest = true;
+    /* In case current state is pause. */
+    resetPlayState();
 }
 
 void CSJFFPlayerKernel::seek(double timeStamp) {
@@ -2543,23 +2679,24 @@ void CSJFFPlayerKernel::seek(double timeStamp) {
 }
 
 bool CSJFFPlayerKernel::isPlaying() {
-    return false;
+    return !m_abortRequest;
 }
 
 bool CSJFFPlayerKernel::isPause() {
-    return false;
+    return m_paused;
 }
 
 bool CSJFFPlayerKernel::isStop() {
-    return false;
+    return m_abortRequest;
 }
 
 CSJFFPlayerKernel::CSJFFPlayerKernel() {
-
+    m_abortRequest = true;
+    m_paused = false;
 }
 
 CSJFFPlayerKernel::~CSJFFPlayerKernel() {
-
+    resetPlayState();
 }
 
 void CSJFFPlayerKernel::setPlayFile(QString &filePath) {
@@ -2567,7 +2704,7 @@ void CSJFFPlayerKernel::setPlayFile(QString &filePath) {
 }
 
 bool CSJFFPlayerKernel::initPlayer() {
-    return false;
+    return true;
 }
 
 int CSJFFPlayerKernel::getDuration() {

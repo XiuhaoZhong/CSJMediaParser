@@ -67,6 +67,7 @@ void CSJMediaPlayerWindow::initUI() {
     m_pMediaControlWidget->setFixedHeight(60);
     m_pMediaControlWidget->setStyleSheet(QString("background-color:#C7ABAB"));
     initControllWidget();
+    initPlayController();
 
     m_pAudioWaveWidget = new QWidget();
     playerLayout->addWidget(m_pAudioWaveWidget);
@@ -89,8 +90,16 @@ void CSJMediaPlayerWindow::show(bool bShow) {
 }
 
 void CSJMediaPlayerWindow::onPlayBtnClicked() {
+    if (!m_playController) {
+        qDebug() << "Error! Play controller hasn't been created!";
+        return ;
+    }
+
     if (m_playStatus == PLAYSTATUS_STOP) {
         qDebug() << "[LOG] Start playing... ";
+
+        m_playController->start();
+
         m_playStatus = PLAYSTATUS_PLAY;
         m_pPlayBtn->setText("Pause");
 
@@ -98,6 +107,9 @@ void CSJMediaPlayerWindow::onPlayBtnClicked() {
         m_pFastBackBtn->setEnabled(true);
     } else if (m_playStatus == PLAYSTATUS_PAUSE) {
         qDebug() << "[LOG] Resume playing... ";
+
+        m_playController->resume();
+
         m_playStatus = PLAYSTATUS_PLAY;
         m_pPlayBtn->setText("Pause");
 
@@ -105,6 +117,9 @@ void CSJMediaPlayerWindow::onPlayBtnClicked() {
         m_pFastBackBtn->setEnabled(false);
     } else if (m_playStatus == PLAYSTATUS_PLAY) {
         qDebug() << "[LOG] Pause playing... ";
+
+        m_playController->pause();
+
         m_pPlayBtn->setText("Resume");
         m_playStatus = PLAYSTATUS_PAUSE;
 
@@ -116,10 +131,20 @@ void CSJMediaPlayerWindow::onPlayBtnClicked() {
 }
 
 void CSJMediaPlayerWindow::onStopBtnClicked() {
+    if (!m_playController) {
+        qDebug() << "Error! Play controller hasn't been created!";
+        return ;
+    }
+
     qDebug() << "[LOG] Stop playing... ";
     m_playStatus = PLAYSTATUS_STOP;
 
+
     m_pStopBtn->setEnabled(false);
+
+    m_playController->stop();
+
+
     m_pPlayBtn->setText("Play");
 
     m_pFastForwardBtn->setEnabled(false);
@@ -127,10 +152,20 @@ void CSJMediaPlayerWindow::onStopBtnClicked() {
 }
 
 void CSJMediaPlayerWindow::onFastForwardBtnClicked() {
+    if (!m_playController) {
+        qDebug() << "Error! Play controller hasn't been created!";
+        return ;
+    }
+
     qDebug() << "[LOG] Fast forward... ";
 }
 
 void CSJMediaPlayerWindow::onFastBackBtnClicked() {
+    if (!m_playController) {
+        qDebug() << "Error! Play controller hasn't been created!";
+        return ;
+    }
+
     qDebug() << "[LOG] Fast backward... ";
 }
 
@@ -153,4 +188,12 @@ void CSJMediaPlayerWindow::initControllWidget() {
     connect(m_pStopBtn, &QPushButton::clicked, this, &CSJMediaPlayerWindow::onStopBtnClicked);
     connect(m_pFastForwardBtn, &QPushButton::clicked, this, &CSJMediaPlayerWindow::onFastForwardBtnClicked);
     connect(m_pFastBackBtn, &QPushButton::clicked, this, &CSJMediaPlayerWindow::onFastBackBtnClicked);
+}
+
+void CSJMediaPlayerWindow::initPlayController() {
+    if (m_playController) {
+        return ;
+    }
+
+    m_playController = CSJPlayerController::createPlayerController();
 }
