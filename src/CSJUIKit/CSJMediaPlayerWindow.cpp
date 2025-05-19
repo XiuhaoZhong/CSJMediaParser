@@ -99,30 +99,27 @@ void CSJMediaPlayerWindow::onPlayBtnClicked() {
         qDebug() << "[LOG] Start playing... ";
 
         m_playController->start();
-
         m_playStatus = PLAYSTATUS_PLAY;
-        m_pPlayBtn->setText("Pause");
 
+        m_pPlayBtn->setText("Pause");
         m_pFastForwardBtn->setEnabled(true);
         m_pFastBackBtn->setEnabled(true);
     } else if (m_playStatus == PLAYSTATUS_PAUSE) {
         qDebug() << "[LOG] Resume playing... ";
 
         m_playController->resume();
-
         m_playStatus = PLAYSTATUS_PLAY;
-        m_pPlayBtn->setText("Pause");
 
+        m_pPlayBtn->setText("Pause");
         m_pFastForwardBtn->setEnabled(false);
         m_pFastBackBtn->setEnabled(false);
     } else if (m_playStatus == PLAYSTATUS_PLAY) {
         qDebug() << "[LOG] Pause playing... ";
 
         m_playController->pause();
-
-        m_pPlayBtn->setText("Resume");
         m_playStatus = PLAYSTATUS_PAUSE;
 
+        m_pPlayBtn->setText("Resume");
         m_pFastForwardBtn->setEnabled(true);
         m_pFastBackBtn->setEnabled(true);
     }
@@ -137,16 +134,12 @@ void CSJMediaPlayerWindow::onStopBtnClicked() {
     }
 
     qDebug() << "[LOG] Stop playing... ";
-    m_playStatus = PLAYSTATUS_STOP;
-
-
-    m_pStopBtn->setEnabled(false);
 
     m_playController->stop();
-
+    m_playStatus = PLAYSTATUS_STOP;
 
     m_pPlayBtn->setText("Play");
-
+    m_pStopBtn->setEnabled(false);
     m_pFastForwardBtn->setEnabled(false);
     m_pFastBackBtn->setEnabled(false);
 }
@@ -171,7 +164,7 @@ void CSJMediaPlayerWindow::onFastBackBtnClicked() {
 
 void CSJMediaPlayerWindow::initControllWidget() {
     m_pPlayBtn = new QPushButton("Play"); // play, pause and resume is the same button, switch by play status.
-    m_pStopBtn = new QPushButton("Stop");
+    m_pStopBtn = new QPushButton("Stop", m_pMediaControlWidget);
     m_pStopBtn->setEnabled(false);
     m_pFastForwardBtn = new QPushButton ("FF");
     m_pFastForwardBtn->setEnabled(false);
@@ -188,6 +181,70 @@ void CSJMediaPlayerWindow::initControllWidget() {
     connect(m_pStopBtn, &QPushButton::clicked, this, &CSJMediaPlayerWindow::onStopBtnClicked);
     connect(m_pFastForwardBtn, &QPushButton::clicked, this, &CSJMediaPlayerWindow::onFastForwardBtnClicked);
     connect(m_pFastBackBtn, &QPushButton::clicked, this, &CSJMediaPlayerWindow::onFastBackBtnClicked);
+
+    m_pPlayBtn->setStyleSheet(R"(
+        QPushButton {
+            background-color: #4CAF50; /* 正常状态背景色 */
+            color: white;
+            border-radius: 5px;
+            padding: 8px;
+        }
+        QPushButton:disabled {
+            background-color: #cccccc; /* 禁用状态背景色 */
+            color: #666666;
+        }
+        QPushButton:pressed {
+            background-color: #45a049; /* 按下状态背景色 */
+        }
+    )");
+
+    m_pStopBtn->setStyleSheet(R"(
+        QPushButton {
+            background-color: #4CAF50; /* 正常状态背景色 */
+            color: white;
+            border-radius: 5px;
+            padding: 8px;
+        }
+        QPushButton:disabled {
+            background-color: #cccccc; /* 禁用状态背景色 */
+            color: #666666;
+        }
+        QPushButton:pressed {
+            background-color: #45a049; /* 按下状态背景色 */
+        }
+    )");
+
+    m_pFastBackBtn->setStyleSheet(R"(
+        QPushButton {
+            background-color: #4CAF50; /* 正常状态背景色 */
+            color: white;
+            border-radius: 5px;
+            padding: 8px;
+        }
+        QPushButton:disabled {
+            background-color: #cccccc; /* 禁用状态背景色 */
+            color: #666666;
+        }
+        QPushButton:pressed {
+            background-color: #45a049; /* 按下状态背景色 */
+        }
+    )");
+
+    m_pFastForwardBtn->setStyleSheet(R"(
+        QPushButton {
+            background-color: #4CAF50; /* 正常状态背景色 */
+            color: white;
+            border-radius: 5px;
+            padding: 8px;
+        }
+        QPushButton:disabled {
+            background-color: #cccccc; /* 禁用状态背景色 */
+            color: #666666;
+        }
+        QPushButton:pressed {
+            background-color: #45a049; /* 按下状态背景色 */
+        }
+    )");
 }
 
 void CSJMediaPlayerWindow::initPlayController() {
