@@ -254,16 +254,15 @@ int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec) {
 
 AVDictionary *filter_codec_opts(AVDictionary *opts, enum AVCodecID codec_id,
                                 AVFormatContext *s, AVStream *st, const AVCodec *codec) {
-    AVDictionary    *ret = NULL;
+    AVDictionary *ret = NULL;
     const AVDictionaryEntry *t = NULL;
-    int            flags = s->oformat ? AV_OPT_FLAG_ENCODING_PARAM
-                                      : AV_OPT_FLAG_DECODING_PARAM;
-    char          prefix = 0;
-    const AVClass    *cc = avcodec_get_class();
+    int flags = s->oformat ? AV_OPT_FLAG_ENCODING_PARAM : AV_OPT_FLAG_DECODING_PARAM;
+    char prefix = 0;
+    const AVClass *cc = avcodec_get_class();
 
-    if (!codec)
-        codec            = s->oformat ? avcodec_find_encoder(codec_id)
-                                      : avcodec_find_decoder(codec_id);
+    if (!codec) {
+        codec = s->oformat ? avcodec_find_encoder(codec_id) : avcodec_find_decoder(codec_id);
+    }
 
     switch (st->codecpar->codec_type) {
     case AVMEDIA_TYPE_VIDEO:
@@ -285,27 +284,32 @@ AVDictionary *filter_codec_opts(AVDictionary *opts, enum AVCodecID codec_id,
         char *p = strchr(t->key, ':');
 
         /* check stream specification in opt name */
-        if (p)
+        if (p) {
             switch (check_stream_specifier(s, st, p + 1)) {
-            case  1: *p = 0; break;
-            case  0:         continue;
-            default:         exit_program(1);
+            case 1: 
+                *p = 0; 
+                break;
+            case 0:
+                continue;
+            default: 
+                exit_program(1);
             }
+        }
 
-        if (av_opt_find(&cc, t->key, NULL, flags, AV_OPT_SEARCH_FAKE_OBJ) ||
-            !codec ||
-            ((priv_class = codec->priv_class) &&
-             av_opt_find(&priv_class, t->key, NULL, flags,
-                         AV_OPT_SEARCH_FAKE_OBJ)))
-            av_dict_set(&ret, t->key, t->value, 0);
-        else if (t->key[0] == prefix &&
-                 av_opt_find(&cc, t->key + 1, NULL, flags,
-                             AV_OPT_SEARCH_FAKE_OBJ))
+        if (av_opt_find(&cc, t->key, NULL, flags, AV_OPT_SEARCH_FAKE_OBJ) || !codec ||
+            ((priv_class = codec->priv_class) && 
+                av_opt_find(&priv_class, t->key, NULL, flags, AV_OPT_SEARCH_FAKE_OBJ))) {
+                av_dict_set(&ret, t->key, t->value, 0);
+        } else if (t->key[0] == prefix && 
+                   av_opt_find(&cc, t->key + 1, NULL, flags, AV_OPT_SEARCH_FAKE_OBJ)) {
             av_dict_set(&ret, t->key + 1, t->value, 0);
+        }
 
-        if (p)
+        if (p) {
             *p = ':';
+        }
     }
+
     return ret;
 }
 
@@ -1111,7 +1115,6 @@ void CSJFFPlayerKernel::video_refresh(double *remaining_time) {
     }
 
     if (m_pVideoStream) {
-
         while (frame_queue_nb_remaining(&m_videoFrameQueue) != 0) {
             double last_duration, duration, delay;
             Frame *vp, *lastvp;
@@ -1136,7 +1139,7 @@ void CSJFFPlayerKernel::video_refresh(double *remaining_time) {
             last_duration = vp_duration(lastvp, vp);
             delay = compute_target_delay(last_duration);
 
-            time= av_gettime_relative()/1000000.0;
+            time= av_gettime_relative() / 1000000.0;
             if (time < m_frameTimer + delay) {
                  *remaining_time = FFMIN(m_frameTimer + delay - time, *remaining_time);
                  break;
@@ -1286,17 +1289,17 @@ int CSJFFPlayerKernel::queue_picture(AVFrame *src_frame, double pts, double dura
         return -1;
     }
 
-    vp->sar = src_frame->sample_aspect_ratio;
+    vp->sar      = src_frame->sample_aspect_ratio;
     vp->uploaded = 0;
 
-    vp->width = src_frame->width;
-    vp->height = src_frame->height;
-    vp->format = src_frame->format;
+    vp->width    = src_frame->width;
+    vp->height   = src_frame->height;
+    vp->format   = src_frame->format;
 
-    vp->pts = pts;
+    vp->pts      = pts;
     vp->duration = duration;
-    vp->pos = pos;
-    vp->serial = serial;
+    vp->pos      = pos;
+    vp->serial   = serial;
 
     //set_default_window_size(vp->width, vp->height, vp->sar);
 
@@ -1361,12 +1364,18 @@ int CSJFFPlayerKernel::audio_decode_task() {
             tb = {1, frame->sample_rate};
 
 #if CONFIG_AVFILTER
-            reconfigure =
-                    cmp_audio_fmts(is->audio_filter_src.fmt, is->audio_filter_src.ch_layout.nb_channels,
-                                   frame->format, frame->ch_layout.nb_channels)    ||
-                    av_channel_layout_compare(&is->audio_filter_src.ch_layout, &frame->ch_layout) ||
-                    is->audio_filter_src.freq           != frame->sample_rate ||
-                                                           m_audDecoder.pkt_serial               != last_serial;
+            
+            int audio_fmts_same = cmp_audio_fmts(is->audio_filter_src.fmt, 
+                                                 is->audio_filter_src.ch_layout.nb_channels,
+                                                 frame->format, 
+                                                 frame->ch_layout.nb_channels);
+
+            int audio_channel_layout_same = av_channel_layout_compare(&is->audio_filter_src.ch_layout, &frame->ch_layout);
+
+            reconfigure = audio_fmts_same || 
+                          audio_channel_layout_same || 
+                          (is->audio_filter_src.freq != frame->sample_rate) || 
+                          m_audDecoder.pkt_serial != last_serial;
 
             if (reconfigure) {
                 char buf1[1024], buf2[1024];
@@ -1374,8 +1383,13 @@ int CSJFFPlayerKernel::audio_decode_task() {
                 av_channel_layout_describe(&frame->ch_layout, buf2, sizeof(buf2));
                 av_log(NULL, AV_LOG_DEBUG,
                        "Audio frame changed from rate:%d ch:%d fmt:%s layout:%s serial:%d to rate:%d ch:%d fmt:%s layout:%s serial:%d\n",
-                       is->audio_filter_src.freq, is->audio_filter_src.ch_layout.nb_channels, av_get_sample_fmt_name(is->audio_filter_src.fmt), buf1, last_serial,
-                       frame->sample_rate, frame->ch_layout.nb_channels, av_get_sample_fmt_name(frame->format), buf2, m_audDecoder.pkt_serial);
+                       is->audio_filter_src.freq, 
+                       is->audio_filter_src.ch_layout.nb_channels, 
+                       av_get_sample_fmt_name(is->audio_filter_src.fmt), 
+                       buf1, last_serial,
+                       frame->sample_rate, 
+                       frame->ch_layout.nb_channels, 
+                       av_get_sample_fmt_name(frame->format), buf2, m_audDecoder.pkt_serial);
 
                 is->audio_filter_src.fmt            = frame->format;
                 ret = av_channel_layout_copy(&is->audio_filter_src.ch_layout, &frame->ch_layout);
@@ -1960,10 +1974,14 @@ int CSJFFPlayerKernel::stream_component_open(int stream_index) {
 
     AVDictionary *codec_opts;
     opts = filter_codec_opts(codec_opts, avctx->codec_id, ic, ic->streams[stream_index], codec);
+    /* Set multi-thread decoder mode. 
+     * "auto" indiecates FFMpeg will select thread numbers automatically with the system properties  
+     */
     if (!av_dict_get(opts, "threads", NULL, 0)) {
         av_dict_set(&opts, "threads", "auto", 0);
     }
 
+    /* If low sample video frame */
     if (stream_lowres) {
         av_dict_set_int(&opts, "lowres", stream_lowres, 0);
     }
@@ -2260,11 +2278,11 @@ int CSJFFPlayerKernel::read_thread() {
         if (!m_bDisableVideo && !m_bDisableSubtitle) {
             st_index[AVMEDIA_TYPE_SUBTITLE] =
                     av_find_best_stream(ic, AVMEDIA_TYPE_SUBTITLE,
-                                        st_index[AVMEDIA_TYPE_SUBTITLE],
-                                        (st_index[AVMEDIA_TYPE_AUDIO] >= 0 ?
-                                             st_index[AVMEDIA_TYPE_AUDIO] :
-                                             st_index[AVMEDIA_TYPE_VIDEO]),
-                                        NULL, 0);
+                                        st_index[AVMEDIA_TYPE_SUBTITLE], 
+                                        st_index[AVMEDIA_TYPE_AUDIO] >= 0 ? 
+                                            st_index[AVMEDIA_TYPE_AUDIO] : st_index[AVMEDIA_TYPE_VIDEO],
+                                        NULL,
+                                        0);
         }
 
         //m_showMode = show_mode;
@@ -2322,8 +2340,8 @@ int CSJFFPlayerKernel::read_thread() {
         return ret;
     }
 
-    int64_t pkt_ts;
-    int64_t stream_start_time;
+    int64_t pkt_ts = 0;
+    int64_t stream_start_time = 0;
     int     pkt_in_play_range = 0;
 
     m_pFormatCtx = ic;
@@ -2409,8 +2427,8 @@ int CSJFFPlayerKernel::read_thread() {
 
         /* if the queue are full, no need to read more */
         if (m_inifiteBuffer < 1 &&
-            (m_audioPaketQueue.size + m_videoPacketQueue.size + m_subtitlePacketQueue.size > MAX_QUEUE_SIZE
-             || (stream_has_enough_packets(m_pAudioSteam, m_audioStreamIndex, &m_audioPaketQueue) &&
+            (m_audioPaketQueue.size + m_videoPacketQueue.size + m_subtitlePacketQueue.size > MAX_QUEUE_SIZE || 
+                (stream_has_enough_packets(m_pAudioSteam, m_audioStreamIndex, &m_audioPaketQueue) &&
                  stream_has_enough_packets(m_pVideoStream, m_videoStreamIndex, &m_videoPacketQueue) &&
                  stream_has_enough_packets(m_pSubtitleStream, m_subtitleStreamIndex, &m_subtitlePacketQueue)))) {
             /* wait 10 ms */
@@ -2452,9 +2470,9 @@ int CSJFFPlayerKernel::read_thread() {
             }
 
             if (m_pFormatCtx->pb && m_pFormatCtx->pb->error) {
-
                 break;
             }
+
             wait_mutex.lock();
             m_pContinueReadCond->wait_for(uniqueLock, std::chrono::milliseconds(10));
             wait_mutex.unlock();
@@ -2512,7 +2530,7 @@ bool CSJFFPlayerKernel::stream_open() {
     m_ytop = 0;
     m_xleft = 0;
 
-    /* start video display */
+    /* Initialize queues and clocks, and then start the read thread. */
     do {
         if (frame_queue_init(&m_videoFrameQueue, &m_videoPacketQueue, VIDEO_PICTURE_QUEUE_SIZE, 1) < 0)
             break;
