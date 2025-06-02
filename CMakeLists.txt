@@ -15,6 +15,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(SRC_ROOT "${ROOT_DIR}/src")
+set(THIRD_PARTY_DIR "${SRC_ROOT}/3rdParts")
 
 set(QTDIR $ENV{QTDIR_6_8_0})
 
@@ -174,6 +175,10 @@ set_target_properties(${TARGET_NAME} PROPERTIES
     MACOSX_BUNDLE TRUE
     WIN32_EXECUTABLE TRUE
 )
+
+target_link_libraries(${TARGET_NAME} PUBLIC spdlog::spdlog)
+
+add_subdirectory(${THIRD_PARTY_DIR})
 
 add_custom_command(TARGET ${TARGET_NAME}
                    POST_BUILD

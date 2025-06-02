@@ -47,3 +47,6 @@ Please implement the key points above, and record the details, and if there are 
 
 ### 2025-05-18
 1. I completed the threads model in the CSJFFPlayerKernel for the first version, then should use the real threads replacing the test threads, and debugging the decoder workflow and improving the thread model.
+
+### 2025-06-02
+1. Add the library spdlog as the logger module
