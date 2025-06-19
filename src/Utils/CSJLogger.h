@@ -19,6 +19,32 @@ public:
         FATAL_LOG
     };
 
+
+    template<typename... TARGS>
+    void log_debug(TARGS&&... args) {
+        log(LogLevel::DEBUG_LOG, args);
+    }
+
+    template<typename... TARGS>
+    void log_info(TARGS&&... args) {
+        log(LogLevel::INFO_LOG, args...);
+    }
+
+    template<typename... TARGS>
+    void log_warn(TARGS&&... args) {
+        log(LogLevel::WARN_LOG, args...);
+    }
+
+    template<typename... TARGS>
+    void log_error(TARGS&&... args) {
+        log(LogLevel::ERROR_LOG, args...);
+    }
+
+    template<typename... TARGS>
+    void log_fatal(TARGS&&... args) {
+        log(LogLevel::FATAL_LOG, args...);
+    }
+
     template<typename... TARGS>
     void log(LogLevel level, TARGS&&... args) {
         switch (level) {

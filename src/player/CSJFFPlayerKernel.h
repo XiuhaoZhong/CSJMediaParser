@@ -29,6 +29,12 @@ extern "C" {
 #include "libavcodec/avfft.h"
 #include "libswscale/swscale.h"
 
+using UniqueThread = std::unique_ptr<std::thread>;
+using StdCondVar = std::condition_variable;
+using StdMutex = std::mutex;
+
+class CSJLogger;
+
 #ifdef __cplusplus
 }
 #endif
@@ -91,15 +97,15 @@ typedef struct MyAVPacketList {
 } MyAVPacketList;
 
 typedef struct PacketQueue {
-    AVFifo  *pkt_list;
-    int      nb_packets;
-    int      size;
-    int64_t  duration;
-    int      abort_request;
-    int      serial;
+    AVFifo     *pkt_list;
+    int         nb_packets;
+    int         size;
+    int64_t     duration;
+    int         abort_request;
+    int         serial;
 
-    std::mutex              *mutex;
-    std::condition_variable *cond;
+    StdMutex   *mutex;
+    StdCondVar *cond;
 } PacketQueue;
 
 typedef struct AudioParams {
@@ -133,22 +139,22 @@ typedef struct Frame {
     int          width;
     int          height;
     int          format;
-    AVRational   sar;
     int          uploaded;
     int          flip_v;
+    AVRational   sar;
 } Frame;
 
 typedef struct FrameQueue {
-    Frame   queue[FRAME_QUEUE_SIZE];
-    int     rindex;
-    int     windex;
-    int     size;
-    int     max_size;
-    int     keep_last;
-    int     rindex_shown;
+    Frame       queue[FRAME_QUEUE_SIZE];
+    int         rindex;
+    int         windex;
+    int         size;
+    int         max_size;
+    int         keep_last;
+    int         rindex_shown;
 
-    std::mutex              *mutex;
-    std::condition_variable *cond;
+    StdMutex   *mutex;
+    StdCondVar *cond;
 
     PacketQueue *pktq;
 } FrameQueue;
@@ -170,9 +176,8 @@ typedef struct Decoder {
     AVRational       start_pts_tb;
     int64_t          next_pts;
     AVRational       next_pts_tb;
-    std::thread      decoder_thr;
-
-    std::condition_variable *empty_queue_cond;
+    UniqueThread     decoder_thr;
+    StdCondVar      *empty_queue_cond;
 } Decoder;
 
 typedef enum ShowMode {
@@ -331,7 +336,7 @@ protected:
     bool stream_open();
 
     AVDictionary** setup_find_stream_info_opts(AVFormatContext *s,
-                                          AVDictionary *codec_opts);
+                                                AVDictionary *codec_opts);
 
     void stream_component_close(int stream_index);
     void stream_close();
@@ -352,25 +357,28 @@ protected:
     void readThreadTest();
 
 private:
-    QString                       m_fileName;
-    char                         *m_pFileName;
+    QString          m_fileName;
+    char            *m_pFileName;
+    CSJLogger       *m_pLogger;
 
-    AVFormatContext              *m_pFormatCtx   = nullptr;
-    AVInputFormat                *m_pInputFormat = nullptr;
-    AVDictionary                 *m_pFormatOpts  = nullptr;
-    AVDictionary                 *m_pCodecOpts   = nullptr;
-    std::condition_variable      *m_pContinueReadCond;
-    std::unique_ptr<std::thread>  m_pReadThread;
-    std::unique_ptr<std::thread>  m_pVideoDecThread;
-    std::unique_ptr<std::thread>  m_pAudioDecThread;
-    std::unique_ptr<std::thread>  m_pSubtitleDecThread;
+    AVFormatContext *m_pFormatCtx   = nullptr;
+    AVInputFormat   *m_pInputFormat = nullptr;
+    AVDictionary    *m_pFormatOpts  = nullptr;
+    AVDictionary    *m_pCodecOpts   = nullptr;
+    StdCondVar      *m_pContinueReadCond;
+    UniqueThread     m_pReadThread;
+    UniqueThread     m_pVideoDecThread;
+    UniqueThread     m_pAudioDecThread;
+    UniqueThread     m_pSubtitleDecThread;
 
     Clock       m_audClk;
     Clock       m_vidClk;
     Clock       m_extClk;
     CSJShowMode m_showMode;
-    int         m_paused;
-    int         m_abortRequest;
+
+    bool        m_abortRequest     = true;
+    bool        m_paused           = false;
+    
     int         m_realTime;
     int         m_avSyncType       = AV_SYNC_AUDIO_MASTER;
     int         m_eof;
@@ -383,8 +391,8 @@ private:
 
     const char *m_WantedStreamSpec[AVMEDIA_TYPE_NB] = {0};
 
-    std::mutex                   m_pauseMtx;
-    std::condition_variable      m_pauseCond;
+    std::mutex  m_pauseMtx;
+    StdCondVar  m_pauseCond;
 
     int         m_seekReq;
     int         m_seekFlags;

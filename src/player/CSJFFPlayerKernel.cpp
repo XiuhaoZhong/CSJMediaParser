@@ -4,6 +4,8 @@
 
 #include <chrono>
 
+#include "Utils/CSJLogger.h"
+
 /* The operation below is the filters. */
 #if CONFIG_AVFILTER
 static int configure_filtergraph(AVFilterGraph *graph, const char *filtergraph,
@@ -774,8 +776,8 @@ void CSJFFPlayerKernel::decoder_abort(Decoder *d, FrameQueue *fq) {
     packet_queue_abort(d->queue);
     frame_queue_signal(fq);
 
-    if (d->decoder_thr.joinable()) {
-        d->decoder_thr.join();
+    if (d->decoder_thr->joinable()) {
+        d->decoder_thr->join();
     }
 
     packet_queue_flush(d->queue);
@@ -918,8 +920,11 @@ void CSJFFPlayerKernel::stream_component_close(int stream_index) {
         decoder_destroy(&m_audDecoder);
         swr_free(&m_swrCtx);
         av_freep(&m_pAudioBuf1);
-        m_audioBuf1Size = 0;
+        /* m_pAudioBuf and m_pAudioBuf1 point the same address, 
+         * so m_pAudioBuf needn't to be free. 
+         */
         m_pAudioBuf = nullptr;
+        m_audioBuf1Size = 0;
 
         // 释放傅里叶离散变换的相应数据;
         if (m_pRdft) {
@@ -961,6 +966,12 @@ void CSJFFPlayerKernel::stream_component_close(int stream_index) {
 
 void CSJFFPlayerKernel::stream_close() {
     m_abortRequest = 1;
+
+    /* In current status is pause, resume the play first. */
+    if (m_paused) {
+        resume();
+    }
+
     if (m_pReadThread->joinable()) {
         m_pReadThread->join();
     }
@@ -989,8 +1000,13 @@ void CSJFFPlayerKernel::stream_close() {
     frame_queue_destory(&m_audioFrameQueue);
     frame_queue_destory(&m_subtitleFrameQueue);
 
-    sws_freeContext(m_pImgConvertCtx);
-    sws_freeContext(m_pSubConvertCtx);
+    if (m_pImgConvertCtx) {
+        sws_freeContext(m_pImgConvertCtx);
+    }
+
+    if (m_pSubConvertCtx) {
+        sws_freeContext(m_pSubConvertCtx);
+    }
 }
 
 void CSJFFPlayerKernel::stream_toggle_pause() {
@@ -1008,7 +1024,7 @@ void CSJFFPlayerKernel::stream_toggle_pause() {
 }
 
 void CSJFFPlayerKernel::resetPlayState() {
-    m_abortRequest = 1;
+    m_abortRequest = true;
 
     if (m_paused) {
         resume();
@@ -1357,8 +1373,9 @@ int CSJFFPlayerKernel::audio_decode_task() {
         return AVERROR(ENOMEM);
 
     do {
-        if ((got_frame = decoder_decode_frame(&m_audDecoder, frame, NULL)) < 0)
+        if ((got_frame = decoder_decode_frame(&m_audDecoder, frame, NULL)) < 0) {
             goto the_end;
+        }
 
         if (got_frame) {
             tb = {1, frame->sample_rate};
@@ -1393,23 +1410,28 @@ int CSJFFPlayerKernel::audio_decode_task() {
 
                 is->audio_filter_src.fmt            = frame->format;
                 ret = av_channel_layout_copy(&is->audio_filter_src.ch_layout, &frame->ch_layout);
-                if (ret < 0)
+                if (ret < 0) {
                     goto the_end;
+                }
+
                 is->audio_filter_src.freq           = frame->sample_rate;
                 last_serial                         = m_audDecoder.pkt_serial;
 
-                if ((ret = configure_audio_filters(is, afilters, 1)) < 0)
+                if ((ret = configure_audio_filters(is, afilters, 1)) < 0) {
                     goto the_end;
+                }
             }
 
-            if ((ret = av_buffersrc_add_frame(is->in_audio_filter, frame)) < 0)
+            if ((ret = av_buffersrc_add_frame(is->in_audio_filter, frame)) < 0) {
                 goto the_end;
+            }
 
             while ((ret = av_buffersink_get_frame_flags(is->out_audio_filter, frame, 0)) >= 0) {
                 tb = av_buffersink_get_time_base(is->out_audio_filter);
 #endif
-                if (!(af = frame_queue_peek_writable(&m_audioFrameQueue)))
+                if (!(af = frame_queue_peek_writable(&m_audioFrameQueue))) {
                     goto the_end;
+                }
 
                 af->pts = (frame->pts == AV_NOPTS_VALUE) ? NAN : frame->pts * av_q2d(tb);
                 af->pos = frame->pkt_pos;
@@ -1420,11 +1442,14 @@ int CSJFFPlayerKernel::audio_decode_task() {
                 frame_queue_push(&m_audioFrameQueue);
 
 #if CONFIG_AVFILTER
-                if (m_audioPaketQueue.serial != m_audDecoder.pkt_serial)
+                if (m_audioPaketQueue.serial != m_audDecoder.pkt_serial) {
                     break;
+                }
             }
-            if (ret == AVERROR_EOF)
+
+            if (ret == AVERROR_EOF) {
                 m_audDecoder.finished = m_audDecoder.pkt_serial;
+            }
 #endif
         }
     } while (ret >= 0 || ret == AVERROR(EAGAIN) || ret == AVERROR_EOF);
@@ -1454,22 +1479,26 @@ int CSJFFPlayerKernel::video_decode_task() {
     int last_vfilter_idx = 0;
 #endif
 
-    if (!frame)
+    if (!frame) {
         return AVERROR(ENOMEM);
+    }
 
     for (;;) {
         ret = get_video_frame(frame);
-        if (ret < 0)
+        if (ret < 0) {
             goto the_end;
-        if (!ret)
+        }
+
+        if (!ret) {
             continue;
+        }
 
 #if CONFIG_AVFILTER
-        if (   last_w != frame->width
-               || last_h != frame->height
-               || last_format != frame->format
-               || last_serial != m_videoDecoder.pkt_serial
-               || last_vfilter_idx != is->vfilter_idx) {
+        if (last_w != frame->width ||
+            last_h != frame->height ||
+            last_format != frame->format ||
+            last_serial != m_videoDecoder.pkt_serial ||
+            last_vfilter_idx != is->vfilter_idx) {
             av_log(NULL, AV_LOG_DEBUG,
                    "Video frame changed from size:%dx%d format:%s serial:%d to size:%dx%d format:%s serial:%d\n",
                    last_w, last_h,
@@ -1501,8 +1530,9 @@ int CSJFFPlayerKernel::video_decode_task() {
         }
 
         ret = av_buffersrc_add_frame(filt_in, frame);
-        if (ret < 0)
+        if (ret < 0) {
             goto the_end;
+        }
 
         while (ret >= 0) {
             is->frame_last_returned_time = av_gettime_relative() / 1000000.0;
@@ -1516,8 +1546,9 @@ int CSJFFPlayerKernel::video_decode_task() {
             }
 
             is->frame_last_filter_delay = av_gettime_relative() / 1000000.0 - is->frame_last_returned_time;
-            if (fabs(is->frame_last_filter_delay) > AV_NOSYNC_THRESHOLD / 10.0)
+            if (fabs(is->frame_last_filter_delay) > AV_NOSYNC_THRESHOLD / 10.0) {
                 is->frame_last_filter_delay = 0;
+            }
             tb = av_buffersink_get_time_base(filt_out);
 #endif
             duration = (frame_rate.num && frame_rate.den ? av_q2d({frame_rate.den, frame_rate.num}) : 0);
@@ -1525,13 +1556,15 @@ int CSJFFPlayerKernel::video_decode_task() {
             ret = queue_picture(frame, pts, duration, frame->pkt_pos, m_videoDecoder.pkt_serial);
             av_frame_unref(frame);
 #if CONFIG_AVFILTER
-            if (m_videoPacketQueue.serial != m_videoDecoder.pkt_serial)
+            if (m_videoPacketQueue.serial != m_videoDecoder.pkt_serial) {
                 break;
+            }
         }
 #endif
 
-        if (ret < 0)
+        if (ret < 0) {
             goto the_end;
+        }
     }
 the_end:
 #if CONFIG_AVFILTER
@@ -1547,11 +1580,13 @@ int CSJFFPlayerKernel::subtitle_decode_task() {
     double pts;
 
     for (;;) {
-        if (!(sp = frame_queue_peek_writable(&m_subtitleFrameQueue)))
+        if (!(sp = frame_queue_peek_writable(&m_subtitleFrameQueue))) {
             return 0;
+        }
 
-        if ((got_subtitle = decoder_decode_frame(&m_subtitleDecoder, NULL, &sp->sub)) < 0)
+        if ((got_subtitle = decoder_decode_frame(&m_subtitleDecoder, NULL, &sp->sub)) < 0) {
             break;
+        }
 
         pts = 0;
 
@@ -1598,7 +1633,6 @@ void CSJFFPlayerKernel::update_sample_display(short *samples, int samples_size) 
         }
         size -= len;
     }
-
 }
 
 int CSJFFPlayerKernel::synchronize_audio(int nb_samples) {
@@ -1675,10 +1709,10 @@ int CSJFFPlayerKernel::audio_decode_frame() {
 
     wanted_nb_samples = synchronize_audio(af->frame->nb_samples);
 
-    if (af->frame->format        != m_audioSrc.fmt            ||
+    if (af->frame->format != m_audioSrc.fmt ||
         av_channel_layout_compare(&af->frame->ch_layout, &m_audioSrc.ch_layout) ||
-        af->frame->sample_rate   != m_audioSrc.freq           ||
-        (wanted_nb_samples       != af->frame->nb_samples && !m_swrCtx)) {
+        af->frame->sample_rate != m_audioSrc.freq ||
+        (wanted_nb_samples != af->frame->nb_samples && !m_swrCtx)) {
         swr_free(&m_swrCtx);
         swr_alloc_set_opts2(&m_swrCtx,
                             &m_audioTgt.ch_layout,
@@ -1716,6 +1750,7 @@ int CSJFFPlayerKernel::audio_decode_frame() {
             av_log(NULL, AV_LOG_ERROR, "av_samples_get_buffer_size() failed\n");
             return -1;
         }
+
         if (wanted_nb_samples != af->frame->nb_samples) {
             if (swr_set_compensation(m_swrCtx,
                                      (wanted_nb_samples - af->frame->nb_samples) * m_audioTgt.freq / af->frame->sample_rate,
@@ -1724,6 +1759,7 @@ int CSJFFPlayerKernel::audio_decode_frame() {
                 return -1;
             }
         }
+
         av_fast_malloc(&m_pAudioBuf1, &m_audioBuf1Size, out_size);
         if (!m_pAudioBuf1) {
             return AVERROR(ENOMEM);
@@ -1740,6 +1776,7 @@ int CSJFFPlayerKernel::audio_decode_frame() {
             if (swr_init(m_swrCtx) < 0)
                 swr_free(&m_swrCtx);
         }
+
         m_pAudioBuf = m_pAudioBuf1;
         resampled_data_size = len2 * m_audioTgt.ch_layout.nb_channels * av_get_bytes_per_sample(m_audioTgt.fmt);
     } else {
@@ -1896,15 +1933,16 @@ int CSJFFPlayerKernel::audio_open(AVChannelLayout *wanted_channel_layout,
 
 int CSJFFPlayerKernel::stream_component_open(int stream_index) {
     AVFormatContext *ic = m_pFormatCtx;
-    AVCodecContext *avctx;
-    const AVCodec *codec;
-    const char *forced_codec_name = NULL;
-    AVDictionary *opts = NULL;
-    const AVDictionaryEntry *t = NULL;
-    int sample_rate;
+    AVCodecContext  *avctx;
+    const AVCodec   *codec;
+    const char      *forced_codec_name = NULL;
+    AVDictionary    *opts = NULL;
+    
+    int             sample_rate;
     AVChannelLayout ch_layout = { (AVChannelOrder)0 };
-    int ret = 0;
-    int stream_lowres = 0;//lowres;
+    int             stream_lowres = 0;//lowres;
+    const AVDictionaryEntry *t = NULL;    
+    int             ret = 0;
 
     if (stream_index < 0 || stream_index >= ic->nb_streams) {
         return -1;
@@ -1929,15 +1967,15 @@ int CSJFFPlayerKernel::stream_component_open(int stream_index) {
     switch (avctx->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
         m_lastAudioStream = stream_index;
-        forced_codec_name = audio_codec_name;
+        //forced_codec_name = audio_codec_name;
         break;
     case AVMEDIA_TYPE_SUBTITLE:
         m_lastSubtitleStream = stream_index;
-        forced_codec_name = subtitle_codec_name;
+        //forced_codec_name = subtitle_codec_name;
         break;
     case AVMEDIA_TYPE_VIDEO:
         m_lastVideoStream = stream_index;
-        forced_codec_name = video_codec_name;
+        //forced_codec_name = video_codec_name;
         break;
     }
 
@@ -1961,8 +1999,10 @@ int CSJFFPlayerKernel::stream_component_open(int stream_index) {
 
     avctx->codec_id = codec->id;
     if (stream_lowres > codec->max_lowres) {
-        av_log(avctx, AV_LOG_WARNING, "The maximum value for lowres supported by the decoder is %d\n",
-               codec->max_lowres);
+        // av_log(avctx, AV_LOG_WARNING, "The maximum value for lowres supported by the decoder is %d\n",
+        //        codec->max_lowres);
+        m_pLogger->log_warn("The maximum value for lowres supported by the decoder is %d\n",
+                                codec->max_lowres);
         stream_lowres = codec->max_lowres;
     }
     avctx->lowres = stream_lowres;
@@ -1987,11 +2027,13 @@ int CSJFFPlayerKernel::stream_component_open(int stream_index) {
     }
 
     if ((ret = avcodec_open2(avctx, codec, &opts)) < 0) {
+        m_pLogger->log_fatal("Open codec failed!");
         goto fail;
     }
 
     if ((t = av_dict_get(opts, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
-        av_log(NULL, AV_LOG_ERROR, "Option %s not found.\n", t->key);
+        //av_log(NULL, AV_LOG_ERROR, "Option %s not found.\n", t->key);
+        m_pLogger->log_error("Option %s not found.\n", t->key);
         ret =  AVERROR_OPTION_NOT_FOUND;
         goto fail;
     }
@@ -2006,25 +2048,32 @@ int CSJFFPlayerKernel::stream_component_open(int stream_index) {
 
         is->audio_filter_src.freq           = avctx->sample_rate;
         ret = av_channel_layout_copy(&is->audio_filter_src.ch_layout, &avctx->ch_layout);
-        if (ret < 0)
+        if (ret < 0) {
             goto fail;
+        }
+
         is->audio_filter_src.fmt            = avctx->sample_fmt;
-        if ((ret = configure_audio_filters(is, afilters, 0)) < 0)
+        if ((ret = configure_audio_filters(is, afilters, 0)) < 0) {
             goto fail;
+        }
+
         sink = is->out_audio_filter;
         sample_rate    = av_buffersink_get_sample_rate(sink);
         ret = av_buffersink_get_ch_layout(sink, &ch_layout);
-        if (ret < 0)
+        if (ret < 0) {
             goto fail;
+        }
     }
 #else
         sample_rate    = avctx->sample_rate;
         ret = av_channel_layout_copy(&ch_layout, &avctx->ch_layout);
-        if (ret < 0)
+        if (ret < 0) {
             goto fail;
+        }
 #endif
 
         /* prepare audio output */
+        /* Audio output will use the native library, this module isn't implemented. */
         if ((ret = audio_open(&ch_layout, sample_rate, &m_audioTgt)) < 0) {
             goto fail;
         }
@@ -2048,6 +2097,7 @@ int CSJFFPlayerKernel::stream_component_open(int stream_index) {
         m_pAudioSteam = ic->streams[stream_index];
 
         if ((ret = decoder_init(&m_audDecoder, avctx, &m_audioPaketQueue, m_pContinueReadCond)) < 0) {
+            m_pLogger->log_error("Audio decoder init failed!");
             goto fail;
         }
 
@@ -2058,19 +2108,20 @@ int CSJFFPlayerKernel::stream_component_open(int stream_index) {
 
         // decoder start 方法还没完成，启动C++11的线程来执行方法.
         packet_queue_start(m_audDecoder.queue);
-        m_pAudioDecThread.reset(new std::thread(&CSJFFPlayerKernel::audio_decode_task, this));
+        m_audDecoder.decoder_thr.reset(new std::thread(&CSJFFPlayerKernel::audio_decode_task, this));
         break;
     case AVMEDIA_TYPE_VIDEO:
         m_videoStreamIndex = stream_index;
         m_pVideoStream = ic->streams[stream_index];
 
         if ((ret = decoder_init(&m_videoDecoder, avctx, &m_videoPacketQueue, m_pContinueReadCond)) < 0) {
+            m_pLogger->log_error("Video decoder init failed!");
             goto fail;
         }
 
         // 此方法需要启动C++11的线程来执行
         packet_queue_start(m_videoDecoder.queue);
-        m_pVideoDecThread.reset(new std::thread(&CSJFFPlayerKernel::video_decode_task, this));
+        m_videoDecoder.decoder_thr.reset(new std::thread(&CSJFFPlayerKernel::video_decode_task, this));
         m_queueAttchmentsReq = 1;
         break;
     case AVMEDIA_TYPE_SUBTITLE:
@@ -2078,12 +2129,13 @@ int CSJFFPlayerKernel::stream_component_open(int stream_index) {
         m_pSubtitleStream = ic->streams[stream_index];
 
         if ((ret = decoder_init(&m_subtitleDecoder, avctx, &m_subtitlePacketQueue, m_pContinueReadCond)) < 0) {
+            m_pLogger->log_error("Subtitle decoder init failed!");
             goto fail;
         }
 
         // 此方法需要启动C++11的线程来执行
         packet_queue_start(m_subtitleDecoder.queue);
-        m_pSubtitleDecThread.reset(new std::thread(&CSJFFPlayerKernel::subtitle_decode_task, this));
+        m_subtitleDecoder.decoder_thr.reset(new std::thread(&CSJFFPlayerKernel::subtitle_decode_task, this));
         break;
     default:
         break;
@@ -2129,6 +2181,9 @@ int CSJFFPlayerKernel::is_realtime(AVFormatContext *s) {
 }
 
 int CSJFFPlayerKernel::read_thread() {
+    CSJLogger *logger = CSJLogger::getLoggerInst();
+    logger->log_info("Reading thread start!");
+
     AVFormatContext *ic = NULL;
     int err, ret;
     const AVDictionaryEntry *t;
@@ -2141,7 +2196,8 @@ int CSJFFPlayerKernel::read_thread() {
     do {
         ic = avformat_alloc_context();
         if (!ic) {
-            av_log(NULL, AV_LOG_FATAL, "Could not allocate context.\n");
+            // av_log(NULL, AV_LOG_FATAL, "Could not allocate context.\n");
+            logger->log_fatal("Could not allocate context.");
             ret = AVERROR(ENOMEM);
             break;
         }
@@ -2158,6 +2214,7 @@ int CSJFFPlayerKernel::read_thread() {
         err = avformat_open_input(&ic, m_pFileName, m_pInputFormat, &m_pFormatOpts);
         if (err < 0) {
             //print_error(m_pFileName, err);
+            logger->log_info("Open input stream failed!");
             ret = -1;
             break;
         }
@@ -2167,7 +2224,8 @@ int CSJFFPlayerKernel::read_thread() {
         }
 
         if ((t = av_dict_get(m_pFormatOpts, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
-            av_log(NULL, AV_LOG_ERROR, "Option %s not found.\n", t->key);
+            //av_log(NULL, AV_LOG_ERROR, "Option %s not found.\n", t->key);
+            logger->log_error("Option %s not found.\n", t->key);
             ret = AVERROR_OPTION_NOT_FOUND;
             break;
         }
@@ -2193,8 +2251,8 @@ int CSJFFPlayerKernel::read_thread() {
             av_freep(&opts);
 
             if (err < 0) {
-                av_log(NULL, AV_LOG_WARNING,
-                      "%s: could not find codec parameters\n", m_pFileName);
+                //av_log(NULL, AV_LOG_WARNING, "%s: could not find codec parameters\n", m_pFileName);
+                logger->log_warn("%s: could not find codec parameters\n", m_pFileName);
                 ret = -1;
                 break;
             }
@@ -2214,9 +2272,6 @@ int CSJFFPlayerKernel::read_thread() {
 
         m_maxFrameDuration = (ic->iformat->flags & AVFMT_TS_DISCONT) ? 10.0 : 3600.0;
 
-        //    if (!window_title && (t = av_dict_get(ic->metadata, "title", NULL, 0)))
-        //        window_title = av_asprintf("%s - %s", t->value, input_filename);
-
         /* if seeking requested, we execute it */
         if (m_startTime != AV_NOPTS_VALUE) {
             int64_t timestamp;
@@ -2229,12 +2284,17 @@ int CSJFFPlayerKernel::read_thread() {
 
             ret = avformat_seek_file(ic, -1, INT64_MIN, timestamp, INT64_MAX, 0);
             if (ret < 0) {
-                av_log(NULL, AV_LOG_WARNING, "%s: could not seek to position %0.3f\n",
-                       m_pFileName, (double)timestamp / AV_TIME_BASE);
+                // av_log(NULL, AV_LOG_WARNING, "%s: could not seek to position %0.3f\n",
+                //        m_pFileName, (double)timestamp / AV_TIME_BASE);
+                logger->log_warn("%s: could not seek to position %0.3f.",
+                                    m_pFileName, (double)timestamp / AV_TIME_BASE);
             }
         }
 
         m_realTime = is_realtime(ic);
+        if (m_realTime) {
+            logger->log_info("Current content is real-time!");
+        }
 
         if (m_showStatus) {
             av_dump_format(ic, 0, m_pFileName, 0);
@@ -2253,10 +2313,13 @@ int CSJFFPlayerKernel::read_thread() {
 
         for (int i = 0; i < AVMEDIA_TYPE_NB; i++) {
             if (m_WantedStreamSpec[i] && st_index[i] == -1) {
-                av_log(NULL,
-                       AV_LOG_ERROR,
-                       "Stream specifier %s does not match any %s stream\n",
-                       m_WantedStreamSpec[i], av_get_media_type_string((AVMediaType)i));
+                // av_log(NULL,
+                //        AV_LOG_ERROR,
+                //        "Stream specifier %s does not match any %s stream\n",
+                //        m_WantedStreamSpec[i], av_get_media_type_string((AVMediaType)i));
+
+                logger->log_error("Stream specifier %s does not match any %s stream\n",
+                                    m_WantedStreamSpec[i], av_get_media_type_string((AVMediaType)i));
                 st_index[i] = INT_MAX;
             }
         }
@@ -2265,6 +2328,8 @@ int CSJFFPlayerKernel::read_thread() {
             st_index[AVMEDIA_TYPE_VIDEO] =
                     av_find_best_stream(ic, AVMEDIA_TYPE_VIDEO,
                                         st_index[AVMEDIA_TYPE_VIDEO], -1, NULL, 0);
+
+            logger->log_info("Find the best video stream, id: %d", st_index[AVMEDIA_TYPE_VIDEO]);
         }
 
         if (!m_bDisableAudio) {
@@ -2273,6 +2338,7 @@ int CSJFFPlayerKernel::read_thread() {
                                         st_index[AVMEDIA_TYPE_AUDIO],
                                         st_index[AVMEDIA_TYPE_VIDEO],
                                         NULL, 0);
+            logger->log_info("Find the best audio stream, id: %d", st_index[AVMEDIA_TYPE_AUDIO]);
         }
 
         if (!m_bDisableVideo && !m_bDisableSubtitle) {
@@ -2283,6 +2349,8 @@ int CSJFFPlayerKernel::read_thread() {
                                             st_index[AVMEDIA_TYPE_AUDIO] : st_index[AVMEDIA_TYPE_VIDEO],
                                         NULL,
                                         0);
+            
+            logger->log_info("Find the best subtitle stream, id: %d", st_index[AVMEDIA_TYPE_SUBTITLE]);
         }
 
         //m_showMode = show_mode;
@@ -2290,18 +2358,26 @@ int CSJFFPlayerKernel::read_thread() {
             AVStream *st = ic->streams[st_index[AVMEDIA_TYPE_VIDEO]];
             AVCodecParameters *codecpar = st->codecpar;
             AVRational sar = av_guess_sample_aspect_ratio(ic, st, NULL);
-            //        if (codecpar->width)
-            //            set_default_window_size(codecpar->width, codecpar->height, sar);
+            if (codecpar->width) {
+                logger->log_info("From guessing aspect ratio, size: %d x %d", 
+                                    codecpar->width, codecpar->height);
+            }
         }
 
         /* open the streams */
         if (st_index[AVMEDIA_TYPE_AUDIO] >= 0) {
-            stream_component_open(st_index[AVMEDIA_TYPE_AUDIO]);
+            ret = stream_component_open(st_index[AVMEDIA_TYPE_AUDIO]);
+            if (ret == -1) {
+                logger->log_warn("Open audio component failed!");
+            }
         }
-
+        
         ret = -1;
         if (st_index[AVMEDIA_TYPE_VIDEO] >= 0) {
             ret = stream_component_open(st_index[AVMEDIA_TYPE_VIDEO]);
+            if (ret == -1) {
+                logger->log_warn("Open video component failed!");
+            }
         }
 
         if (m_showMode == SHOW_MODE_NONE) {
@@ -2309,12 +2385,15 @@ int CSJFFPlayerKernel::read_thread() {
         }
 
         if (st_index[AVMEDIA_TYPE_SUBTITLE] >= 0) {
-            stream_component_open(st_index[AVMEDIA_TYPE_SUBTITLE]);
+            ret = stream_component_open(st_index[AVMEDIA_TYPE_SUBTITLE]);
+            if (ret == -1) {
+                logger->log_warn("Open subtitle component failed!");
+            }
         }
 
         if (m_videoStreamIndex < 0 && m_audioStreamIndex < 0) {
-            av_log(NULL, AV_LOG_FATAL, "Failed to open file '%s' or configure filtergraph\n",
-                   m_pFileName);
+            //av_log(NULL, AV_LOG_FATAL, "Failed to open file '%s' or configure filtergraph\n", m_pFileName);
+            logger->log_fatal("Failed to open file '%s' or configure filtergraph!", m_pFileName);
             ret = -1;
             break;
         }
@@ -2329,13 +2408,15 @@ int CSJFFPlayerKernel::read_thread() {
             avformat_close_input(&ic);
         }
 
+        logger->log_error("Stop reading stream due to exceptions!");
         return ret;
     }
 
     AVPacket *pkt = NULL;
     pkt = av_packet_alloc();
     if (!pkt) {
-        av_log(NULL, AV_LOG_FATAL, "Could not allocate packet.\n");
+        //av_log(NULL, AV_LOG_FATAL, "Could not allocate packet.\n");
+        logger->log_fatal("Could not allocate packet.");
         ret = AVERROR(ENOMEM);
         return ret;
     }
@@ -2350,6 +2431,7 @@ int CSJFFPlayerKernel::read_thread() {
     std::mutex wait_mutex;
     std::unique_lock<std::mutex> uniqueLock(wait_mutex);
     // start entering the read cycle.
+    logger->log_info("Start reading stream packets ...");
     for (;;) {
         if (m_abortRequest) {
             break;
@@ -2374,6 +2456,7 @@ int CSJFFPlayerKernel::read_thread() {
         }
 #endif
         if (m_seekReq) {
+            logger->log_info("Seeking stream ...");
             int64_t seek_target = m_seekPos;
             int64_t seek_min    = m_seekRel > 0 ? seek_target - m_seekRel + 2: INT64_MIN;
             int64_t seek_max    = m_seekRel < 0 ? seek_target - m_seekRel - 2: INT64_MAX;
@@ -2382,8 +2465,8 @@ int CSJFFPlayerKernel::read_thread() {
 
             ret = avformat_seek_file(m_pFormatCtx, -1, seek_min, seek_target, seek_max, m_seekFlags);
             if (ret < 0) {
-                av_log(NULL, AV_LOG_ERROR,
-                       "%s: error while seeking\n", m_pFormatCtx->url);
+                //av_log(NULL, AV_LOG_ERROR, "%s: error while seeking\n", m_pFormatCtx->url);
+                logger->log_error("%s: error while seeking\n", m_pFormatCtx->url);
             } else {
                 if (m_audioStreamIndex >= 0) {
                     packet_queue_flush(&m_audioPaketQueue);
@@ -2410,7 +2493,7 @@ int CSJFFPlayerKernel::read_thread() {
             if (m_paused) {
                 step_to_next_frame();
             }
-        }
+        } // m_seekReq;
 
         if (m_queueAttchmentsReq) {
             if (m_pVideoStream && m_pVideoStream->disposition & AV_DISPOSITION_ATTACHED_PIC) {
@@ -2518,10 +2601,21 @@ int CSJFFPlayerKernel::read_thread() {
     }
 
     av_packet_free(&pkt);
+    logger->log_info("Read thread quit successfully!");
     return 0;
 }
 
 bool CSJFFPlayerKernel::stream_open() {
+     CSJLogger *logger = CSJLogger::getLoggerInst();
+
+    if (!m_abortRequest) {
+        logger->log(CSJLogger::LogLevel::INFO_LOG, "Current status is playing, stop playing first!");
+        stream_close();
+    }
+
+    logger->log(CSJLogger::LogLevel::INFO_LOG, "Initialize play components, it's going to play.");
+    m_abortRequest = false;
+
     bool ret = false;
     m_lastVideoStream = m_videoStreamIndex = -1;
     m_lastAudioStream = m_audioStreamIndex = -1;
@@ -2551,11 +2645,13 @@ bool CSJFFPlayerKernel::stream_open() {
 
         m_audioClockSerial = -1;
         if (m_startupVolume < 0) {
-            av_log(NULL, AV_LOG_WARNING, "-volume=%d < 0, setting to 0\n", m_startupVolume);
+            //av_log(NULL, AV_LOG_WARNING, "-volume=%d < 0, setting to 0\n", m_startupVolume);
+            logger->log_warn("-volume=%d < 0, setting to 0\n", m_startupVolume);
         }
 
         if (m_startupVolume > 100) {
-            av_log(NULL, AV_LOG_WARNING, "-volume=%d > 100, setting to 100\n", m_startupVolume);
+            //av_log(NULL, AV_LOG_WARNING, "-volume=%d > 100, setting to 100\n", m_startupVolume);
+            logger->log_warn("-volume=%d > 100, setting to 100\n", m_startupVolume);
         }
 
         m_startupVolume = av_clip(m_startupVolume, 0, 100);
@@ -2567,6 +2663,8 @@ bool CSJFFPlayerKernel::stream_open() {
         m_pReadThread.reset(new std::thread(&CSJFFPlayerKernel::read_thread, this));
         ret = true;
     } while (false);
+
+    logger->log(CSJLogger::LogLevel::INFO_LOG, "Stream open succussfully!");
 
     return ret;
 }
@@ -2651,22 +2749,15 @@ void CSJFFPlayerKernel::readThreadTest() {
 }
 
 void CSJFFPlayerKernel::play() {
-    if (!m_abortRequest) {
-        qDebug()  << "[Thread Debug] Current status is playing, replay...";
-
-        //  TODO: Stop all the thread and reset all the states.
-        resetPlayState();
-    }
-
-    m_abortRequest = false;
+    stream_open();
 
     // m_pRenderThread.reset(new std::thread(&CSJVideoRendererWidget::internalRender, this));
 
-    m_pReadThread.reset(new std::thread(&CSJFFPlayerKernel::readThreadTest, this));
+    // m_pReadThread.reset(new std::thread(&CSJFFPlayerKernel::readThreadTest, this));
 
-    m_pVideoDecThread.reset(new std::thread(&CSJFFPlayerKernel::threadTestFunc, this, 0));
-    m_pAudioDecThread.reset(new std::thread(&CSJFFPlayerKernel::threadTestFunc, this, 1));
-    m_pSubtitleDecThread.reset(new std::thread(&CSJFFPlayerKernel::threadTestFunc, this, 2));
+    // m_pVideoDecThread.reset(new std::thread(&CSJFFPlayerKernel::threadTestFunc, this, 0));
+    // m_pAudioDecThread.reset(new std::thread(&CSJFFPlayerKernel::threadTestFunc, this, 1));
+    // m_pSubtitleDecThread.reset(new std::thread(&CSJFFPlayerKernel::threadTestFunc, this, 2));
 
 }
 
@@ -2682,6 +2773,7 @@ void CSJFFPlayerKernel::resume() {
     // m_step = 0;
 
     //std::lock_guard<std::mutex> lock(m_pauseMtx);
+
     m_paused = false;
     m_pauseCond.notify_all();
 }
@@ -2708,7 +2800,8 @@ bool CSJFFPlayerKernel::isStop() {
     return m_abortRequest;
 }
 
-CSJFFPlayerKernel::CSJFFPlayerKernel() {
+CSJFFPlayerKernel::CSJFFPlayerKernel() 
+    : m_pLogger(CSJLogger::getLoggerInst()) {
     m_abortRequest = true;
     m_paused = false;
 }

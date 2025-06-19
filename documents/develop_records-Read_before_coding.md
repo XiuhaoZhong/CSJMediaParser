@@ -50,3 +50,8 @@ Please implement the key points above, and record the details, and if there are 
 
 ### 2025-06-02
 1. Add the library spdlog as the logger module
+
+### 2025-06-03
+1. Walked the stream_open function, and add the relative logs.
+2. The next step is to walk stream_component_open function and add relative logs.
+3. Then start the play thread model and debug.
