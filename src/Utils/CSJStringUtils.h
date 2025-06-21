@@ -121,6 +121,16 @@ std::string Format(const std::string& format, Args&&... args) {
     return ss.str();
 }
 
+class CSJStringUtil {
+public:
+    CSJStringUtil() = default;
+    ~CSJStringUtil() = default;
+
+    static std::wstring char2wstring(const char* origin_str);
+    static std::wstring string2wstring(const std::string& origin_string);
+    static std::string wstring2string(const std::wstring& origin_string);
+};
+
 }
 
 

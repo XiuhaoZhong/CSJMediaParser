@@ -20,42 +20,55 @@ bool CSJPathTool::fileExists(std::string &file_path) {
     return fs::exists(tmp);
 }
 
+bool CSJPathTool::fileExists(std::wstring &file_path) {
+    if (file_path.size() == 0) {
+        return false;
+    }
+
+    fs::path tmp(file_path);
+    return fs::exists(tmp);
+}
+
 fs::path CSJPathTool::getExecuteDir() {
     return m_workPath;
 }
 
 fs::path CSJPathTool::getResourceDir() {
-    return getExecuteDir().append("resource");
+    return getExecuteDir().append(L"resource");
 }
 
 fs::path CSJPathTool::getModelDir() {
-    return getResourceDir().append("models");
+    return getResourceDir().append(L"models");
 }
 
 fs::path CSJPathTool::getTextureDir() {
-    return getResourceDir().append("textures");
+    return getResourceDir().append(L"textures");
 }
 
 fs::path CSJPathTool::getImageDir() {
-    return getResourceDir().append("images");
+    return getResourceDir().append(L"images");
 }
 
 fs::path CSJPathTool::getShaderDir() {
-    return getResourceDir().append("shaders");
+#ifdef _WIN32
+    return getResourceDir().append(L"DXShaders");
+#else
+    return getResourceDir().append(L"MetalShaders");
+#endif
 }
 
-std::string CSJPathTool::getModelFileWithName(std::string &model_file_name) {
-    return getModelDir().string().append(model_file_name);
+std::wstring CSJPathTool::getModelFileWithName(std::wstring &model_file_name) {
+    return getModelDir().append(model_file_name);
 }
 
-std::string CSJPathTool::getImageWithName(std::string &image_name) {
-    return getImageDir().string().append(image_name);
+std::wstring CSJPathTool::getImageWithName(std::wstring &image_name) {
+    return getImageDir().append(image_name);
 }
 
-std::string CSJPathTool::getShaderFileWithName(std::string &shader_file_name) {
-    return getShaderDir().string().append(shader_file_name);
+std::wstring CSJPathTool::getShaderFileWithName(std::wstring &shader_file_name) {
+    return getShaderDir().append(shader_file_name);
 }
 
-std::string CSJPathTool::getTextureWithName(std::string &texture_file_name) {
-    return getTextureDir().string().append(texture_file_name);
+std::wstring CSJPathTool::getTextureWithName(std::wstring &texture_file_name) {
+    return getTextureDir().append(texture_file_name);
 }

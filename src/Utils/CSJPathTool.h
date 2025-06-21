@@ -14,6 +14,7 @@ public:
 
     void setWorkDirectory(fs::path work_directory);
     bool fileExists(std::string &file_path);
+    bool fileExists(std::wstring &file_path);
 
     fs::path getExecuteDir();
     fs::path getResourceDir();
@@ -22,10 +23,10 @@ public:
     fs::path getImageDir();
     fs::path getShaderDir();
 
-    std::string getModelFileWithName(std::string& modelFileName);
-    std::string getImageWithName(std::string& imageName);
-    std::string getShaderFileWithName(std::string& shaderFileName);
-    std::string getTextureWithName(std::string& textureFileName);
+    std::wstring getModelFileWithName(std::wstring& modelFileName);
+    std::wstring getImageWithName(std::wstring& imageName);
+    std::wstring getShaderFileWithName(std::wstring& shaderFileName);
+    std::wstring getTextureWithName(std::wstring& textureFileName);
 
 protected:
     CSJPathTool() = default;
