@@ -35,11 +35,12 @@ set(DYNAMIC_LIBS "")
 
 # set Qt environment variables
 if (CMAKE_HOST_WIN32)
-set(ENV{PATH} "${QTDIR}/bin;${QTDIR}/lib;$ENV{PATH}")
-file(GLOB DYNAMIC_LIBS "${ROOT_DIR}/../CSJMediaParser_attachments/dlls/*.dll"
+    set(ENV{PATH} "${QTDIR}/bin;${QTDIR}/lib;$ENV{PATH}")
+    file(GLOB DYNAMIC_LIBS "${ROOT_DIR}/../CSJMediaParser_attachments/dlls/*.dll"
                        "${ROOT_DIR}/../CSJMediaParser_attachments/dlls/*.pdb")
+    add_definitions(-DUNICODE -D_UNICODE)
 elseif (CMAKE_HOST_APPLE)
-set(ENV{PATH} "${QTDIR}/bin:${QTDIR}/lib:$ENV{PATH}")
+    set(ENV{PATH} "${QTDIR}/bin:${QTDIR}/lib:$ENV{PATH}")
 endif()
 
 set(QT_DIR $ENV{QTDIR}/lib/cmake/Qt6)
@@ -60,63 +61,61 @@ file(GLOB RENDERER_SOURCE_FILES "${SRC_ROOT}/renderClient/*")
 file(GLOB UTIL_SOURCE_FILES "${SRC_ROOT}/Utils/*")
 file(GLOB CONTROLLER_SOURCE_FILES "${SRC_ROOT}/Controllers/*")
 
-IF (CMAKE_HOST_WIN32)
+if(CMAKE_HOST_WIN32)
 # settings on Windows
-file(GLOB RENDERER_IMPL_FILES "${SRC_ROOT}/renderClient/Win/*")
+    file(GLOB RENDERER_IMPL_FILES "${SRC_ROOT}/renderClient/Win/*")
 
-set(NativeRenderLib d3d11 dxgi dxguid d3dcompiler)
-set(OpenCV_Include_DIR thirdParts/Win/opencv-4.9/include)
-set(ffmpeg_inc_dir thirdParts/Win/ffmpeg/include)
+    set(NativeRenderLib d3d11 dxgi dxguid d3dcompiler)
+    set(OpenCV_Include_DIR thirdParts/Win/opencv-4.9/include)
+    set(ffmpeg_inc_dir thirdParts/Win/ffmpeg/include)
 
-link_directories(thirdParts/Win/ffmpeg/libs thirdParts/Win/opencv-4.9/libs)
-set(ffmpeg_lib avcodec avdevice avfilter avformat avutil swresample swscale)
-set(opencv_lib opencv_calib3d490 opencv_core490 opencv_dnn490 opencv_features2d490 opencv_flann490 opencv_highgui490 opencv_imgcodecs490 opencv_imgproc490 opencv_ml490 opencv_objdetect490 opencv_photo490 opencv_stitching490 opencv_video490)
+    link_directories(thirdParts/Win/ffmpeg/libs thirdParts/Win/opencv-4.9/libs)
+    set(ffmpeg_lib avcodec avdevice avfilter avformat avutil swresample swscale)
+    set(opencv_lib opencv_calib3d490 opencv_core490 opencv_dnn490 opencv_features2d490 opencv_flann490 opencv_highgui490 opencv_imgcodecs490 opencv_imgproc490 opencv_ml490 opencv_objdetect490 opencv_photo490 opencv_stitching490 opencv_video490)
 
-include_directories(src ${ffmpeg_inc_dir} ${OpenCV_Include_DIR}  src/player src/MpegTool CommonTools)
-ELSEIF (CMAKE_HOST_APPLE)
-# settings on MacOS
+    include_directories(src ${ffmpeg_inc_dir} ${OpenCV_Include_DIR}  src/player src/MpegTool CommonTools)
+elseif (CMAKE_HOST_APPLE)# settings on MacOS
+    # USE ARC
+    add_compile_options(-x objective-c++)
 
-# USE ARC
-add_compile_options(-x objective-c++)
+    # opencv dir
+    set(OpenCV_DIR ~/technology_space/OpenCv/opencv-4.9.0/libs/lib/cmake/opencv4)
+    find_package(OpenCV REQUIRED)
+    set(OpenCV_Include_DIR ~/technology_space/OpenCv/opencv-4.9.0/libs/include/opencv4)
 
-# opencv dir
-set(OpenCV_DIR ~/technology_space/OpenCv/opencv-4.9.0/libs/lib/cmake/opencv4)
-find_package(OpenCV REQUIRED)
-set(OpenCV_Include_DIR ~/technology_space/OpenCv/opencv-4.9.0/libs/include/opencv4)
+    # ffmpeg dir
+    set(ffmpeg_inc_dir thirdParts/Mac/ffmpeg/include)
 
-# ffmpeg dir
-set(ffmpeg_inc_dir thirdParts/Mac/ffmpeg/include)
+    # src on MacOS
+    file(GLOB RENDERER_IMPL_FILES "${SRC_ROOT}/renderClient/Mac/*")
 
-# src on MacOS
-file(GLOB RENDERER_IMPL_FILES "${SRC_ROOT}/renderClient/Mac/*")
+    link_directories(thirdParts/Mac/ffmpeg/libs)
 
-link_directories(thirdParts/Mac/ffmpeg/libs)
+    find_library(lib-videotoolbox VideoToolbox)
+    find_library(lib-audiotoolbox AudioToolbox)
+    find_library(lib-avfoundation AVFoundation)
+    find_library(lib-coreaudio CoreAudio)
+    find_library(lib-coremedia CoreMedia)
+    find_library(lib-corevideo CoreVideo)
+    find_library(lib-security Security)
+    find_library(lib-iconv iconv.2)
+    find_library(lib-z z)
+    find_library(lib-bz2 bz2)
+    find_library(lib-xml2 xml2)
+    find_library(lib-foundation Foundation)
+    find_library(lib-metal Metal)
+    find_library(lib-metalKit MetalKit)
 
-find_library(lib-videotoolbox VideoToolbox)
-find_library(lib-audiotoolbox AudioToolbox)
-find_library(lib-avfoundation AVFoundation)
-find_library(lib-coreaudio CoreAudio)
-find_library(lib-coremedia CoreMedia)
-find_library(lib-corevideo CoreVideo)
-find_library(lib-security Security)
-find_library(lib-iconv iconv.2)
-find_library(lib-z z)
-find_library(lib-bz2 bz2)
-find_library(lib-xml2 xml2)
-find_library(lib-foundation Foundation)
-find_library(lib-metal Metal)
-find_library(lib-metalKit MetalKit)
+    set(ffmpeg_lib avcodec avdevice avfilter avformat avutil swresample swscale)
 
-set(ffmpeg_lib avcodec avdevice avfilter avformat avutil swresample swscale)
-
-include_directories(${SRC_ROOT} 
-                    ${ffmpeg_inc_dir} 
-                    ${OpenCV_Include_DIR} 
-                    src/player 
-                    src/MpegTool 
-                    CommonTools
-                    ${QTDIR}/lib/QtGui.framework/Headers)
-ENDIF ()
+    include_directories(${SRC_ROOT} 
+                        ${ffmpeg_inc_dir} 
+                        ${OpenCV_Include_DIR} 
+                        src/player 
+                        src/MpegTool 
+                        CommonTools
+                        ${QTDIR}/lib/QtGui.framework/Headers)
+endif()
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(${TARGET_NAME}
@@ -150,23 +149,22 @@ else()
     endif()
 endif()
 
-IF (CMAKE_HOST_WIN32)
-target_link_libraries(${TARGET_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
-    ${ffmpeg_lib} ${NativeRenderLib} ${local_libs} ${OpenCV_LIBRARIES}
-)
-ELSEIF (CMAKE_HOST_APPLE)
-target_link_libraries(${TARGET_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
-    ${lib-audiotoolbox} ${lib-bz2} ${lib-videotoolbox} ${lib-coremedia}
-    ${lib-corevideo} ${lib-security} ${lib-xml2} ${lib-z} ${lib-iconv}
-    ${lib-foundation} ${lib-metal} ${lib-metalKit}
-    ${ffmpeg_lib} ${local_libs} ${OpenCV_LIBRARIES}
-)
-set_property(TARGET ${TARGET_NAME} APPEND_STRING PROPERTY
-             COMPILE_FLAGS "-fobjc-arc")
-
-ELSE()
-target_link_libraries(${TARGET_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
-ENDIF()
+if(CMAKE_HOST_WIN32)
+    target_link_libraries(${TARGET_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
+        ${ffmpeg_lib} ${NativeRenderLib} ${local_libs} ${OpenCV_LIBRARIES}
+    )
+elseif(CMAKE_HOST_APPLE)
+    target_link_libraries(${TARGET_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
+        ${lib-audiotoolbox} ${lib-bz2} ${lib-videotoolbox} ${lib-coremedia}
+        ${lib-corevideo} ${lib-security} ${lib-xml2} ${lib-z} ${lib-iconv}
+        ${lib-foundation} ${lib-metal} ${lib-metalKit}
+        ${ffmpeg_lib} ${local_libs} ${OpenCV_LIBRARIES}
+    )
+    set_property(TARGET ${TARGET_NAME} APPEND_STRING PROPERTY
+        COMPILE_FLAGS "-fobjc-arc")
+else()
+    target_link_libraries(${TARGET_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+endif()
 
 set_target_properties(${TARGET_NAME} PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER my.example.com
@@ -185,12 +183,12 @@ add_custom_command(TARGET ${TARGET_NAME}
                    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${TARGET_NAME}> ${OUTPUT_DIR}
                    COMMENT "Copy target ${TARGET} to output directory")
 
-if (CMAKE_HOST_WIN32)
-foreach(file ${DYNAMIC_LIBS})
-    add_custom_command(TARGET ${TARGET_NAME}
-                       POST_BUILD
-                       COMMAND ${CMAKE_COMMAND} -E copy ${file} ${OUTPUT_DIR})
-endforeach()
+if(CMAKE_HOST_WIN32)
+    foreach(file ${DYNAMIC_LIBS})
+        add_custom_command(TARGET ${TARGET_NAME}
+                            POST_BUILD
+                            COMMAND ${CMAKE_COMMAND} -E copy ${file} ${OUTPUT_DIR})
+    endforeach()
 endif()
 
 file(MAKE_DIRECTORY ${OUTPUT_RESOURCE_DIR})
@@ -201,7 +199,8 @@ add_custom_command(TARGET ${TARGET_NAME}
 
 install(TARGETS ${TARGET_NAME}
     BUNDLE DESTINATION .
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
 
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(${TARGET_NAME})
