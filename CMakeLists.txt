@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 
 set(TARGET_NAME CSJMediaParser)
 
@@ -35,7 +35,7 @@ set(DYNAMIC_LIBS "")
 
 # set Qt environment variables
 if (CMAKE_HOST_WIN32)
-set(ENV{PATH} "${QTDIR}/bin${QTDIR}/lib;$ENV{PATH}")
+set(ENV{PATH} "${QTDIR}/bin;${QTDIR}/lib;$ENV{PATH}")
 file(GLOB DYNAMIC_LIBS "${ROOT_DIR}/../CSJMediaParser_attachments/dlls/*.dll"
                        "${ROOT_DIR}/../CSJMediaParser_attachments/dlls/*.pdb")
 elseif (CMAKE_HOST_APPLE)
