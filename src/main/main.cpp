@@ -4,12 +4,14 @@
 
 #include "Utils/CSJPathTool.h"
 #include "Utils/CSJLogger.h"
+#include "Utils/CSJStringUtils.h"
 
 int main(int argc, char *argv[]) {
 
     /* Record the work directory. */
     CSJPathTool *pathTool = CSJPathTool::getInstance();
-    pathTool->setWorkDirectory(fs::canonical(fs::path(argv[0]).remove_filename()));
+    std::wstring current_path(csjutils::CSJStringUtil::char2wstring(argv[0]));
+    pathTool->setWorkDirectory(fs::canonical(fs::path(current_path).remove_filename()));
 
     CSJLogger* logger = CSJLogger::getLoggerInst();
     logger->log(CSJLogger::LogLevel::INFO_LOG, "CSJMediaParser started!\0");

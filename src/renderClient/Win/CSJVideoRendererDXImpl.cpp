@@ -9,12 +9,16 @@
 #include "DDSTextureLoader11.h"
 #include "DXTrace.h"
 
+#include "Utils/CSJPathTool.h"
+#include "Utils/CSJLogger.h"
+
 const D3D11_INPUT_ELEMENT_DESC CSJVideoRendererDXImpl::VertexPosColor::inputLayout[2] = {
     {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
     {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0}
 };
 
-CSJVideoRendererDXImpl::CSJVideoRendererDXImpl() {
+CSJVideoRendererDXImpl::CSJVideoRendererDXImpl()
+    : m_pLogger(CSJLogger::getLoggerInst()) {
     m_pixelFmt = CSJVIDEO_FMT_NONE;
     m_bContentNeedUpdate = false;
 }
@@ -29,9 +33,9 @@ bool CSJVideoRendererDXImpl::init(WId widgetID, int width, int height) {
         return false;
     }
 
-    m_ClientWidth = width;
+    m_ClientWidth  = width;
     m_ClientHeight = height;
-    m_pixelFmt = CSJVIDEO_FMT_NONE;
+    m_pixelFmt     = CSJVIDEO_FMT_NONE;
 
     HRESULT hr = S_OK;
 
@@ -379,19 +383,22 @@ void CSJVideoRendererDXImpl::setImage(const QString & imagePath) {
 }
 
 bool CSJVideoRendererDXImpl::createShaders() {
-    std::wstring vertshaderFile(L"resources\\DXShaders\\DXVertexShader.hlsl");
-    std::wstring vertCso(L"resources\\DXShaders\\DXVertexShader.cso");
+    CSJPathTool *pathTool = CSJPathTool::getInstance();
+
+    std::wstring vertshaderFile = pathTool->getShaderDir().append(L"DXVertexShader.hlsl").wstring();
+    std::wstring vertCso = pathTool->getShaderDir().append(L"DXVertexShader.cso").wstring();
 
     // Create pixel shader with video pixel type, and default is rgba.
-    std::wstring pixelShaderFile(L"resources\\DXShaders\\DXRGBAShader.hlsl");
-    std::wstring pixelCso(L"resources\\DXShaders\\DXRGBAShader.cso");
+    std::wstring pixelShaderFile = pathTool->getShaderDir().append(L"DXRGBAShader.hlsl").wstring();
+    std::wstring pixelCso = pathTool->getShaderDir().append(L"DXRGBAShader.cso").wstring();
 
     if (m_pixelFmt == CSJVIDEO_FMT_YUV420P) {
-        pixelShaderFile = L"resources\\DXShaders\\DXYUVShader.hlsl";
-        pixelCso = L"resources\\DXShaders\\DXYUVShader.cso";
+        pixelShaderFile = pathTool->getShaderDir().append(L"DXYUVShader.hlsl").wstring();
+        pixelCso = pathTool->getShaderDir().append(L"DXYUVShader.cso").wstring();
     }
     
     if (!initShaders(vertshaderFile, vertCso, pixelShaderFile, pixelCso)) {
+        m_pLogger->log_error("Shader initialize failed!");
         return false;
     }
 
@@ -478,9 +485,9 @@ bool CSJVideoRendererDXImpl::initRenderData() {
     };
 
     D3D11_BUFFER_DESC indexBufferDes{};
-    indexBufferDes.Usage = D3D11_USAGE_IMMUTABLE;
-    indexBufferDes.ByteWidth = sizeof(indices);
-    indexBufferDes.BindFlags = D3D11_BIND_INDEX_BUFFER;
+    indexBufferDes.Usage          = D3D11_USAGE_IMMUTABLE;
+    indexBufferDes.ByteWidth      = sizeof(indices);
+    indexBufferDes.BindFlags      = D3D11_BIND_INDEX_BUFFER;
     indexBufferDes.CPUAccessFlags = 0;
 
     D3D11_SUBRESOURCE_DATA indexData{};
@@ -589,10 +596,10 @@ bool CSJVideoRendererDXImpl::createD3DTexture(int width, int height,
     texDesc.CPUAccessFlags  = CPUAccessFlags;
     texDesc.MiscFlags       = MiscFlags;
     if (m_Enable4xMsaa) {
-        texDesc.SampleDesc.Count = 4;
+        texDesc.SampleDesc.Count   = 4;
         texDesc.SampleDesc.Quality = m_4xMsaaQuality - 1;
     } else {
-        texDesc.SampleDesc.Count = 1;
+        texDesc.SampleDesc.Count   = 1;
         texDesc.SampleDesc.Quality = 0;
     }
 
@@ -697,13 +704,13 @@ bool CSJVideoRendererDXImpl::createTexturesForYUV420(int width, int height) {
 
 void CSJVideoRendererDXImpl::createTextureSampler() {
     D3D11_SAMPLER_DESC samplerDesc{};
-    samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
-    samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
-    samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
-    samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+    samplerDesc.Filter         = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    samplerDesc.AddressU       = D3D11_TEXTURE_ADDRESS_WRAP;
+    samplerDesc.AddressV       = D3D11_TEXTURE_ADDRESS_WRAP;
+    samplerDesc.AddressW       = D3D11_TEXTURE_ADDRESS_WRAP;
     samplerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
-    samplerDesc.MinLOD = 0;
-    samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+    samplerDesc.MinLOD         = 0;
+    samplerDesc.MaxLOD         = D3D11_FLOAT32_MAX;
 
     ComPtr<ID3D11Device> curDevice = getCurrentDevice();
     assert(curDevice);
@@ -722,7 +729,7 @@ void CSJVideoRendererDXImpl::updateFrameData() {
         updateYUV420Frame(m_curVideoData);
         break;
     default:
-        std::cout << "[ERROE] Update a unsupported pixel format!" << std::endl;
+        m_pLogger->log_error("Update a unsupported pixel format!");
         break;
     }
 }
@@ -733,22 +740,11 @@ void CSJVideoRendererDXImpl::updateRGBAFrame(CSJVideoData *videoData) {
         return ;
     }
 
-    // D3D11_SUBRESOURCE_DATA sourceData{};
-    // sourceData.pSysMem = videoData->getRGB24();
-    // sourceData.SysMemPitch = m_videoWidth;
-    // sourceData.SysMemSlicePitch = 0;
-    // curContext->UpdateSubresource(m_singleTex.Get(),
-    //                               0, 
-    //                               nullptr, 
-    //                               sourceData.pSysMem, 
-    //                               sourceData.SysMemPitch,
-    //                               sourceData.SysMemSlicePitch);
-
     bool updateState = updateDynamicResource(m_singleTex, 
                                              videoData->getWidth() * videoData->getHeight(), 
                                              videoData->getData());
     if (!updateState) {
-        std::cout << "Update rgba data failed!" << std::endl;
+        m_pLogger->log_error("Update rgba data failed!");
     }
 }
 
@@ -758,28 +754,28 @@ void CSJVideoRendererDXImpl::updateYUV420Frame(CSJVideoData * videoData) {
         return ;
     }
 
-    std::cout << "[Log] Update yuv data!" << std::endl;
+    m_pLogger->log_info("Update yuv data");
 
     rsize_t len = m_videoWidth * m_videoHeight;
     bool updateState = updateDynamicResource(m_texYUV[0], len, videoData->getyuvY());
     if (!updateState) {
-        std::cout << "[Error] update Y plane data failed!" << std::endl;
+        m_pLogger->log_error("Update Y plane data failed!");
         return ;
     }
 
     updateState = updateDynamicResource(m_texYUV[1], len / 4, videoData->getyuvU());
     if (!updateState) {
-        std::cout << "[Error] update U plane data failed!" << std::endl;
+        m_pLogger->log_error("Update U plane data failed!");
         return ;
     }
 
     updateState = updateDynamicResource(m_texYUV[2], len / 4, videoData->getyuvV());
     if (!updateState) {
-        std::cout << "[Error] update V plane data failed!" << std::endl;
+        m_pLogger->log_error("Update V plane data failed!");
         return ;
     }
 
-    std::cout << "[Log] Update yuv data successfully!" << std::endl;
+    m_pLogger->log_info("Update yuv data successfully!");
 }
 
 bool CSJVideoRendererDXImpl::updateDynamicResource(ComPtr<ID3D11Resource> resource, 
@@ -788,12 +784,12 @@ bool CSJVideoRendererDXImpl::updateDynamicResource(ComPtr<ID3D11Resource> resour
     
     ComPtr<ID3D11DeviceContext> curContext = getCurrentContext();
     if (!curContext) {
-        std::cout << "[Error] current context is null!" << std::endl;
+        m_pLogger->log_error("Current context is null!");
         return false;
     }
 
     if (!resource || !data) {
-        std::cout << "[Error] resource or data is null!" << std::endl;
+        m_pLogger->log_error("Resource or data is null!");
         return false;
     }
 

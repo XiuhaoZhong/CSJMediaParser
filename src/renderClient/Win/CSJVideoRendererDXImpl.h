@@ -14,6 +14,7 @@
 template <typename T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;
 
+class CSJLogger;
 class CSJVideoRendererDXImpl : public CSJVideoRenderer {
 public:
     struct VertexPosColor {
@@ -99,15 +100,15 @@ private:
     ComPtr<ID3D11Buffer>        m_pIndexBuffer;
     ComPtr<ID3D11Buffer>        m_ConstantBuffer;
 
-    HWND    m_hMainWnd;        // 主窗口句柄
-    int     m_renderFPS;       // 渲染帧率
-    int     m_ClientWidth;     // 视口宽度
-    int     m_ClientHeight;    // 视口高度
-    bool    m_Enable4xMsaa;    // 是否开启4倍多重采样
-    UINT    m_4xMsaaQuality;   // MSAA支持的质量等级
-
-    bool    m_initSuccess = false;    // whether Direct3D is initialized or not.
-    HANDLE  m_pInitEvent = NULL;      // 初始化成功之后的通知
+    HWND       m_hMainWnd;              // 主窗口句柄
+    int        m_renderFPS;             // 渲染帧率
+    int        m_ClientWidth;           // 视口宽度
+    int        m_ClientHeight;          // 视口高度
+    bool       m_Enable4xMsaa;          // 是否开启4倍多重采样
+    UINT       m_4xMsaaQuality;         // MSAA支持的质量等级
+    CSJLogger *m_pLogger;               
+    bool       m_initSuccess = false;   // whether Direct3D is initialized or not.
+    HANDLE     m_pInitEvent = NULL;     // 初始化成功之后的通知
 
     /* Direct3D 11 */
     ComPtr<ID3D11Device>          m_pd3dDevice;            // D3D11设备
@@ -148,7 +149,6 @@ private:
     ComPtr<ID3D11ShaderResourceView> m_pShaderResViewY;
     ComPtr<ID3D11ShaderResourceView> m_pShaderResViewU;
     ComPtr<ID3D11ShaderResourceView> m_pShaderResViewV;
-    
 
     /*********************************************************
      * Texture for single fmt, such as rgba and so on.
