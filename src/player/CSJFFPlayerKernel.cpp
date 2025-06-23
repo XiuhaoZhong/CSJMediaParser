@@ -581,8 +581,8 @@ int CSJFFPlayerKernel::decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtit
 
             if (old_serial != d->pkt_serial) {
                 avcodec_flush_buffers(d->avctx);
-                d->finished = 0;
-                d->next_pts = d->start_pts;
+                d->finished    = 0;
+                d->next_pts    = d->start_pts;
                 d->next_pts_tb = d->start_pts_tb;
             }
         }
@@ -624,14 +624,14 @@ int CSJFFPlayerKernel::decoder_decode_frame(Decoder *d, AVFrame *frame, AVSubtit
 int CSJFFPlayerKernel::frame_queue_init(FrameQueue *f, PacketQueue *pktq,
                                         int max_size, int keep_last) {
     memset(f, 0, sizeof(FrameQueue));
-    f->mutex = new std::mutex();
-    f->cond = new std::condition_variable();
-
-    f->pktq = pktq;
-    f->max_size = FFMAX(max_size, FRAME_QUEUE_SIZE);
+    f->mutex     = new std::mutex();
+    f->cond      = new std::condition_variable();
+    f->pktq      = pktq;
+    f->max_size  = FFMAX(max_size, FRAME_QUEUE_SIZE);
     f->keep_last = !!keep_last;
     for (int i = 0; i < f->max_size; i++) {
-        if (!(f->queue[i].frame == av_frame_alloc())) {
+        AVFrame *frame = av_frame_alloc();
+        if (!(f->queue[i].frame = av_frame_alloc())) {
             return AVERROR(ENOMEM);
         }
     }
@@ -927,12 +927,12 @@ void CSJFFPlayerKernel::stream_component_close(int stream_index) {
         m_audioBuf1Size = 0;
 
         // 释放傅里叶离散变换的相应数据;
-        if (m_pRdft) {
-            av_rdft_end(m_pRdft);
-            av_freep(m_pRdftData);
-            m_pRdft = nullptr;
-            m_rdftBits = 0;
-        }
+        // if (m_pRdft) {
+        //     av_rdft_end(m_pRdft);
+        //     av_freep(m_pRdftData);
+        //     m_pRdft = nullptr;
+        //     m_rdftBits = 0;
+        // }
         break;
     case AVMEDIA_TYPE_VIDEO:
         decoder_abort(&m_videoDecoder, &m_videoFrameQueue);
@@ -1434,7 +1434,7 @@ int CSJFFPlayerKernel::audio_decode_task() {
                 }
 
                 af->pts = (frame->pts == AV_NOPTS_VALUE) ? NAN : frame->pts * av_q2d(tb);
-                af->pos = frame->pkt_pos;
+                af->pos = frame->pts;
                 af->serial = m_audDecoder.pkt_serial;
                 af->duration = av_q2d({frame->nb_samples, frame->sample_rate});
 
@@ -1553,7 +1553,7 @@ int CSJFFPlayerKernel::video_decode_task() {
 #endif
             duration = (frame_rate.num && frame_rate.den ? av_q2d({frame_rate.den, frame_rate.num}) : 0);
             pts = (frame->pts == AV_NOPTS_VALUE) ? NAN : frame->pts * av_q2d(tb);
-            ret = queue_picture(frame, pts, duration, frame->pkt_pos, m_videoDecoder.pkt_serial);
+            ret = queue_picture(frame, pts, duration, frame->pts, m_videoDecoder.pkt_serial);
             av_frame_unref(frame);
 #if CONFIG_AVFILTER
             if (m_videoPacketQueue.serial != m_videoDecoder.pkt_serial) {
@@ -2235,7 +2235,7 @@ int CSJFFPlayerKernel::read_thread() {
             ic->flags |= AVFMT_FLAG_GENPTS;
         }
 
-        av_format_inject_global_side_data(ic);
+        //av_format_inject_global_side_data(ic);
 
         static int find_stream_info = 1;
         AVDictionary *codec_opts;

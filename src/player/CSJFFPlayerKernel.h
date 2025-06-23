@@ -26,7 +26,7 @@ extern "C" {
 
 #include "libavdevice/avdevice.h"
 #include "libswresample/swresample.h"
-#include "libavcodec/avfft.h"
+//#include "libavcodec/avfft.h"
 #include "libswscale/swscale.h"
 
 using UniqueThread = std::unique_ptr<std::thread>;
@@ -472,8 +472,8 @@ private:
     int     m_lastIStart;
 
     // 实时离散傅里叶变换上下文
-    RDFTContext *m_pRdft;
-    FFTSample   *m_pRdftData;
+    // RDFTContext *m_pRdft;
+    // FFTSample   *m_pRdftData;
     int          m_rdftBits;
     int          m_xpos;
     double       m_rdftSpeed = 0.02;

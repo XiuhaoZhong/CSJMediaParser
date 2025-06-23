@@ -6,7 +6,6 @@
 extern "C" {
 #endif
 
-#include "config.h"
 #include "libavutil/ffversion.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
@@ -96,15 +95,7 @@ void CSJMpegTool::updateMediaData(CSJMpegUpdateDataType dataType) {
 }
 
 QString CSJMpegTool::getFFMpegVersion() {
-
-    std::string verString = Format("FFMpeg version:\n {0}", FFMPEG_VERSION);
-    std::string confString = Format("FFMpeg config:\n {0}", FFMPEG_CONFIGURATION);
-
-    QString resString = QString::fromStdString(verString);
-    resString.append("\n\n");
-    resString.append(QString::fromStdString(confString));
-
-    return resString;
+    return QString();
 }
 
 QString CSJMpegTool::getFFMpegBuildConf() {
