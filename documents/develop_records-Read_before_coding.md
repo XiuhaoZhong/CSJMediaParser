@@ -55,3 +55,9 @@ Please implement the key points above, and record the details, and if there are 
 1. Walked the stream_open function, and add the relative logs.
 2. The next step is to walk stream_component_open function and add relative logs.
 3. Then start the play thread model and debug.
+
+### 2025-06-23
+1. I upgraded ffmpeg to latest version, and x264/x265/fdk-aac libraries into ffmpeg
+2. After thinking about the current constructre, there should be some improvement.
+    1. Separate the UI logic and media logic, as far, the CSJPlayerKernel is separated from UI
+    2. Media data parsering and analysing should be improved, the operations should be executed during the playing process, so this is a big point. 
