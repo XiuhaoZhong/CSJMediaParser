@@ -49,8 +49,8 @@ set(QT6_DIR $ENV{QTDIR}/lib/cmake/Qt6)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Gui)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Gui)
 
-add_subdirectory(CommonTools)
-set(local_libs CSJCommonTools)
+add_subdirectory(CSJMediaEngine)
+set(local_libs CSJMediaEngine)
 
 file(GLOB MAIN_SOURCE_FILES "${SRC_ROOT}/main/*")
 file(GLOB MPEG_HEADER_FILES "${SRC_ROOT}/MpegHeaders/*")

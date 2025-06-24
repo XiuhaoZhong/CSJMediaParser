@@ -58,6 +58,15 @@ Please implement the key points above, and record the details, and if there are 
 
 ### 2025-06-23
 1. I upgraded ffmpeg to latest version, and x264/x265/fdk-aac libraries into ffmpeg
-2. After thinking about the current constructre, there should be some improvement.
+2. After thinking about the current constructre, there should be some improvements.
     1. Separate the UI logic and media logic, as far, the CSJPlayerKernel is separated from UI
-    2. Media data parsering and analysing should be improved, the operations should be executed during the playing process, so this is a big point. 
+    2. Media data parsering and analysing should be improved, the operations should be executed during the playing process, so this is a big point.
+
+### 2025-06-24
+1. I start to recreate the constructure of current project, the main thoughts:
+    1. Add a layer named CSJMediaEngine, and provides the interfaces that are used to deal multimedia, currently the main interfaces are CSJMediaPlayer and CSJMediaEngineInfo. 
+    2. CSJMediaPlayer will take place previous player
+    3. CSJMediaEngineInfo provides interfaces to check the supportings in the current media engine. These supportings include media file type, video/audio format, video/audio decoder and encoder, network protocols and so on.
+2. I make the basis constructure of the CSJMediaEngine, and plan to archine it as an dynamic library, thus, it can be update convenient.
+3. This is the major that current phase needed to be done.
+4. You'd better make constructure images and documents to record the details.
