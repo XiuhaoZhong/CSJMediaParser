@@ -6,6 +6,6 @@ message(STATUS "CSJMediaEngine path: ${CMAKE_CURRENT_SOURCE_DIR}")
 
 set(CommonTool_srcs CSJMediaData.cpp)
 
-add_library(${TARGET_NAME} STATIC ${CommonTool_srcs})
+add_library(${TARGET_NAME} SHARED ${CommonTool_srcs})
 
 include_directories(${CSJMEDIAENGINE_DIR}/include)

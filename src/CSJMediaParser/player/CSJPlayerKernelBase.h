@@ -4,7 +4,7 @@
 #include <QString>
 
 #include "MpegHeaders/CSJMpegHeader.h"
-#include "CommonTools/CSJMediaData.h"
+//#include "CommonTools/CSJMediaData.h"
 #include "CSJVideoPresentDelegate.h"
 
 typedef enum {
