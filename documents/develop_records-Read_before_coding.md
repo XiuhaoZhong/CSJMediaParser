@@ -70,3 +70,7 @@ Please implement the key points above, and record the details, and if there are 
 2. I make the basis constructure of the CSJMediaEngine, and plan to archine it as an dynamic library, thus, it can be update convenient.
 3. This is the major that current phase needed to be done.
 4. You'd better make constructure images and documents to record the details.
+
+### 2025-06-25
+1. I rearrange the directory construct, and now I've divided the whole project into CSJMediaParser, CSJMediaEngine and thirdParts, CSJMediaEngine will be the kernel of the multimedia dealing functionalities.
+2. As far, CSJMediaParser can't depende the CSJMediaEngine, this is the next target to do, and then, move the player into the CSJMediaEnigne.
