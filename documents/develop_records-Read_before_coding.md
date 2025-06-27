@@ -74,3 +74,7 @@ Please implement the key points above, and record the details, and if there are 
 ### 2025-06-25
 1. I rearrange the directory construct, and now I've divided the whole project into CSJMediaParser, CSJMediaEngine and thirdParts, CSJMediaEngine will be the kernel of the multimedia dealing functionalities.
 2. As far, CSJMediaParser can't depende the CSJMediaEngine, this is the next target to do, and then, move the player into the CSJMediaEnigne.
+
+### 2025-06-27
+1. The dynamic library CSJMediaEngine is available, CSJMediaParser links it successfully
+2. Next, I'll move the media relative features into the CSJMediaEngine.
