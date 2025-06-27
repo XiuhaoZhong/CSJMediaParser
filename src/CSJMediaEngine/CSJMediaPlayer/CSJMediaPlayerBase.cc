@@ -1,6 +1,6 @@
-#include "CSJMdiePlayerBase.h"
+#include "CSJMediaPlayerBase.h"
 
-namespace CSJMEDIAENGINE {
+namespace CSJMediaEngine {
 CSJMediaPlayerBase::CSJMediaPlayerBase() {
 
 }
@@ -13,4 +13,4 @@ CSJMediaPlayerBase *CSJMediaPlayerBase::getPlayerInstance() {
     return nullptr;
 }
 
-} // namespace CSJMEDIAENGINE
+} // namespace CSJMediaEngine

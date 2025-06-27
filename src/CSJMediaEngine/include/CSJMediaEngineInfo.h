@@ -9,6 +9,8 @@ class CSJMEDIAENGINE_API CSJMediaEngineInfo {
 public:
     CSJMediaEngineInfo();
     ~CSJMediaEngineInfo();
+
+    void printEngineInfo();
 };
 
 } // namespace CSJMEDIAENGINE

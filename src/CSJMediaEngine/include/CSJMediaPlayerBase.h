@@ -1,9 +1,9 @@
-#ifndef __CSJMEDIAPLAYERBASE_H
-#define __CSJMEDIAPLAYERBASE_H
+#ifndef __CSJMEDIAPLAYERBASE_H__
+#define __CSJMEDIAPLAYERBASE_H__
 
 #include "CSJMediaEngine_Export.h"
 
-namespace CSJMEDIAENGINE {
+namespace CSJMediaEngine {
 
 class CSJMEDIAENGINE_API CSJMediaPlayerBase {
 public:
@@ -13,6 +13,6 @@ public:
     static CSJMediaPlayerBase* getPlayerInstance();
 };
 
-} // namespace CSJMEDIAENGINE
+} // namespace CSJMediaEngine
 
 #endif // __CSJMEDIAPLAYERBASE_H

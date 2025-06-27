@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.15)
 
 set(TARGET_NAME CSJMediaParser)
 
@@ -20,12 +20,8 @@ set(QTDIR $ENV{QTDIR_6_8_0})
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(QTDIR ${QTDIR}/debug)
-    set(OUTPUT_DIR "${APP_OUTPUT_DIR}/Debug/")
-    file(MAKE_DIRECTORY ${OUTPUT_DIR})
 else()
     set(QTDIR ${QTDIR}/release)
-    set(OUTPUT_DIR "${APP_OUTPUT_DIR}/Release/")
-    file(MAKE_DIRECTORY ${OUTPUT_DIR})
 endif()
 # set the resource directory in the output directory
 set(OUTPUT_RESOURCE_DIR "${OUTPUT_DIR}/resource")
@@ -37,12 +33,15 @@ if (CMAKE_HOST_WIN32)
     set(ENV{PATH} "${QTDIR}/bin;${QTDIR}/lib;$ENV{PATH}")
     file(GLOB DYNAMIC_LIBS "${DEPENDENCIES_DIR}/Win/ffmpeg/dlls/*.dll")
     add_definitions(-DUNICODE -D_UNICODE)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 elseif (CMAKE_HOST_APPLE)
     set(ENV{PATH} "${QTDIR}/bin:${QTDIR}/lib:$ENV{PATH}")
 endif()
 
 set(QT_DIR $ENV{QTDIR}/lib/cmake/Qt6)
 set(QT6_DIR $ENV{QTDIR}/lib/cmake/Qt6)
+
+add_compile_definitions(CSJMEDIAENGINE_EXPORTS)
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Gui)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Gui)
@@ -63,10 +62,10 @@ if(CMAKE_HOST_WIN32)
     set(NativeRenderLib d3d11 dxgi dxguid d3dcompiler)
     set(ffmpeg_inc_dir ${DEPENDENCIES_DIR}/Win/ffmpeg/include)
 
-    link_directories(${DEPENDENCIES_DIR}/Win/ffmpeg/libs)
+    link_directories(${DEPENDENCIES_DIR}/Win/ffmpeg/libs ${GENERATE_LIB_DIR})
     set(ffmpeg_lib avcodec avdevice avfilter avformat avutil swresample swscale)
 
-    include_directories(src ${ffmpeg_inc_dir} src/player src/MpegTool CommonTools)
+    include_directories(${ffmpeg_inc_dir} player MpegTool ${GENERATE_HEADERS_DIR})
 elseif (CMAKE_HOST_APPLE)# settings on MacOS
     # USE ARC
     add_compile_options(-x objective-c++)
@@ -165,6 +164,7 @@ set_target_properties(${TARGET_NAME} PROPERTIES
 )
 
 target_link_libraries(${TARGET_NAME} PUBLIC spdlog::spdlog)
+target_link_libraries(${TARGET_NAME} PUBLIC CSJMediaEngine)
 
 add_custom_command(TARGET ${TARGET_NAME}
                    POST_BUILD

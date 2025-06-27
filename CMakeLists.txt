@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.15)
 
 project(CSJMediaParser VERSION 0.1.0)
 
@@ -9,6 +9,16 @@ set(PROJ_ROOT_DIR    "${CMAKE_CURRENT_SOURCE_DIR}")
 set(DEPENDENCIES_DIR "${PROJ_ROOT_DIR}/thirdParts")
 set(APP_OUTPUT_DIR   "${PROJ_ROOT_DIR}/output")
 set(THIRDPARTS_DIR   "${PROJ_ROOT_DIR}/src/3rdParts")
+set(BUILD_DIR        "${PROJ_ROOT_DIR}/build")       
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(OUTPUT_DIR "${APP_OUTPUT_DIR}/Debug")
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(OUTPUT_DIR "${APP_OUTPUT_DIR}/Release")
+else()
+endif()
+
+file(MAKE_DIRECTORY "${OUTPUT_DIR}")
 
 if(MSVC)
     # MSVC编译器
@@ -19,6 +29,10 @@ else()
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g3 -Wall -Wextra")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG")
 endif()
+
+set(GENERATE_HEADERS_DIR "${BUILD_DIR}/include")
+set(GENERATE_LIB_DIR "${PROJ_ROOT_DIR}/build/libs")
+file(MAKE_DIRECTORY ${GENERATE_LIB_DIR})
 
 add_subdirectory("${PROJ_ROOT_DIR}/src/3rdParts")
 add_subdirectory("${PROJ_ROOT_DIR}/src/CSJMediaEngine")
