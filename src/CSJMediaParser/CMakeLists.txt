@@ -24,7 +24,7 @@ else()
     set(QTDIR ${QTDIR}/release)
 endif()
 # set the resource directory in the output directory
-set(OUTPUT_RESOURCE_DIR "${APP_APP_OUTPUT_DIR}/resource")
+set(OUTPUT_RESOURCE_DIR "${APP_OUTPUT_DIR}/resource")
 
 set(DYNAMIC_LIBS "")
 
@@ -191,7 +191,7 @@ if(CSJ_BUILD_DEBUG)
             --verbose 1
             --debug
             --compiler-runtime
-            ${APP_OUTPUT_DIR}/${TARGET_NAME}.exe#$<TARGET_FILE:${TARGET_NAME}>
+            ${APP_OUTPUT_DIR}/${TARGET_NAME}.exe
         WORKING_DIRECTORY "${APP_OUTPUT_DIR}"
         COMMENT "Depolying Qt ..."
     )
