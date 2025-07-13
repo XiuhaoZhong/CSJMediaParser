@@ -11,12 +11,12 @@ if(MSVC)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 endif()
 
-set(CMAKE_INSTALL_BINDIR ${OUTPUT_DIR})
+set(CMAKE_INSTALL_BINDIR ${APP_OUTPUT_DIR})
 set(CMAKE_INSTALL_LIBDIR ${GENERATE_LIB_DIR})
 
 file(GLOB_RECURSE ENGINE_SOURCE_FILES "${CSJMEDIAENGINE_DIR}/CSJMediaEngineInfo/*"
-                                        "${CSJMEDIAENGINE_DIR}/CSJMediaPlayer/*"
-                                        "${CSJMEDIAENGINE_DIR}/include/*")
+                                      "${CSJMEDIAENGINE_DIR}/CSJMediaPlayer/*"
+                                      "${CSJMEDIAENGINE_DIR}/include/*")
 
 set(CommonTool_srcs CSJMediaData.cpp)
 
@@ -26,24 +26,39 @@ add_custom_target(
     COMMAND ${CMAKE_COMMAND} -E copy_directory "${CSJMEDIAENGINE_DIR}/include" "${BUILD_DIR}/include/${TARGET_NAME}"
 )
 
-add_library(${TARGET_NAME} SHARED ${ENGINE_SOURCE_FILES})
+if(CMAKE_HOST_WIN32)
+    message(STATUS "LIB Directory: ${DEPENDENCIES_DIR}")
+    set(ffmpeg_inc_dir ${DEPENDENCIES_DIR}/Win/ffmpeg/include)
+    link_directories(${DEPENDENCIES_DIR}/Win/ffmpeg/libs ${GENERATE_LIB_DIR})
+    set(ffmpeg_lib avcodec avdevice avfilter avformat avutil swresample swscale)
+elseif(CMAKE_HOST_APPLE)
+else()
+endif()
 
+add_library(${TARGET_NAME} SHARED ${ENGINE_SOURCE_FILES})
 add_dependencies(${TARGET_NAME} COPY_HEADERS)
 
 target_compile_definitions(${TARGET_NAME} PRIVATE CSJMEDIAENGINE_EXPORTS)
 
+if(CMAKE_HOST_WIN32)
+    target_link_libraries(${TARGET_NAME} PRIVATE ${ffmpeg_lib})
+elseif(CMAKE_HOST_APPLE)
+else()
+endif()
+
 include_directories(${CSJMEDIAENGINE_DIR}/include)
 
+if(CMAKE_HOST_WIN32)
 add_custom_command(
-    TARGET ${TARGET_NAME}
-    POST_BUILD
+    TARGET ${TARGET_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        $<TARGET_FILE:${TARGET_NAME}> ${OUTPUT_DIR}
+        "$<TARGET_FILE:${TARGET_NAME}>" ${APP_OUTPUT_DIR}
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_FILE_DIR:${TARGET_NAME}>/$<TARGET_FILE_BASE_NAME:${TARGET_NAME}>.lib ${GENERATE_LIB_DIR} 
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_FILE_DIR:${TARGET_NAME}>/$<TARGET_FILE_BASE_NAME:${TARGET_NAME}>.pdb ${GENERATE_LIB_DIR} 
 )
+endif()
 
 # install(TARGETS ${TARGET_NAME} 
 #     LIBRARY DESTINATION ${GENERATE_LIB_DIR}

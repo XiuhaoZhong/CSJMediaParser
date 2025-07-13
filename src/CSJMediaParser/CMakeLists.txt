@@ -18,13 +18,13 @@ set(SRC_ROOT "${CSJMEDIAPARSER_ROOT_DIR}")
 
 set(QTDIR $ENV{QTDIR_6_8_0})
 
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+if (CSJ_BUILD_DEBUG)
     set(QTDIR ${QTDIR}/debug)
 else()
     set(QTDIR ${QTDIR}/release)
 endif()
 # set the resource directory in the output directory
-set(OUTPUT_RESOURCE_DIR "${OUTPUT_DIR}/resource")
+set(OUTPUT_RESOURCE_DIR "${APP_APP_OUTPUT_DIR}/resource")
 
 set(DYNAMIC_LIBS "")
 
@@ -168,14 +168,14 @@ target_link_libraries(${TARGET_NAME} PUBLIC CSJMediaEngine)
 
 add_custom_command(TARGET ${TARGET_NAME}
                    POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${TARGET_NAME}> ${OUTPUT_DIR}
+                   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${TARGET_NAME}> ${APP_OUTPUT_DIR}
                    COMMENT "Copy target ${TARGET} to output directory")
 
 if(CMAKE_HOST_WIN32)
     foreach(file ${DYNAMIC_LIBS})
         add_custom_command(TARGET ${TARGET_NAME}
                             POST_BUILD
-                            COMMAND ${CMAKE_COMMAND} -E copy ${file} ${OUTPUT_DIR})
+                            COMMAND ${CMAKE_COMMAND} -E copy ${file} ${APP_OUTPUT_DIR})
     endforeach()
 endif()
 
@@ -183,7 +183,20 @@ file(MAKE_DIRECTORY ${OUTPUT_RESOURCE_DIR})
 add_custom_command(TARGET ${TARGET_NAME}
                   POST_BUILD
                   COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJ_ROOT_DIR}/resources ${OUTPUT_RESOURCE_DIR}
-                  COMMENT "Copy Resources to output directory")
+                  COMMENT "Copy Resources to output directory") 
+
+if(CSJ_BUILD_DEBUG)
+    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD 
+        COMMAND "${CMAKE_COMMAND}" -E env PATH="${QTDIR}" "${QTDIR}/bin/windeployqt6"
+            --verbose 1
+            --debug
+            --compiler-runtime
+            ${APP_OUTPUT_DIR}/${TARGET_NAME}.exe#$<TARGET_FILE:${TARGET_NAME}>
+        WORKING_DIRECTORY "${APP_OUTPUT_DIR}"
+        COMMENT "Depolying Qt ..."
+    )
+else()
+endif()
 
 install(TARGETS ${TARGET_NAME}
     BUNDLE DESTINATION .

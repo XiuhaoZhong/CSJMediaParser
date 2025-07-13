@@ -2,23 +2,24 @@ cmake_minimum_required(VERSION 3.15)
 
 project(CSJMediaParser VERSION 0.1.0)
 
+option(CSJ_BUILD_DEBUG "Build on Debug" ON)
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(PROJ_ROOT_DIR    "${CMAKE_CURRENT_SOURCE_DIR}")
 set(DEPENDENCIES_DIR "${PROJ_ROOT_DIR}/thirdParts")
-set(APP_OUTPUT_DIR   "${PROJ_ROOT_DIR}/output")
 set(THIRDPARTS_DIR   "${PROJ_ROOT_DIR}/src/3rdParts")
-set(BUILD_DIR        "${PROJ_ROOT_DIR}/build")       
+set(BUILD_DIR        "${PROJ_ROOT_DIR}/build")   
+set(APP_OUTPUT_DIR   "${PROJ_ROOT_DIR}/output")    
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(OUTPUT_DIR "${APP_OUTPUT_DIR}/Debug")
-elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-    set(OUTPUT_DIR "${APP_OUTPUT_DIR}/Release")
+if(CSJ_BUILD_DEBUG)
+    set(APP_OUTPUT_DIR   "${APP_OUTPUT_DIR}/Debug")
 else()
+    set(APP_OUTPUT_DIR   "${APP_OUTPUT_DIR}/Release")
 endif()
 
-file(MAKE_DIRECTORY "${OUTPUT_DIR}")
+file(MAKE_DIRECTORY "${APP_OUTPUT_DIR}")
 
 if(MSVC)
     # MSVC编译器
