@@ -14,7 +14,7 @@ extern "C" {
 }
 #endif
 
-#include "Utils/CSJStringUtils.h"
+#include "CSJUtils/CSJStringUtils.h"
 #include "CSJMediaData.h"
 #include "CSJMediaDataManager.h"
 #include "CSJMpegToolWorker.h"

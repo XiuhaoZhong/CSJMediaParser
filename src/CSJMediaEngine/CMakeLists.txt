@@ -5,7 +5,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(TARGET_NAME "CSJMediaEngine")
 set(CSJMEDIAENGINE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
-message(STATUS "CSJMediaEngine path: ${CMAKE_CURRENT_SOURCE_DIR}")
 
 if(MSVC)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
@@ -27,13 +26,14 @@ add_custom_target(
 )
 
 if(CMAKE_HOST_WIN32)
-    message(STATUS "LIB Directory: ${DEPENDENCIES_DIR}")
     set(ffmpeg_inc_dir ${DEPENDENCIES_DIR}/Win/ffmpeg/include)
     link_directories(${DEPENDENCIES_DIR}/Win/ffmpeg/libs ${GENERATE_LIB_DIR})
     set(ffmpeg_lib avcodec avdevice avfilter avformat avutil swresample swscale)
 elseif(CMAKE_HOST_APPLE)
 else()
 endif()
+
+include_directories(${CSJMEDIAENGINE_DIR}/include)
 
 add_library(${TARGET_NAME} SHARED ${ENGINE_SOURCE_FILES})
 add_dependencies(${TARGET_NAME} COPY_HEADERS)
@@ -46,7 +46,8 @@ elseif(CMAKE_HOST_APPLE)
 else()
 endif()
 
-include_directories(${CSJMEDIAENGINE_DIR}/include)
+# target_link_libraries(${TARGET_NAME} PUBLIC spdlog::spdlog)
+target_link_libraries(${TARGET_NAME} PUBLIC CSJUtils)
 
 if(CMAKE_HOST_WIN32)
 add_custom_command(

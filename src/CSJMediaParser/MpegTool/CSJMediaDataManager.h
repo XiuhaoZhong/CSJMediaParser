@@ -2,12 +2,12 @@
 #define __CSJMEDIADATAMANAGER_H__
 
 #include <QMutex>
+#include <QReadWriteLock>
 #include <QSharedPointer>
 
 #include "MpegHeaders/CSJMpegHeader.h"
 #include "MpegTool/CSJMediaData.h"
-#include "Utils/CSJLockUtils.h"
-
+#include "RWLock/CSJLockUtils.h"
 
 #define PACKET_READ_NUM 20
 #define FRAME_READ_NUM 20

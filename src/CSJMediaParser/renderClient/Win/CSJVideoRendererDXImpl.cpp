@@ -9,9 +9,11 @@
 #include "DDSTextureLoader11.h"
 #include "DXTrace.h"
 
-#include "Utils/CSJPathTool.h"
-#include "Utils/CSJLogger.h"
-#include "Utils/CSJStringUtils.h"
+#include "CSJUtils/CSJPathTool.h"
+#include "CSJUtils/CSJLogger.h"
+#include "CSJUtils/CSJStringUtils.h"
+
+using namespace csjutils;
 
 const D3D11_INPUT_ELEMENT_DESC CSJVideoRendererDXImpl::VertexPosColor::inputLayout[2] = {
     {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},

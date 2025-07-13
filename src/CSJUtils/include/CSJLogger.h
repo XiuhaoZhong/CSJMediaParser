@@ -1,12 +1,16 @@
 #ifndef __CSJLOGGER_H__
 #define __CSJLOGGER_H__
 
+#include "CSJUtils_Export.h"
+
 #include <cstdint>
 #include <stdexcept>
 
 #include <spdlog/spdlog.h>
 
-class CSJLogger final {
+namespace csjutils {
+
+class CSJUTILS_API CSJLogger final {
 public:
     static CSJLogger* getLoggerInst();
     ~CSJLogger();
@@ -22,7 +26,7 @@ public:
 
     template<typename... TARGS>
     void log_debug(TARGS&&... args) {
-        log(LogLevel::DEBUG_LOG, args);
+        log(LogLevel::DEBUG_LOG, std::forward<TARGS>(args)...);
     }
 
     template<typename... TARGS>
@@ -75,11 +79,13 @@ public:
     }
 
 protected:
-        CSJLogger();
+    CSJLogger();
 
 private:
     std::shared_ptr<spdlog::logger> m_pLogger;
 
 };
+
+} // namespace csjutils
 
 #endif // __CSJLOGGER_H__

@@ -4,7 +4,10 @@
 
 #include <chrono>
 
-#include "Utils/CSJLogger.h"
+#include "CSJUtils/CSJLogger.h"
+#include "CSJUtils/CSJPathTool.h"
+
+using namespace csjutils;
 
 /* The operation below is the filters. */
 #if CONFIG_AVFILTER
@@ -2181,6 +2184,16 @@ int CSJFFPlayerKernel::is_realtime(AVFormatContext *s) {
 }
 
 int CSJFFPlayerKernel::read_thread() {
+    if (m_fileName.size() == 0) {
+        m_pLogger->log_error("There's no file need to play");
+        return -1;
+    }
+
+    if (!CSJPathTool::fileExists(m_fileName)) {
+        m_pLogger->log_error("The {} is not exists!", m_fileName);
+        return -1;
+    }
+
     CSJLogger *logger = CSJLogger::getLoggerInst();
     logger->log_info("Reading thread start!");
 
@@ -2211,7 +2224,7 @@ int CSJFFPlayerKernel::read_thread() {
             scan_all_pmts_set = 1;
         }
 
-        err = avformat_open_input(&ic, m_pFileName, m_pInputFormat, &m_pFormatOpts);
+        err = avformat_open_input(&ic, m_fileName.c_str(), m_pInputFormat, &m_pFormatOpts);
         if (err < 0) {
             //print_error(m_pFileName, err);
             logger->log_info("Open input stream failed!");
@@ -2252,7 +2265,7 @@ int CSJFFPlayerKernel::read_thread() {
 
             if (err < 0) {
                 //av_log(NULL, AV_LOG_WARNING, "%s: could not find codec parameters\n", m_pFileName);
-                logger->log_warn("%s: could not find codec parameters\n", m_pFileName);
+                logger->log_warn("{}: could not find codec parameters\n", m_fileName);
                 ret = -1;
                 break;
             }
@@ -2286,8 +2299,8 @@ int CSJFFPlayerKernel::read_thread() {
             if (ret < 0) {
                 // av_log(NULL, AV_LOG_WARNING, "%s: could not seek to position %0.3f\n",
                 //        m_pFileName, (double)timestamp / AV_TIME_BASE);
-                logger->log_warn("%s: could not seek to position %0.3f.",
-                                    m_pFileName, (double)timestamp / AV_TIME_BASE);
+                logger->log_warn("{}: could not seek to position %0.3f.",
+                                    m_fileName, (double)timestamp / AV_TIME_BASE);
             }
         }
 
@@ -2297,7 +2310,7 @@ int CSJFFPlayerKernel::read_thread() {
         }
 
         if (m_showStatus) {
-            av_dump_format(ic, 0, m_pFileName, 0);
+            av_dump_format(ic, 0, m_fileName.c_str(), 0);
         }
 
         for (int i = 0; i < ic->nb_streams; i++) {
@@ -2393,7 +2406,7 @@ int CSJFFPlayerKernel::read_thread() {
 
         if (m_videoStreamIndex < 0 && m_audioStreamIndex < 0) {
             //av_log(NULL, AV_LOG_FATAL, "Failed to open file '%s' or configure filtergraph\n", m_pFileName);
-            logger->log_fatal("Failed to open file '%s' or configure filtergraph!", m_pFileName);
+            logger->log_fatal("Failed to open file '{}' or configure filtergraph!", m_fileName);
             ret = -1;
             break;
         }

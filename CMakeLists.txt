@@ -36,5 +36,6 @@ set(GENERATE_LIB_DIR "${PROJ_ROOT_DIR}/build/libs")
 file(MAKE_DIRECTORY ${GENERATE_LIB_DIR})
 
 add_subdirectory("${PROJ_ROOT_DIR}/src/3rdParts")
+add_subdirectory("${PROJ_ROOT_DIR}/src/CSJUtils")
 add_subdirectory("${PROJ_ROOT_DIR}/src/CSJMediaEngine")
 add_subdirectory("${PROJ_ROOT_DIR}/src/CSJMediaParser")

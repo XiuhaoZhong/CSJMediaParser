@@ -9,6 +9,8 @@
 #include <sstream>
 #include <iomanip>
 
+#include "CSJUtils_Export.h"
+
 namespace csjutils {
 class ArgBase {
 public:
@@ -121,7 +123,7 @@ std::string Format(const std::string& format, Args&&... args) {
     return ss.str();
 }
 
-class CSJStringUtil {
+class CSJUTILS_API CSJStringUtil {
 public:
     CSJStringUtil() = default;
     ~CSJStringUtil() = default;

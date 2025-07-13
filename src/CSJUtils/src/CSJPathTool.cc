@@ -2,6 +2,8 @@
 
 #include <filesystem>
 
+namespace csjutils {
+
 CSJPathTool* CSJPathTool::getInstance() {
     static  CSJPathTool instance;
     return &instance;
@@ -72,3 +74,5 @@ std::string CSJPathTool::getShaderFileWithName(std::string &shader_file_name) {
 std::string CSJPathTool::getTextureWithName(std::string &texture_file_name) {
     return getTextureDir().append(texture_file_name).string();
 }
+
+} // namespace csjutils 

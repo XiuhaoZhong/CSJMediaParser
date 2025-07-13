@@ -33,8 +33,6 @@ using UniqueThread = std::unique_ptr<std::thread>;
 using StdCondVar = std::condition_variable;
 using StdMutex = std::mutex;
 
-class CSJLogger;
-
 #ifdef __cplusplus
 }
 #endif
@@ -187,6 +185,12 @@ typedef enum ShowMode {
     SHOW_MODE_RDFT,
     SHOW_MODE_NB
 } CSJShowMode;
+
+namespace csjutils {
+class CSJLogger;
+}
+
+using csjutils::CSJLogger;
 
 class CSJFFPlayerKernel : public CSJPlayerKernelBase {
 public:
@@ -357,8 +361,7 @@ protected:
     void readThreadTest();
 
 private:
-    QString          m_fileName;
-    char            *m_pFileName;
+    std::string      m_fileName;
     CSJLogger       *m_pLogger;
 
     AVFormatContext *m_pFormatCtx   = nullptr;

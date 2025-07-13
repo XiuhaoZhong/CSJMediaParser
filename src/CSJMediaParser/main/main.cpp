@@ -2,10 +2,12 @@
 
 #include <QApplication>
 
-#include "Utils/CSJPathTool.h"
-#include "Utils/CSJLogger.h"
+#include "CSJUtils/CSJPathTool.h"
+#include "CSJUtils/CSJLogger.h"
 
 #include "CSJMediaEngine/CSJMediaEngineInfo.h"
+
+using namespace csjutils;
 
 int main(int argc, char *argv[]) {
     /* Record the work directory. */

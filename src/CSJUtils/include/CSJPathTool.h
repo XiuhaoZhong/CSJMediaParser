@@ -6,15 +6,19 @@
 #include <filesystem>
 #include <memory>
 
+#include "CSJUtils_Export.h"
+
 namespace fs = std::filesystem;
 
-class CSJPathTool {
+namespace csjutils {
+
+class CSJUTILS_API CSJPathTool {
 public:
     static CSJPathTool* getInstance();
 
     void setWorkDirectory(fs::path work_directory);
-    bool fileExists(std::string &file_path);
-    bool fileExists(std::wstring &file_path);
+    static bool fileExists(std::string &file_path);
+    static bool fileExists(std::wstring &file_path);
 
     fs::path getExecuteDir();
     fs::path getResourceDir();
@@ -35,5 +39,7 @@ protected:
 private:
     fs::path m_workPath;
 };
+
+} // namespace csjutils
 
 #endif // __CSJPATHTOOL_H__

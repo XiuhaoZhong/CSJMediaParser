@@ -41,8 +41,6 @@ endif()
 set(QT_DIR $ENV{QTDIR}/lib/cmake/Qt6)
 set(QT6_DIR $ENV{QTDIR}/lib/cmake/Qt6)
 
-add_compile_definitions(CSJMEDIAENGINE_EXPORTS)
-
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Gui)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Gui)
 
@@ -54,6 +52,7 @@ file(GLOB PLAYER_SOURCE_FILES "${SRC_ROOT}/player/*")
 file(GLOB RENDERER_SOURCE_FILES "${SRC_ROOT}/renderClient/*")
 file(GLOB UTIL_SOURCE_FILES "${SRC_ROOT}/Utils/*")
 file(GLOB CONTROLLER_SOURCE_FILES "${SRC_ROOT}/Controllers/*")
+file(GLOB LOCK_SOURCE_FILES "${SRC_ROOT}/RWLock/*")
 
 if(CMAKE_HOST_WIN32)
 # settings on Windows
@@ -65,7 +64,7 @@ if(CMAKE_HOST_WIN32)
     link_directories(${DEPENDENCIES_DIR}/Win/ffmpeg/libs ${GENERATE_LIB_DIR})
     set(ffmpeg_lib avcodec avdevice avfilter avformat avutil swresample swscale)
 
-    include_directories(${ffmpeg_inc_dir} player MpegTool ${GENERATE_HEADERS_DIR})
+    include_directories(${SRC_ROOT} ${ffmpeg_inc_dir} player MpegTool ${GENERATE_HEADERS_DIR})
 elseif (CMAKE_HOST_APPLE)# settings on MacOS
     # USE ARC
     add_compile_options(-x objective-c++)
@@ -119,6 +118,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ${CONTROLLER_SOURCE_FILES}
         ${RENDERER_SOURCE_FILES}
         ${RENDERER_IMPL_FILES}
+        ${LOCK_SOURCE_FILES}
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET ${TARGET_NAME} APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -163,7 +163,7 @@ set_target_properties(${TARGET_NAME} PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
 
-target_link_libraries(${TARGET_NAME} PUBLIC spdlog::spdlog)
+target_link_libraries(${TARGET_NAME} PUBLIC CSJUtils)
 target_link_libraries(${TARGET_NAME} PUBLIC CSJMediaEngine)
 
 add_custom_command(TARGET ${TARGET_NAME}

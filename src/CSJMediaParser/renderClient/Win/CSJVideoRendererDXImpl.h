@@ -14,7 +14,11 @@
 template <typename T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;
 
+namespace csjutils {
 class CSJLogger;
+}
+using csjutils::CSJLogger;
+
 class CSJVideoRendererDXImpl : public CSJVideoRenderer {
 public:
     struct VertexPosColor {
@@ -105,10 +109,10 @@ private:
     int        m_ClientWidth;           // 视口宽度
     int        m_ClientHeight;          // 视口高度
     bool       m_Enable4xMsaa;          // 是否开启4倍多重采样
-    UINT       m_4xMsaaQuality;         // MSAA支持的质量等级
-    CSJLogger *m_pLogger;               
+    UINT       m_4xMsaaQuality;         // MSAA支持的质量等级             
     bool       m_initSuccess = false;   // whether Direct3D is initialized or not.
     HANDLE     m_pInitEvent = NULL;     // 初始化成功之后的通知
+    CSJLogger *m_pLogger;  
 
     /* Direct3D 11 */
     ComPtr<ID3D11Device>          m_pd3dDevice;            // D3D11设备

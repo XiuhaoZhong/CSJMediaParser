@@ -4,6 +4,8 @@
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
+namespace csjutils {
+
 CSJLogger *CSJLogger::getLoggerInst() {
     static CSJLogger logger;
     return &logger;
@@ -33,3 +35,5 @@ CSJLogger::~CSJLogger() {
     m_pLogger->flush();
     spdlog::drop_all();
 }
+
+} // namespace csjutils 

@@ -16,7 +16,7 @@
 #include <QGroupBox>
 #include <QFileDialog>
 
-#include "Utils/CSJStringUtils.h"
+#include "CSJUtils/CSJStringUtils.h"
 #include "MpegTool/CSJMpegTool.h"
 #include "CSJUIKit/CSJDialog.h"
 #include "CSJUIKit/CSJPopupWidget.h"
