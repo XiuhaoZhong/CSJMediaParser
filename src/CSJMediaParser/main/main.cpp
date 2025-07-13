@@ -9,10 +9,9 @@
 #include "CSJMediaEngine/CSJMediaEngineInfo.h"
 
 int main(int argc, char *argv[]) {
-
     /* Record the work directory. */
     CSJPathTool *pathTool = CSJPathTool::getInstance();
-    std::wstring current_path(csjutils::CSJStringUtil::char2wstring(argv[0]));
+    std::string current_path(argv[0]);
     pathTool->setWorkDirectory(fs::canonical(fs::path(current_path).remove_filename()));
 
     CSJLogger* logger = CSJLogger::getLoggerInst();

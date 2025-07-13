@@ -34,41 +34,41 @@ fs::path CSJPathTool::getExecuteDir() {
 }
 
 fs::path CSJPathTool::getResourceDir() {
-    return getExecuteDir().append(L"resource");
+    return getExecuteDir().append("resource");
 }
 
 fs::path CSJPathTool::getModelDir() {
-    return getResourceDir().append(L"models");
+    return getResourceDir().append("models");
 }
 
 fs::path CSJPathTool::getTextureDir() {
-    return getResourceDir().append(L"textures");
+    return getResourceDir().append("textures");
 }
 
 fs::path CSJPathTool::getImageDir() {
-    return getResourceDir().append(L"images");
+    return getResourceDir().append("images");
 }
 
 fs::path CSJPathTool::getShaderDir() {
 #ifdef _WIN32
-    return getResourceDir().append(L"DXShaders");
+    return getResourceDir().append("DXShaders");
 #else
-    return getResourceDir().append(L"MetalShaders");
+    return getResourceDir().append("MetalShaders");
 #endif
 }
 
-std::wstring CSJPathTool::getModelFileWithName(std::wstring &model_file_name) {
-    return getModelDir().append(model_file_name);
+std::string CSJPathTool::getModelFileWithName(std::string &model_file_name) {
+    return getModelDir().append(model_file_name).string();
 }
 
-std::wstring CSJPathTool::getImageWithName(std::wstring &image_name) {
-    return getImageDir().append(image_name);
+std::string CSJPathTool::getImageWithName(std::string &image_name) {
+    return getImageDir().append(image_name).string();
 }
 
-std::wstring CSJPathTool::getShaderFileWithName(std::wstring &shader_file_name) {
-    return getShaderDir().append(shader_file_name);
+std::string CSJPathTool::getShaderFileWithName(std::string &shader_file_name) {
+    return getShaderDir().append(shader_file_name).string();
 }
 
-std::wstring CSJPathTool::getTextureWithName(std::wstring &texture_file_name) {
-    return getTextureDir().append(texture_file_name);
+std::string CSJPathTool::getTextureWithName(std::string &texture_file_name) {
+    return getTextureDir().append(texture_file_name).string();
 }

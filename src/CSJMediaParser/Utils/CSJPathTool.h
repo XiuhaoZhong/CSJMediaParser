@@ -23,10 +23,10 @@ public:
     fs::path getImageDir();
     fs::path getShaderDir();
 
-    std::wstring getModelFileWithName(std::wstring& modelFileName);
-    std::wstring getImageWithName(std::wstring& imageName);
-    std::wstring getShaderFileWithName(std::wstring& shaderFileName);
-    std::wstring getTextureWithName(std::wstring& textureFileName);
+    std::string getModelFileWithName(std::string& modelFileName);
+    std::string getImageWithName(std::string& imageName);
+    std::string getShaderFileWithName(std::string& shaderFileName);
+    std::string getTextureWithName(std::string& textureFileName);
 
 protected:
     CSJPathTool() = default;
