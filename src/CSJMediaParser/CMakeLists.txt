@@ -185,17 +185,30 @@ add_custom_command(TARGET ${TARGET_NAME}
                   COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJ_ROOT_DIR}/resources ${OUTPUT_RESOURCE_DIR}
                   COMMENT "Copy Resources to output directory") 
 
-if(CSJ_BUILD_DEBUG)
-    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD 
-        COMMAND "${CMAKE_COMMAND}" -E env PATH="${QTDIR}" "${QTDIR}/bin/windeployqt6"
-            --verbose 1
-            --debug
-            --compiler-runtime
-            ${APP_OUTPUT_DIR}/${TARGET_NAME}.exe
-        WORKING_DIRECTORY "${APP_OUTPUT_DIR}"
-        COMMENT "Depolying Qt ..."
-    )
-else()
+# deploy Qt libraries for windows.
+if(CMAKE_HOST_WIN32)
+    if(CSJ_BUILD_DEBUG)
+        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD 
+            COMMAND "${CMAKE_COMMAND}" -E env PATH="${QTDIR}" "${QTDIR}/bin/windeployqt6"
+                --verbose 1
+                --debug
+                --compiler-runtime
+                ${APP_OUTPUT_DIR}/${TARGET_NAME}.exe
+            WORKING_DIRECTORY "${APP_OUTPUT_DIR}"
+            COMMENT "Depolying Qt ..."
+        )    
+    else()
+        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD 
+            COMMAND "${CMAKE_COMMAND}" -E env PATH="${QTDIR}" "${QTDIR}/bin/windeployqt6"
+                --verbose 1
+                --release
+                --compiler-runtime
+                ${APP_OUTPUT_DIR}/${TARGET_NAME}.exe
+            WORKING_DIRECTORY "${APP_OUTPUT_DIR}"
+            COMMENT "Depolying Qt ..."
+        )
+    endif()
+    
 endif()
 
 install(TARGETS ${TARGET_NAME}
