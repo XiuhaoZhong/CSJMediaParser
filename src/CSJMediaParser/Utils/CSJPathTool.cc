@@ -34,7 +34,7 @@ fs::path CSJPathTool::getExecuteDir() {
 }
 
 fs::path CSJPathTool::getResourceDir() {
-    return getExecuteDir().append("resource");
+    return getExecuteDir().append("resources");
 }
 
 fs::path CSJPathTool::getModelDir() {

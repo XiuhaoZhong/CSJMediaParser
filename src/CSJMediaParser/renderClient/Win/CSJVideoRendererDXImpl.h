@@ -45,10 +45,10 @@ public:
 protected:
     bool createShaders();
 
-    bool initShaders(std::wstring & vertShaderFile,
-                     std::wstring & vertCso,
-                     std::wstring & pixelShaderFile,
-                     std::wstring & pixelCso);
+    bool initShaders(std::string & vertShaderFile,
+                     std::string & vertCso,
+                     std::string & pixelShaderFile,
+                     std::string & pixelCso);
 
     bool initRenderData();
 

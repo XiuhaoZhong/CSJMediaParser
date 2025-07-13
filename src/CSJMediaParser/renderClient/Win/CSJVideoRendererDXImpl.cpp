@@ -11,6 +11,7 @@
 
 #include "Utils/CSJPathTool.h"
 #include "Utils/CSJLogger.h"
+#include "Utils/CSJStringUtils.h"
 
 const D3D11_INPUT_ELEMENT_DESC CSJVideoRendererDXImpl::VertexPosColor::inputLayout[2] = {
     {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
@@ -384,17 +385,16 @@ void CSJVideoRendererDXImpl::setImage(const QString & imagePath) {
 
 bool CSJVideoRendererDXImpl::createShaders() {
     CSJPathTool *pathTool = CSJPathTool::getInstance();
-
-    std::wstring vertshaderFile = pathTool->getShaderDir().append(L"DXVertexShader.hlsl").wstring();
-    std::wstring vertCso = pathTool->getShaderDir().append(L"DXVertexShader.cso").wstring();
+    std::string vertshaderFile = pathTool->getShaderDir().append("DXVertexShader.hlsl").string();
+    std::string vertCso = pathTool->getShaderDir().append("DXVertexShader.cso").string();
 
     // Create pixel shader with video pixel type, and default is rgba.
-    std::wstring pixelShaderFile = pathTool->getShaderDir().append(L"DXRGBAShader.hlsl").wstring();
-    std::wstring pixelCso = pathTool->getShaderDir().append(L"DXRGBAShader.cso").wstring();
+    std::string pixelShaderFile = pathTool->getShaderDir().append("DXRGBAShader.hlsl").string();
+    std::string pixelCso = pathTool->getShaderDir().append("DXRGBAShader.cso").string();
 
     if (m_pixelFmt == CSJVIDEO_FMT_YUV420P) {
-        pixelShaderFile = pathTool->getShaderDir().append(L"DXYUVShader.hlsl").wstring();
-        pixelCso = pathTool->getShaderDir().append(L"DXYUVShader.cso").wstring();
+        pixelShaderFile = pathTool->getShaderDir().append("DXYUVShader.hlsl").string();
+        pixelCso = pathTool->getShaderDir().append("DXYUVShader.cso").string();
     }
     
     if (!initShaders(vertshaderFile, vertCso, pixelShaderFile, pixelCso)) {
@@ -405,10 +405,10 @@ bool CSJVideoRendererDXImpl::createShaders() {
     return true;
 }
 
-bool CSJVideoRendererDXImpl::initShaders(std::wstring &vertShaderFile,
-                                         std::wstring &vertCso,
-                                         std::wstring &pixelShaderFile,
-                                         std::wstring &pixelCso) {
+bool CSJVideoRendererDXImpl::initShaders(std::string &vertShaderFile,
+                                         std::string &vertCso,
+                                         std::string &pixelShaderFile,
+                                         std::string &pixelCso) {
     ComPtr<ID3D11Device> curDevice = getCurrentDevice();
     if (!curDevice) {
         return false;
@@ -416,9 +416,12 @@ bool CSJVideoRendererDXImpl::initShaders(std::wstring &vertShaderFile,
 
     ComPtr<ID3DBlob> blob;
 
+    std::wstring vertShaderaPath = csjutils::CSJStringUtil::string2wstring(vertShaderFile);
+    std::wstring vertCsoPath = csjutils::CSJStringUtil::string2wstring(vertCso);
+
     /* Create vertex shader */
-    HR(CreateShaderFromFile(vertCso.c_str(),
-                            vertShaderFile.c_str(),
+    HR(CreateShaderFromFile(vertCsoPath.c_str(),
+                            vertShaderaPath.c_str(),
                             "main",
                             "vs_5_0",
                             blob.ReleaseAndGetAddressOf()));
@@ -435,9 +438,12 @@ bool CSJVideoRendererDXImpl::initShaders(std::wstring &vertShaderFile,
                                     blob->GetBufferSize(),
                                     m_pVertexLayout.ReleaseAndGetAddressOf()));
 
+    std::wstring pixelCsoPath = csjutils::CSJStringUtil::string2wstring(pixelCso);
+    std::wstring pixelShaderPath = csjutils::CSJStringUtil::string2wstring(pixelShaderFile);
+
     /* Creating Pixel shader */
-    HR(CreateShaderFromFile(pixelCso.c_str(),
-                            pixelShaderFile.c_str(),
+    HR(CreateShaderFromFile(pixelCsoPath.c_str(),
+                            pixelShaderPath.c_str(),
                             "main",
                             "ps_5_0",
                             blob.ReleaseAndGetAddressOf()));

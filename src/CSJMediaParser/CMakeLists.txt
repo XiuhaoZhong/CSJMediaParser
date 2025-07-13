@@ -24,7 +24,7 @@ else()
     set(QTDIR ${QTDIR}/release)
 endif()
 # set the resource directory in the output directory
-set(OUTPUT_RESOURCE_DIR "${APP_OUTPUT_DIR}/resource")
+set(OUTPUT_RESOURCE_DIR "${APP_OUTPUT_DIR}/resources")
 
 set(DYNAMIC_LIBS "")
 
