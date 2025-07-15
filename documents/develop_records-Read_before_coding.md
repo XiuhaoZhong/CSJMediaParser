@@ -87,3 +87,6 @@ Please implement the key points above, and record the details, and if there are 
 #### TODO list
 1. Design the main UI, as I removed the MpegTools, the main UI should rearrangement.
 2. Now, I need to complete the CSJFFPlayerKernel.
+
+#### Problem
+1. There's a strange issue, on my old windows PC, when cmake executes the windelpoyqt to delopy qt, there will be an error, but there's no problem in my new windows PC with the same code. Laugh to cry!!!
