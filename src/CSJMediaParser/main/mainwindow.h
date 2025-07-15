@@ -26,10 +26,8 @@ protected:
 
     void initUI();
 
-    void initLeftLayout(QVBoxLayout *leftLayout);
-    void initRightLayout(QVBoxLayout *rightLayout);
-
-    void stringTest();
+    void initMiddleLayout(QVBoxLayout *leftLayout);
+    //void initRightLayout(QVBoxLayout *rightLayout);
 
 protected slots:
     void onOpenMenuClicked();

@@ -78,3 +78,12 @@ Please implement the key points above, and record the details, and if there are 
 ### 2025-06-27
 1. The dynamic library CSJMediaEngine is available, CSJMediaParser links it successfully
 2. Next, I'll move the media relative features into the CSJMediaEngine.
+
+### 2025-07-16
+#### Archivements.
+1. I've already completed the architecture of CSJMediaEngine, all the media process functions are moved into it.
+2. I've already applied the windeployqt to deploy qt libraries for CSJMediaParser.
+
+#### TODO list
+1. Design the main UI, as I removed the MpegTools, the main UI should rearrangement.
+2. Now, I need to complete the CSJFFPlayerKernel.

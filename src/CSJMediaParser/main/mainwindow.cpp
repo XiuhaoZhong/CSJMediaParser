@@ -17,7 +17,6 @@
 #include <QFileDialog>
 
 #include "CSJUtils/CSJStringUtils.h"
-// #include "MpegTool/CSJMpegTool.h"
 #include "CSJUIKit/CSJDialog.h"
 #include "CSJUIKit/CSJPopupWidget.h"
 #include "CSJUIKit/CSJMediaPlayerWindow.h"
@@ -25,8 +24,8 @@
 #include "Controllers/CSJMediaDetailModule.h"
 #include "Controllers/CSJMediaSPFDataController.h"
 
-#define MAINWINDOW_WIDTH 1280
-#define MAINWINDOW_HEIGHT 960
+#define MAINWINDOW_WIDTH 640
+#define MAINWINDOW_HEIGHT 480
 #define MENUBAR_HEIGHT 35
 
 MainWindow::MainWindow(QWidget *parent)
@@ -38,13 +37,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     initUI();
 
-    //stringTest();
-    //ffmpegTestFunc();
-
     this->move(QApplication::screens().constFirst()->availableGeometry().center()- this->rect().center());
-
-    std::string format_str = csjutils::Format("There are {0} fools in the world", 10);
-    std::cout << format_str << std::endl;
 }
 
 MainWindow::~MainWindow() {
@@ -93,25 +86,22 @@ void MainWindow::initUI() {
     m_pCentrelWidget->setAutoFillBackground(true);
     m_pCentrelWidget->setPalette(pale);
 
-    QHBoxLayout *topHonrizontalLayout = new QHBoxLayout(m_pCentrelWidget);
+    //QHBoxLayout *topHonrizontalLayout = new QHBoxLayout(m_pCentrelWidget);
+    QVBoxLayout *mainLayout = new QVBoxLayout(m_pCentrelWidget);
 
-    QVBoxLayout *leftVBoxLayout = new QVBoxLayout();
-    QVBoxLayout *rightBoxLayout = new QVBoxLayout();
+    QVBoxLayout *middleBoxLayout = new QVBoxLayout();
 
-    topHonrizontalLayout->addLayout(leftVBoxLayout);
-    topHonrizontalLayout->addLayout(rightBoxLayout);
+    mainLayout->addLayout(middleBoxLayout);
 
-    topHonrizontalLayout->setStretchFactor(leftVBoxLayout, 1);
-    topHonrizontalLayout->setStretchFactor(rightBoxLayout, 2);
+    //topHonrizontalLayout->setStretchFactor(leftVBoxLayout, 1);
 
-    initLeftLayout(leftVBoxLayout);
-    initRightLayout(rightBoxLayout);
+    initMiddleLayout(middleBoxLayout);
 
     QLabel *tipLabel = new QLabel(m_pMediaInfoWidget);
     tipLabel->setText(QString("Here will show the media information!"));
 }
 
-void MainWindow::initLeftLayout(QVBoxLayout *leftLayout) {
+void MainWindow::initMiddleLayout(QVBoxLayout *leftLayout) {
     if (!leftLayout) {
         return ;
     }
@@ -150,15 +140,15 @@ void MainWindow::initLeftLayout(QVBoxLayout *leftLayout) {
     leftLayout->setStretchFactor(m_pMediaInfoWidget, 2);
 }
 
-void MainWindow::initRightLayout(QVBoxLayout *rightLayout) {
-    if (!rightLayout) {
-        return ;
-    }
+// void MainWindow::initRightLayout(QVBoxLayout *rightLayout) {
+//     if (!rightLayout) {
+//         return ;
+//     }
 
-    CSJMediaDetailModule *module = new CSJMediaDetailModule();
-    module->initWidthParentWidget(this);
-    rightLayout->addWidget(module->getWidget());
-}
+//     CSJMediaDetailModule *module = new CSJMediaDetailModule();
+//     module->initWidthParentWidget(this);
+//     rightLayout->addWidget(module->getWidget());
+// }
 
 void MainWindow::onOpenMenuClicked() {
     QMessageBox::information(nullptr, "Tips", "Open File", QMessageBox::Ok);
