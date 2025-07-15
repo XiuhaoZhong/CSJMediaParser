@@ -179,28 +179,24 @@ add_custom_command(TARGET ${TARGET_NAME}
 
 # deploy Qt libraries for windows.
 if(CMAKE_HOST_WIN32)
+    find_program(WINDEPLOYQT_EXECUTABLE windeployqt6 HINTS "${QTDIR}/bin/")
+    if (NOT WINDEPLOYQT_EXECUTABLE) 
+        message(FATAL_ERROR "windeployqt6 not found in ${QTDIR}/bin/")
+    endif()
+    set(WINDEPLOYQT_OPTIONS --verbose 1 --compiler-runtime)
     if(CSJ_BUILD_DEBUG)
-        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD 
-            COMMAND "${CMAKE_COMMAND}" -E "${QTDIR}/bin/windeployqt6"
-                --verbose 1
-                --debug
-                --compiler-runtime
-                ${APP_OUTPUT_DIR}/${TARGET_NAME}.exe
-            WORKING_DIRECTORY "${APP_OUTPUT_DIR}"
-            COMMENT "Depolying Qt ..."
-        )    
+        list(APPEND WINDEPLOYQT_OPTIONS --debug)
     else()
-        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD 
-            COMMAND "${CMAKE_COMMAND}" -E "${QTDIR}/bin/windeployqt6"
-                --verbose 1
-                --release
-                --compiler-runtime
-                ${APP_OUTPUT_DIR}/${TARGET_NAME}.exe
-            WORKING_DIRECTORY "${APP_OUTPUT_DIR}"
-            COMMENT "Depolying Qt ..."
-        )
+        list(APPEND WINDEPLOYQT_OPTIONS --release)
     endif()
     
+    add_custom_command(TARGET ${TARGET_NAME} POST_BUILD 
+        COMMAND "${CMAKE_COMMAND}" -E env PATH="${QTDIR}" ${WINDEPLOYQT_EXECUTABLE}
+            ${WINDEPLOYQT_OPTIONS}
+            ${APP_OUTPUT_DIR}/${TARGET_NAME}.exe
+        WORKING_DIRECTORY "${APP_OUTPUT_DIR}"
+        COMMENT "Depolying Qt ..."
+    )    
 endif()
 
 install(TARGETS ${TARGET_NAME}
