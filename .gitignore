@@ -42,6 +42,6 @@
 build
 
 # output directory
-output
+output*
 
 

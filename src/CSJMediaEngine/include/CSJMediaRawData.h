@@ -76,7 +76,7 @@ private:
     uint8_t           *m_dataRGB24 = nullptr;
 };
 
-class CSJAudioData {
+class CSJMEDIAENGINE_API CSJAudioData {
 public:
     CSJAudioData();
 

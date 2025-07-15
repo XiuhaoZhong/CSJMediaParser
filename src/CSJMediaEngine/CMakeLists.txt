@@ -15,6 +15,7 @@ set(CMAKE_INSTALL_LIBDIR ${GENERATE_LIB_DIR})
 
 file(GLOB_RECURSE ENGINE_SOURCE_FILES "${CSJMEDIAENGINE_DIR}/CSJMediaEngineInfo/*"
                                       "${CSJMEDIAENGINE_DIR}/CSJMediaPlayer/*"
+                                      "${CSJMEDIAENGINE_DIR}/CSJMediaData/*"
                                       "${CSJMEDIAENGINE_DIR}/include/*")
 
 set(CommonTool_srcs CSJMediaData.cpp)

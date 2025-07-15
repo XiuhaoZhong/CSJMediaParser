@@ -47,7 +47,10 @@ CSJVideoData::CSJVideoData()
 }
 
 CSJVideoData::CSJVideoData(CSJVideoFormatType fmtType, uint8_t* data, int width, int height)
-    : m_fmtType(fmtType), m_data(data), m_width(width), m_height(height) {
+    : m_fmtType(fmtType)
+    , m_data(data)
+    , m_width(width)
+    , m_height(height) {
 
     if (fmtType == CSJVIDEO_FMT_NV12) {
         initWithYUV420();

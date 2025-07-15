@@ -45,12 +45,8 @@ find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Gui)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Gui)
 
 file(GLOB MAIN_SOURCE_FILES "${SRC_ROOT}/main/*")
-# file(GLOB MPEG_HEADER_FILES "${SRC_ROOT}/MpegHeaders/*")
 file(GLOB UIKIT_SOURCE_FILES "${SRC_ROOT}/CSJUIKit/*")
-# file(GLOB MPEGTOOL_SOURCE_FILES "${SRC_ROOT}/MpegTool/*")
-# file(GLOB PLAYER_SOURCE_FILES "${SRC_ROOT}/player/*")
 file(GLOB RENDERER_SOURCE_FILES "${SRC_ROOT}/renderClient/*")
-# file(GLOB UTIL_SOURCE_FILES "${SRC_ROOT}/Utils/*")
 file(GLOB CONTROLLER_SOURCE_FILES "${SRC_ROOT}/Controllers/*")
 file(GLOB LOCK_SOURCE_FILES "${SRC_ROOT}/RWLock/*")
 
@@ -109,12 +105,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(${TARGET_NAME}
         MANUAL_FINALIZATION
         ${MAIN_SOURCE_FILES}
-        #${MPEG_HEADER_FILES}
         ${UIKIT_SOURCE_FILES}
-        #${UTIL_SOURCE_FILES}
-        #${PLAYER_SOURCE_FILES}
         ${RENDER_SOURCES}
-        #${MPEGTOOL_SOURCE_FILES}
         ${CONTROLLER_SOURCE_FILES}
         ${RENDERER_SOURCE_FILES}
         ${RENDERER_IMPL_FILES}
@@ -189,7 +181,7 @@ add_custom_command(TARGET ${TARGET_NAME}
 if(CMAKE_HOST_WIN32)
     if(CSJ_BUILD_DEBUG)
         add_custom_command(TARGET ${TARGET_NAME} POST_BUILD 
-            COMMAND "${CMAKE_COMMAND}" -E env PATH="${QTDIR}" "${QTDIR}/bin/windeployqt6"
+            COMMAND "${CMAKE_COMMAND}" -E "${QTDIR}/bin/windeployqt6"
                 --verbose 1
                 --debug
                 --compiler-runtime
@@ -199,7 +191,7 @@ if(CMAKE_HOST_WIN32)
         )    
     else()
         add_custom_command(TARGET ${TARGET_NAME} POST_BUILD 
-            COMMAND "${CMAKE_COMMAND}" -E env PATH="${QTDIR}" "${QTDIR}/bin/windeployqt6"
+            COMMAND "${CMAKE_COMMAND}" -E "${QTDIR}/bin/windeployqt6"
                 --verbose 1
                 --release
                 --compiler-runtime
