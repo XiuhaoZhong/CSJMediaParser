@@ -1,15 +1,14 @@
 #include "CSJMediaSPFDataController.h"
 
-
 #include <QtCore/QDebug>
 #include <QThread>
 #include <QMap>
 
 #include "CSJUIKit/CSJAccordionWidget.h"
 
-#include "MpegTool/CSJMpegTool.h"
-#include "MpegTool/CSJMediaDataManager.h"
-#include "MpegTool/CSJMpegToolWorker.h"
+// #include "MpegTool/CSJMpegTool.h"
+// #include "MpegTool/CSJMediaDataManager.h"
+// #include "MpegTool/CSJMpegToolWorker.h"
 
 #define PACKET_READ_NUM 10
 #define FRAME_READ_NUM 10
@@ -21,24 +20,24 @@ CSJMediaSPFDataController *CSJMediaSPFDataController::getInstance() {
 
 CSJMediaSPFDataController::CSJMediaSPFDataController()
     : m_bIsParsing(false) {
-    CSJMpegToolWorker *worker = CSJMpegToolWorker::getInstance();
-    connect(this, SIGNAL(parseStreams()), worker, SLOT(onParseStreams()));
-    connect(this, SIGNAL(parsePackets()), worker, SLOT(onParsePackets()));
-    connect(this, SIGNAL(parseFrames()), worker, SLOT(onParseFrames()));
+    // CSJMpegToolWorker *worker = CSJMpegToolWorker::getInstance();
+    // connect(this, SIGNAL(parseStreams()), worker, SLOT(onParseStreams()));
+    // connect(this, SIGNAL(parsePackets()), worker, SLOT(onParsePackets()));
+    // connect(this, SIGNAL(parseFrames()), worker, SLOT(onParseFrames()));
 
-    connect(worker, SIGNAL(updateStreams()), this, SLOT(onUpdateStreams()));
-    connect(worker, SIGNAL(updatePackets()), this, SLOT(onUpdatePackets()));
-    connect(worker, SIGNAL(updateFrames()), this, SLOT(onUpdateFrames()));
+    // connect(worker, SIGNAL(updateStreams()), this, SLOT(onUpdateStreams()));
+    // connect(worker, SIGNAL(updatePackets()), this, SLOT(onUpdatePackets()));
+    // connect(worker, SIGNAL(updateFrames()), this, SLOT(onUpdateFrames()));
 
-    worker->moveToThread(&m_parseThread);
-    m_parseThread.start();
+    // worker->moveToThread(&m_parseThread);
+    // m_parseThread.start();
 
-    connect(&m_parseThread, &QThread::finished, this, &CSJMediaSPFDataController::onParseThreadFinished);
+    // connect(&m_parseThread, &QThread::finished, this, &CSJMediaSPFDataController::onParseThreadFinished);
 }
 
 void CSJMediaSPFDataController::setMediaUrl(QString &mediaUrl) {
     qDebug() << "[INFO] CSJMediaSPFDataController::setMediaUrl, current tid: " << QThread::currentThreadId();
-    CSJMpegToolWorker::getInstance()->setMediaUrl(mediaUrl);
+    //CSJMpegToolWorker::getInstance()->setMediaUrl(mediaUrl);
 }
 
 CSJMediaSPFDataController::~CSJMediaSPFDataController() {
@@ -59,11 +58,12 @@ void CSJMediaSPFDataController::startParse() {
 }
 
 void CSJMediaSPFDataController::stopParse() {
-    CSJMpegToolWorker::getInstance()->stop();
-    m_parseThread.quit();
-    m_parseThread.wait();
+    // CSJMpegToolWorker::getInstance()->stop();
+    // m_parseThread.quit();
+    // m_parseThread.wait();
 }
 
+/*
 void CSJMediaSPFDataController::parseStreamInfo(CSJSpStreamInfo stream,
                                                 QString &streamTitle,
                                                 QVector<QString> &attributeArr) {
@@ -147,69 +147,70 @@ void CSJMediaSPFDataController::parseFrameInfo(CSJSpFrameInfo frame,
                                                QVector<QString> &attributeArr) {
 
 }
+*/
 
 void CSJMediaSPFDataController::onUpdateStreams() {
     qDebug() << "[INFO] CSJMediaSPFDataController::onUpdateStreams, current tid: " << QThread::currentThreadId();
 
-    if (!m_pStreamWidget) {
-        return ;
-    }
+    // if (!m_pStreamWidget) {
+    //     return ;
+    // }
 
-    QVector<CSJSpStreamInfo> streams;
+    // QVector<CSJSpStreamInfo> streams;
 
-    streams = CSJMediaDataManager::getInstance()->getStreams();
-    if (streams.size() == 0) {
-        return ;
-    }
+    // streams = CSJMediaDataManager::getInstance()->getStreams();
+    // if (streams.size() == 0) {
+    //     return ;
+    // }
 
-    for (int i = 0; i < streams.size(); i++) {
-        CSJSpStreamInfo st = streams[i];
+    // for (int i = 0; i < streams.size(); i++) {
+    //     CSJSpStreamInfo st = streams[i];
 
-        QString streamTitle = "";
-        QVector<QString> attriArr;
+    //     QString streamTitle = "";
+    //     QVector<QString> attriArr;
 
-        streamTitle += "Track " +
-                       QString::number(st->getIndex()) +
-                       ": " + st->getType();
+    //     streamTitle += "Track " +
+    //                    QString::number(st->getIndex()) +
+    //                    ": " + st->getType();
 
-        parseStreamInfo(st, streamTitle, attriArr);
+    //     parseStreamInfo(st, streamTitle, attriArr);
 
-        m_pStreamWidget->addPageWithTitle(streamTitle, attriArr);
-    }
+    //     m_pStreamWidget->addPageWithTitle(streamTitle, attriArr);
+    // }
 }
 
 void CSJMediaSPFDataController::onUpdatePackets() {
-    if (!m_pPacketWidget) {
-        return ;
-    }
+    // if (!m_pPacketWidget) {
+    //     return ;
+    // }
 
-    QVector<CSJSpPacketInfo> packets;
-    packets = CSJMediaDataManager::getInstance()->getPackets(m_iNextPacketIndex);
-    if (packets.size() == 0) {
-        return ;
-    }
+    // QVector<CSJSpPacketInfo> packets;
+    // packets = CSJMediaDataManager::getInstance()->getPackets(m_iNextPacketIndex);
+    // if (packets.size() == 0) {
+    //     return ;
+    // }
 
-    m_iNextPacketIndex += packets.size();
-    for (int i = 0; i < packets.size(); i++) {
-        CSJSpPacketInfo pkt = packets[i];
+    // m_iNextPacketIndex += packets.size();
+    // for (int i = 0; i < packets.size(); i++) {
+    //     CSJSpPacketInfo pkt = packets[i];
 
-        QString pktTitle = "Packet " + QString::number(i) + ": ";
-        pktTitle += CSJMediaDataManager::getInstance()->getStreamTypeWithIndex(pkt->getStreamIndex());
+    //     QString pktTitle = "Packet " + QString::number(i) + ": ";
+    //     pktTitle += CSJMediaDataManager::getInstance()->getStreamTypeWithIndex(pkt->getStreamIndex());
 
-        QVector<QString> pktInfos;
-        parsePacketInfo(pkt, pktTitle, pktInfos);
+    //     QVector<QString> pktInfos;
+    //     parsePacketInfo(pkt, pktTitle, pktInfos);
 
-        m_pPacketWidget->addPageWithTitle(pktTitle, pktInfos);
-    }
+    //     m_pPacketWidget->addPageWithTitle(pktTitle, pktInfos);
+    // }
 }
 
 void CSJMediaSPFDataController::onUpdateFrames() {
-    if (!m_pFrameWidget) {
-        return ;
-    }
+    // if (!m_pFrameWidget) {
+    //     return ;
+    // }
 }
 
 void CSJMediaSPFDataController::onParseThreadFinished() {
-    CSJMediaDataManager::getInstance()->clearData();
-    m_bIsParsing = false;
+    // CSJMediaDataManager::getInstance()->clearData();
+    // m_bIsParsing = false;
 }

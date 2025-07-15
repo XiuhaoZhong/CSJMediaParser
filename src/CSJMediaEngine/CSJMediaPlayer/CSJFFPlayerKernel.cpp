@@ -1,13 +1,13 @@
 #include "CSJFFPlayerKernel.h"
 
-#include <QDebug>
-
 #include <chrono>
+#include <iostream>
 
 #include "CSJUtils/CSJLogger.h"
 #include "CSJUtils/CSJPathTool.h"
 
 using namespace csjutils;
+namespace csjmediaengine {
 
 /* The operation below is the filters. */
 #if CONFIG_AVFILTER
@@ -2710,14 +2710,14 @@ void CSJFFPlayerKernel::threadTestFunc(int t) {
 }
 
 void CSJFFPlayerKernel::threadLog(int thread_type, int log_type) {
-    static QString threadType[] = {
+    static std::string threadType[] = {
         "Video decoder thread",
         "Audio decoder thread",
         "Subtitle decoder thread",
         "Reading thread"
     };
 
-    static QString logString[] = {
+    static std::string logString[] = {
         "start",
         "pause",
         "resume",
@@ -2727,13 +2727,13 @@ void CSJFFPlayerKernel::threadLog(int thread_type, int log_type) {
         "exit"
     };
 
-    QString outputLog = "";
+    std::string outputLog = "";
     outputLog.append("[Thread Debug] ");
     outputLog.append(threadType[thread_type]);
     outputLog.append(": ");
     outputLog.append(logString[log_type]);
 
-    qDebug() << outputLog;
+    std::cout << outputLog;
 }
 
 void CSJFFPlayerKernel::readThreadTest() {
@@ -2823,7 +2823,7 @@ CSJFFPlayerKernel::~CSJFFPlayerKernel() {
     resetPlayState();
 }
 
-void CSJFFPlayerKernel::setPlayFile(QString &filePath) {
+void CSJFFPlayerKernel::setPlayFile(std::string &filePath) {
 
 }
 
@@ -2834,3 +2834,5 @@ bool CSJFFPlayerKernel::initPlayer() {
 int CSJFFPlayerKernel::getDuration() {
     return 0;
 }
+
+} // namespace csjmediaengine 

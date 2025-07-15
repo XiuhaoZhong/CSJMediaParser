@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-namespace CSJMediaEngine {
+namespace csjmediaengine {
 
 CSJMediaEngineInfo::CSJMediaEngineInfo() {
 
@@ -16,4 +16,4 @@ void CSJMediaEngineInfo::printEngineInfo() {
     std::cout << "This is CSJMediaEngine information!" << std::endl;
 }
 
-} // namespace CSJMediaEngine
+} // namespace csjmediaengine

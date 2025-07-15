@@ -33,7 +33,7 @@ elseif(CMAKE_HOST_APPLE)
 else()
 endif()
 
-include_directories(${CSJMEDIAENGINE_DIR}/include)
+include_directories(${CSJMEDIAENGINE_DIR}/include ${ffmpeg_inc_dir} ${GENERATE_HEADERS_DIR})
 
 add_library(${TARGET_NAME} SHARED ${ENGINE_SOURCE_FILES})
 add_dependencies(${TARGET_NAME} COPY_HEADERS)

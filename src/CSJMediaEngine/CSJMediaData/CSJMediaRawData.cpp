@@ -1,5 +1,7 @@
 #include "CSJMediaRawData.h"
 
+namespace csjmediaengine{
+
 #ifdef _WIN32
 std::wstring SubTypeToString(GUID& subtype) {
     WCHAR buffer[128];
@@ -243,3 +245,5 @@ CSJAudioData& CSJAudioData::operator=(CSJAudioData && audioData) {
 
     return *this;
 }
+
+} // namespace csjmediaengine

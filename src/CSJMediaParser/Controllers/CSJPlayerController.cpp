@@ -2,7 +2,9 @@
 
 #include <qdebug.h>
 
-#include "CSJPlayerKernelBase.h"
+#include "CSJMediaEngine/CSJMediaPlayerBase.h"
+
+using namespace csjmediaengine;
 
 class CSJPlayerControllerImpl : public CSJPlayerController {
 public:
@@ -21,11 +23,11 @@ public:
     bool isStopping() override;
 
 private:
-    std::unique_ptr<CSJPlayerKernelBase> m_pPlayerKernel;
+    std::unique_ptr<CSJMediaPlayerBase> m_pPlayerKernel;
 };
 
 CSJPlayerControllerImpl::CSJPlayerControllerImpl() {
-    m_pPlayerKernel = std::move(CSJPlayerKernelBase::getPlayerKernel());
+    m_pPlayerKernel = std::move(CSJMediaPlayerBase::getPlayerKernel());
 }
 
 CSJPlayerControllerImpl::~CSJPlayerControllerImpl() {
@@ -43,7 +45,8 @@ bool CSJPlayerControllerImpl::initPlayerKernel(QString& filePath) {
 
     qDebug() << "[" <<__FILE__  << ": " << __FUNCTIONW__ << "]" << " Player kernel has been created!";
 
-    m_pPlayerKernel->setPlayFile(filePath);
+    std::string play_file_path = filePath.toStdString();
+    m_pPlayerKernel->setPlayFile(play_file_path);
     return true;
 }
 

@@ -1,7 +1,11 @@
 #ifndef __CSJVIDEOPRESENTDELEGATE_H__
 #define __CSJVIDEOPRESENTDELEGATE_H__
 
-#include "MpegHeaders/CSJMediaRawData.h"
+#include "CSJMediaEngine_Export.h"
+
+#include "CSJMediaRawData.h"
+
+namespace csjmediaengine {
 
 /**
  * @brief The CSJVideoPresentDelegate defines interfaces that the player kernel
@@ -10,7 +14,7 @@
  *        These interfaces should be implemented by the class which is responsible
  *        for video frames rendering, and set into player kernel object as a delegate.
  */
-class CSJVideoPresentDelegate {
+class CSJMEDIAENGINE_API CSJVideoPresentDelegate {
 public:
     CSJVideoPresentDelegate() = default;
     ~CSJVideoPresentDelegate() = default;
@@ -32,4 +36,5 @@ public:
     virtual void updateVideoFrame(CSJVideoData *videoData) = 0;
 };
 
+} // namespace csjmediaengine 
 #endif // __CSJVIDEOPRESENTDELEGATE_H__

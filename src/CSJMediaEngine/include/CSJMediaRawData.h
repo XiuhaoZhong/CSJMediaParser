@@ -1,12 +1,16 @@
 #ifndef __CSJMEDIARAWDATA_H__
 #define __CSJMEDIARAWDATA_H__
 
+#include "CSJMediaEngine_Export.h"
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
 
 #include <stdint.h>
 #include <string>
+
+namespace csjmediaengine {
 
 typedef enum {
     CSJVIDEO_FMT_NONE = -1,
@@ -29,7 +33,7 @@ std::wstring SubTypeToString(GUID& subtype);
 
 CSJVideoFormatType string2VideoType(std::wstring &fmtString);
 
-class CSJVideoData {
+class CSJMEDIAENGINE_API CSJVideoData {
 public:
     CSJVideoData();
 
@@ -92,5 +96,7 @@ private:
     int                m_channels;
     int                m_bitsPerSample;
 };
+
+} // namespace csjmediaengine
 
 #endif // __CSJMEDIARAWDATA_H__

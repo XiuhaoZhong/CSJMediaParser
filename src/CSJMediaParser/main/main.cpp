@@ -8,6 +8,7 @@
 #include "CSJMediaEngine/CSJMediaEngineInfo.h"
 
 using namespace csjutils;
+using csjmediaengine::CSJMediaEngineInfo;
 
 int main(int argc, char *argv[]) {
     /* Record the work directory. */
@@ -18,7 +19,7 @@ int main(int argc, char *argv[]) {
     CSJLogger* logger = CSJLogger::getLoggerInst();
     logger->log(CSJLogger::LogLevel::INFO_LOG, "CSJMediaParser started!\0");
 
-    CSJMediaEngine::CSJMediaEngineInfo engineInfo;
+    CSJMediaEngineInfo engineInfo;
     engineInfo.printEngineInfo();
 
     QApplication a(argc, argv);

@@ -6,7 +6,10 @@
 
 #include <array>
 
-#include "MpegHeaders/CSJMediaRawData.h"
+#include "CSJMediaEngine/CSJMediaRawData.h"
+
+using csjmediaengine::CSJVideoFormatType;
+using csjmediaengine::CSJVideoData;
 
 /**
  * This is the base class of video renderer, subclasses which implements

@@ -3,7 +3,7 @@
 
 #include "CSJMediaEngine_Export.h"
 
-namespace CSJMediaEngine {
+namespace csjmediaengine {
 
 class CSJMEDIAENGINE_API CSJMediaEngineInfo {
 public:
@@ -13,6 +13,6 @@ public:
     void printEngineInfo();
 };
 
-} // namespace CSJMEDIAENGINE
+} // namespace csjmediaengine
 
 #endif // __CSJMEDIAENGINEINFO_H__

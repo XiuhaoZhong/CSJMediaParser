@@ -1,6 +1,8 @@
 #include "CSJMediaPlayerBase.h"
 
-namespace CSJMediaEngine {
+#include "CSJFFPlayerKernel.h"
+
+namespace csjmediaengine {
 CSJMediaPlayerBase::CSJMediaPlayerBase() {
 
 }
@@ -13,4 +15,8 @@ CSJMediaPlayerBase *CSJMediaPlayerBase::getPlayerInstance() {
     return nullptr;
 }
 
-} // namespace CSJMediaEngine
+std::unique_ptr<CSJMediaPlayerBase> CSJMediaPlayerBase::getPlayerKernel(CSJPlayerType playerType) {
+    return std::make_unique<CSJFFPlayerKernel>();
+}
+
+} // namespace csjmediaengine

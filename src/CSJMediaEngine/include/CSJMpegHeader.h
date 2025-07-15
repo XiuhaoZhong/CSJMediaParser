@@ -1,8 +1,6 @@
 #ifndef CSJMPEGHEADER_H
 #define CSJMPEGHEADER_H
 
-#include <QVector>
-
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -7,7 +7,9 @@
 #include <thread>
 
 #include "renderClient/CSJVideoRenderer.h"
-#include "player/CSJVideoPresentDelegate.h"
+#include "CSJMediaEngine/CSJVideoPresentDelegate.h"
+
+using csjmediaengine::CSJVideoPresentDelegate;
 
 /** 
  * The render mode of CSJVideoRendererWidget. 

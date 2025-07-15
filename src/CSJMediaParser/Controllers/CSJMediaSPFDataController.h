@@ -7,9 +7,9 @@
 
 #include <QThread>
 
-#include "MpegTool/CSJMpegInteractions.h"
+// #include "MpegTool/CSJMpegInteractions.h"
 
-#include "MpegTool/CSJMediaData.h"
+// #include "MpegTool/CSJMediaData.h"
 
 class CSJAccordionWidget;
 class CSJMediaSPFDataController : public QObject/*CSJMpegDataUpdateDelegate*/ {
@@ -41,9 +41,9 @@ signals:
     void parseFrames();
 
 protected:
-    void parseStreamInfo(CSJSpStreamInfo stream, QString &streamTitle, QVector<QString> &attributeArr);
-    void parsePacketInfo(CSJSpPacketInfo packet, QString &packetTitle, QVector<QString> &attributeArr);
-    void parseFrameInfo(CSJSpFrameInfo frame, QString &frameTitle, QVector<QString> &attributeArr);
+    // void parseStreamInfo(CSJSpStreamInfo stream, QString &streamTitle, QVector<QString> &attributeArr);
+    // void parsePacketInfo(CSJSpPacketInfo packet, QString &packetTitle, QVector<QString> &attributeArr);
+    // void parseFrameInfo(CSJSpFrameInfo frame, QString &frameTitle, QVector<QString> &attributeArr);
 
 public slots:
     void onUpdateStreams();

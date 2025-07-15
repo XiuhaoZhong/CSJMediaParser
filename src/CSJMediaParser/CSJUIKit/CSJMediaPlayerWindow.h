@@ -6,7 +6,7 @@
 
 #include <QWidget>
 
-#include "player/CSJPlayerController.h"
+#include "Controllers/CSJPlayerController.h"
 
 class QPushButton;
 class CSJVideoRendererWidget;

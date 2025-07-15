@@ -1,5 +1,4 @@
-
-#include "CSJPlayerKernelBase.h"
+#include "CSJMediaPlayerBase.h"
 
 #include <thread>
 #include <mutex>
@@ -27,15 +26,23 @@ extern "C" {
 #include "libavdevice/avdevice.h"
 #include "libswresample/swresample.h"
 //#include "libavcodec/avfft.h"
+#include "libavcodec/avcodec.h"
 #include "libswscale/swscale.h"
+#ifdef __cplusplus
+}
+#endif
 
 using UniqueThread = std::unique_ptr<std::thread>;
 using StdCondVar = std::condition_variable;
 using StdMutex = std::mutex;
 
-#ifdef __cplusplus
+namespace csjutils {
+class CSJLogger;
 }
-#endif
+
+using csjutils::CSJLogger;
+
+namespace csjmediaengine {
 
 #define MAX_QUEUE_SIZE (15 * 1024 * 1024)
 #define MIN_FRAMES 25
@@ -186,19 +193,13 @@ typedef enum ShowMode {
     SHOW_MODE_NB
 } CSJShowMode;
 
-namespace csjutils {
-class CSJLogger;
-}
-
-using csjutils::CSJLogger;
-
-class CSJFFPlayerKernel : public CSJPlayerKernelBase {
+class CSJFFPlayerKernel : public CSJMediaPlayerBase {
 public:
     CSJFFPlayerKernel();
 
     ~CSJFFPlayerKernel();
 
-    void setPlayFile(QString& filePath) override;
+    void setPlayFile(std::string& filePath) override;
     bool initPlayer() override;
 
     int getDuration() override;
@@ -498,3 +499,5 @@ private:
     int     m_showStatus        = -1;
     int64_t m_audioCallbackTime;
 };
+
+} // namespace csjmediaengine 
