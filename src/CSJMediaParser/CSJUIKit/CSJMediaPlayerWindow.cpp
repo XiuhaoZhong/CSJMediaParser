@@ -35,7 +35,7 @@ CSJMediaPlayerWindow::~CSJMediaPlayerWindow() {
 }
 
 void CSJMediaPlayerWindow::initUI() {
-    setFixedSize(QSize(MAINWINDOW_WIDTH, MAINWINDOW_HEIGHT));
+    setFixedSize(QSize(PLAYERWINDOW_WIDTH, PLAYERWINDOW_HEIGHT));
 
     QVBoxLayout *mianLayout = new QVBoxLayout(this);
 
