@@ -26,8 +26,6 @@ endif()
 # set the resource directory in the output directory
 set(OUTPUT_RESOURCE_DIR "${APP_OUTPUT_DIR}/resources")
 
-set(DYNAMIC_LIBS "")
-
 # set Qt environment variables
 if (CMAKE_HOST_WIN32)
     set(ENV{PATH} "${QTDIR}/bin;${QTDIR}/lib;$ENV{PATH}")
