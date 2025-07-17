@@ -53,14 +53,10 @@ file(GLOB LOCK_SOURCE_FILES "${SRC_ROOT}/RWLock/*")
 if(CMAKE_HOST_WIN32)
 # settings on Windows
     file(GLOB RENDERER_IMPL_FILES "${SRC_ROOT}/renderClient/Win/*")
-
     set(NativeRenderLib d3d11 dxgi dxguid d3dcompiler)
-    set(ffmpeg_inc_dir ${DEPENDENCIES_DIR}/Win/ffmpeg/include)
+    link_directories(${GENERATE_LIB_DIR})
 
-    link_directories(${DEPENDENCIES_DIR}/Win/ffmpeg/libs ${GENERATE_LIB_DIR})
-    set(ffmpeg_lib avcodec avdevice avfilter avformat avutil swresample swscale)
-
-    include_directories(${SRC_ROOT} ${ffmpeg_inc_dir} player MpegTool ${GENERATE_HEADERS_DIR})
+    include_directories(${SRC_ROOT}  ${GENERATE_HEADERS_DIR})
 elseif (CMAKE_HOST_APPLE)# settings on MacOS
     # USE ARC
     add_compile_options(-x objective-c++)
@@ -132,8 +128,8 @@ endif()
 
 if(CMAKE_HOST_WIN32)
     target_link_libraries(${TARGET_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
-        ${ffmpeg_lib} ${NativeRenderLib} ${local_libs} 
-    ) # ${OpenCV_LIBRARIES}
+        ${NativeRenderLib} ${local_libs} 
+    )
 elseif(CMAKE_HOST_APPLE)
     target_link_libraries(${TARGET_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
         ${lib-audiotoolbox} ${lib-bz2} ${lib-videotoolbox} ${lib-coremedia}
