@@ -31,7 +31,6 @@ set(DYNAMIC_LIBS "")
 # set Qt environment variables
 if (CMAKE_HOST_WIN32)
     set(ENV{PATH} "${QTDIR}/bin;${QTDIR}/lib;$ENV{PATH}")
-    file(GLOB DYNAMIC_LIBS "${DEPENDENCIES_DIR}/Win/ffmpeg/dlls/*.dll")
     add_definitions(-DUNICODE -D_UNICODE)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 elseif (CMAKE_HOST_APPLE)
@@ -154,23 +153,15 @@ set_target_properties(${TARGET_NAME} PROPERTIES
 target_link_libraries(${TARGET_NAME} PUBLIC CSJUtils)
 target_link_libraries(${TARGET_NAME} PUBLIC CSJMediaEngine)
 
-add_custom_command(TARGET ${TARGET_NAME}
-                   POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${TARGET_NAME}> ${APP_OUTPUT_DIR}
+add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy 
+                        $<TARGET_FILE:${TARGET_NAME}> ${APP_OUTPUT_DIR}
                    COMMENT "Copy target ${TARGET} to output directory")
 
-if(CMAKE_HOST_WIN32)
-    foreach(file ${DYNAMIC_LIBS})
-        add_custom_command(TARGET ${TARGET_NAME}
-                            POST_BUILD
-                            COMMAND ${CMAKE_COMMAND} -E copy ${file} ${APP_OUTPUT_DIR})
-    endforeach()
-endif()
-
 file(MAKE_DIRECTORY ${OUTPUT_RESOURCE_DIR})
-add_custom_command(TARGET ${TARGET_NAME}
-                  POST_BUILD
-                  COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJ_ROOT_DIR}/resources ${OUTPUT_RESOURCE_DIR}
+add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+                  COMMAND ${CMAKE_COMMAND} -E copy_directory 
+                        ${PROJ_ROOT_DIR}/resources ${OUTPUT_RESOURCE_DIR}
                   COMMENT "Copy Resources to output directory") 
 
 # deploy Qt libraries for windows.

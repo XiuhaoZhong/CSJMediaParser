@@ -13,17 +13,17 @@ endif()
 set(CMAKE_INSTALL_BINDIR ${APP_OUTPUT_DIR})
 set(CMAKE_INSTALL_LIBDIR ${GENERATE_LIB_DIR})
 
+file(GLOB FFMPEG_DLL_FILES "${DEPENDENCIES_DIR}/Win/ffmpeg/dlls/*.dll")
+
 file(GLOB_RECURSE ENGINE_SOURCE_FILES "${CSJMEDIAENGINE_DIR}/CSJMediaEngineInfo/*"
                                       "${CSJMEDIAENGINE_DIR}/CSJMediaPlayer/*"
                                       "${CSJMEDIAENGINE_DIR}/CSJMediaData/*"
                                       "${CSJMEDIAENGINE_DIR}/include/*")
 
-set(CommonTool_srcs CSJMediaData.cpp)
-
 # copy headers to build dir, so as to be used by others.
-add_custom_target(
-    COPY_HEADERS
-    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CSJMEDIAENGINE_DIR}/include" "${BUILD_DIR}/include/${TARGET_NAME}"
+add_custom_target(COPY_HEADERS
+    COMMAND ${CMAKE_COMMAND} -E copy_directory 
+        "${CSJMEDIAENGINE_DIR}/include" "${BUILD_DIR}/include/${TARGET_NAME}"
 )
 
 if(CMAKE_HOST_WIN32)
@@ -47,23 +47,23 @@ elseif(CMAKE_HOST_APPLE)
 else()
 endif()
 
-# target_link_libraries(${TARGET_NAME} PUBLIC spdlog::spdlog)
 target_link_libraries(${TARGET_NAME} PUBLIC CSJUtils)
 
 if(CMAKE_HOST_WIN32)
-add_custom_command(
-    TARGET ${TARGET_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "$<TARGET_FILE:${TARGET_NAME}>" ${APP_OUTPUT_DIR}
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        $<TARGET_FILE_DIR:${TARGET_NAME}>/$<TARGET_FILE_BASE_NAME:${TARGET_NAME}>.lib ${GENERATE_LIB_DIR} 
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        $<TARGET_FILE_DIR:${TARGET_NAME}>/$<TARGET_FILE_BASE_NAME:${TARGET_NAME}>.pdb ${GENERATE_LIB_DIR} 
-)
-endif()
+    add_custom_command(
+        TARGET ${TARGET_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_FILE:${TARGET_NAME}>" ${APP_OUTPUT_DIR}
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE_DIR:${TARGET_NAME}>/$<TARGET_FILE_BASE_NAME:${TARGET_NAME}>.lib ${GENERATE_LIB_DIR} 
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE_DIR:${TARGET_NAME}>/$<TARGET_FILE_BASE_NAME:${TARGET_NAME}>.pdb ${GENERATE_LIB_DIR} 
+    )
 
-# install(TARGETS ${TARGET_NAME} 
-#     LIBRARY DESTINATION ${GENERATE_LIB_DIR}
-#     RUNTIME DESTINATION ${OUTPUT_DIR}
-# )
+    foreach(file ${FFMPEG_DLL_FILES})
+        add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
+                            COMMAND ${CMAKE_COMMAND} -E copy ${file} ${APP_OUTPUT_DIR})
+    endforeach()
+
+endif()
 
