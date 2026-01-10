@@ -13,8 +13,6 @@ endif()
 set(CMAKE_INSTALL_BINDIR ${APP_OUTPUT_DIR})
 set(CMAKE_INSTALL_LIBDIR ${GENERATE_LIB_DIR})
 
-file(GLOB FFMPEG_DLL_FILES "${DEPENDENCIES_DIR}/Win/ffmpeg/dlls/*.dll")
-
 file(GLOB_RECURSE ENGINE_SOURCE_FILES "${CSJMEDIAENGINE_DIR}/CSJMediaEngineInfo/*"
                                       "${CSJMEDIAENGINE_DIR}/CSJMediaPlayer/*"
                                       "${CSJMEDIAENGINE_DIR}/CSJMediaData/*"
@@ -27,10 +25,30 @@ add_custom_target(COPY_HEADERS
 )
 
 if(CMAKE_HOST_WIN32)
+    file(GLOB FFMPEG_DLL_FILES "${DEPENDENCIES_DIR}/Win/ffmpeg/dlls/*.dll")
     set(ffmpeg_inc_dir ${DEPENDENCIES_DIR}/Win/ffmpeg/include)
     link_directories(${DEPENDENCIES_DIR}/Win/ffmpeg/libs ${GENERATE_LIB_DIR})
     set(ffmpeg_lib avcodec avdevice avfilter avformat avutil swresample swscale)
 elseif(CMAKE_HOST_APPLE)
+
+    set(CMAKE_MACOSX_RPATH ON)
+
+    set(ffmpeg_inc_dir ${DEPENDENCIES_DIR}/Mac/ffmpeg/include)
+    link_directories(${DEPENDENCIES_DIR}/Mac/ffmpeg/libs ${GENERATE_LIB_DIR})
+    set(ffmpeg_lib avcodec avdevice avfilter avformat avutil swresample swscale)
+    
+    find_library(lib-videotoolbox VideoToolbox)
+    find_library(lib-audiotoolbox AudioToolbox)
+    find_library(lib-avfoundation AVFoundation)
+    find_library(lib-coreaudio CoreAudio)
+    find_library(lib-coremedia CoreMedia)
+    find_library(lib-corevideo CoreVideo)
+    find_library(lib-security Security)
+    find_library(lib-iconv iconv.2)
+    find_library(lib-z z)
+    find_library(lib-bz2 bz2)
+    find_library(lib-xml2 xml2)
+    find_library(lib-foundation Foundation)
 else()
 endif()
 
@@ -44,6 +62,11 @@ target_compile_definitions(${TARGET_NAME} PRIVATE CSJMEDIAENGINE_EXPORTS)
 if(CMAKE_HOST_WIN32)
     target_link_libraries(${TARGET_NAME} PRIVATE ${ffmpeg_lib})
 elseif(CMAKE_HOST_APPLE)
+    target_link_libraries(${TARGET_NAME} PRIVATE 
+        ${lib-audiotoolbox} ${lib-bz2} ${lib-videotoolbox} ${lib-coremedia}
+        ${lib-corevideo} ${lib-security} ${lib-xml2} ${lib-z} ${lib-iconv} ${lib-foundation}
+        ${ffmpeg_lib}
+    )
 else()
 endif()
 
@@ -64,6 +87,14 @@ if(CMAKE_HOST_WIN32)
         add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
                             COMMAND ${CMAKE_COMMAND} -E copy ${file} ${APP_OUTPUT_DIR})
     endforeach()
+
+elseif(CMAKE_HOST_APPLE)
+    add_custom_command(
+        TARGET ${TARGET_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_FILE:${TARGET_NAME}>" ${GENERATE_LIB_DIR}
+    )
+else()
 
 endif()
 

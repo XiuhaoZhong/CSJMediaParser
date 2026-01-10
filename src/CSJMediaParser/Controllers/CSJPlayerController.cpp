@@ -43,7 +43,7 @@ bool CSJPlayerControllerImpl::initPlayerKernel(QString& filePath) {
         return false;
     }
 
-    qDebug() << "[" <<__FILE__  << ": " << __FUNCTIONW__ << "]" << " Player kernel has been created!";
+    //qDebug() << "[" <<__FILE__  << ": " << __FUNCTIONW__ << "]" << " Player kernel has been created!";
 
     std::string play_file_path = filePath.toStdString();
     m_pPlayerKernel->setPlayFile(play_file_path);
@@ -52,7 +52,7 @@ bool CSJPlayerControllerImpl::initPlayerKernel(QString& filePath) {
 
 void CSJPlayerControllerImpl::start() {
     if (!m_pPlayerKernel) {
-        qDebug() << "[" <<__FILE__ << ": " << __FUNCTIONW__ << "]" << " Player kernel hasn't been created!";
+        //qDebug() << "[" <<__FILE__ << ": " << __FUNCTIONW__ << "]" << " Player kernel hasn't been created!";
         return ;
     }
 
@@ -61,7 +61,7 @@ void CSJPlayerControllerImpl::start() {
 
 void CSJPlayerControllerImpl::pause() {
     if (!m_pPlayerKernel) {
-        qDebug() << "[" <<__FILE__ << ": " << __FUNCTIONW__ << "]" << " Player kernel hasn't been created!";
+        //qDebug() << "[" <<__FILE__ << ": " << __FUNCTIONW__ << "]" << " Player kernel hasn't been created!";
         return ;
     }
 
@@ -70,7 +70,7 @@ void CSJPlayerControllerImpl::pause() {
 
 void CSJPlayerControllerImpl::resume() {
     if (!m_pPlayerKernel) {
-        qDebug() << "[" <<__FILE__ << ": " << __FUNCTIONW__ << "]" << " Player kernel hasn't been created!";
+        //qDebug() << "[" <<__FILE__ << ": " << __FUNCTIONW__ << "]" << " Player kernel hasn't been created!";
         return ;
     }
 
@@ -83,7 +83,7 @@ void CSJPlayerControllerImpl::stop() {
 
 bool CSJPlayerControllerImpl::isPlaying() {
     if (!m_pPlayerKernel) {
-        qDebug() << "[" <<__FILE__ << ": " << __FUNCTIONW__ << "]" << " Player kernel hasn't been created!";
+        //qDebug() << "[" <<__FILE__ << ": " << __FUNCTIONW__ << "]" << " Player kernel hasn't been created!";
         return false;
     }
 
@@ -92,7 +92,7 @@ bool CSJPlayerControllerImpl::isPlaying() {
 
 bool CSJPlayerControllerImpl::isPausing() {
     if (!m_pPlayerKernel) {
-        qDebug() << "[" <<__FILE__ << ": " << __FUNCTIONW__ << "]" << " Player kernel hasn't been created!";
+        //qDebug() << "[" <<__FILE__ << ": " << __FUNCTIONW__ << "]" << " Player kernel hasn't been created!";
         return false;
     }
 
@@ -101,7 +101,7 @@ bool CSJPlayerControllerImpl::isPausing() {
 
 bool CSJPlayerControllerImpl::isStopping() {
     if (!m_pPlayerKernel) {
-        qDebug() << "[" <<__FILE__ << ": " << __FUNCTIONW__ << "]" << " Player kernel hasn't been created!";
+        //qDebug() << "[" <<__FILE__ << ": " << __FUNCTIONW__ << "]" << " Player kernel hasn't been created!";
         return false;
     }
 

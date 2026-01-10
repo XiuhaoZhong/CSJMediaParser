@@ -35,6 +35,12 @@ set(GENERATE_HEADERS_DIR "${BUILD_DIR}/include")
 set(GENERATE_LIB_DIR "${PROJ_ROOT_DIR}/build/libs")
 file(MAKE_DIRECTORY ${GENERATE_LIB_DIR})
 
+if(CSJ_BUILD_DEBUG)
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/Debug/" CACHE PATH "INSTALL_DIR" FORCE)
+else()
+    set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/Release/" CACHE PATH "INSTALL_DIR" FORCE)
+endif()
+
 add_subdirectory("${PROJ_ROOT_DIR}/src/3rdParts")
 add_subdirectory("${PROJ_ROOT_DIR}/src/CSJUtils")
 add_subdirectory("${PROJ_ROOT_DIR}/src/CSJMediaEngine")

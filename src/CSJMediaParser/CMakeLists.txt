@@ -57,39 +57,19 @@ elseif (CMAKE_HOST_APPLE)# settings on MacOS
     # USE ARC
     add_compile_options(-x objective-c++)
 
-    find_package(OpenCV REQUIRED)
-
-    # ffmpeg dir
-    set(ffmpeg_inc_dir thirdParts/Mac/ffmpeg/include)
+    #find_package(OpenCV REQUIRED)
 
     # src on MacOS
     file(GLOB RENDERER_IMPL_FILES "${SRC_ROOT}/renderClient/Mac/*")
 
-    link_directories(thirdParts/Mac/ffmpeg/libs)
-
-    find_library(lib-videotoolbox VideoToolbox)
-    find_library(lib-audiotoolbox AudioToolbox)
-    find_library(lib-avfoundation AVFoundation)
-    find_library(lib-coreaudio CoreAudio)
-    find_library(lib-coremedia CoreMedia)
-    find_library(lib-corevideo CoreVideo)
-    find_library(lib-security Security)
-    find_library(lib-iconv iconv.2)
-    find_library(lib-z z)
-    find_library(lib-bz2 bz2)
-    find_library(lib-xml2 xml2)
     find_library(lib-foundation Foundation)
     find_library(lib-metal Metal)
     find_library(lib-metalKit MetalKit)
 
-    set(ffmpeg_lib avcodec avdevice avfilter avformat avutil swresample swscale)
+    link_directories(${GENERATE_LIB_DIR})
+    include_directories(${SRC_ROOT}  ${GENERATE_HEADERS_DIR})
 
     include_directories(${SRC_ROOT} 
-                        ${ffmpeg_inc_dir} 
-                        ${OpenCV_Include_DIR} 
-                        src/player 
-                        src/MpegTool 
-                        CommonTools
                         ${QTDIR}/lib/QtGui.framework/Headers)
 endif()
 
@@ -128,10 +108,7 @@ if(CMAKE_HOST_WIN32)
     )
 elseif(CMAKE_HOST_APPLE)
     target_link_libraries(${TARGET_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
-        ${lib-audiotoolbox} ${lib-bz2} ${lib-videotoolbox} ${lib-coremedia}
-        ${lib-corevideo} ${lib-security} ${lib-xml2} ${lib-z} ${lib-iconv}
         ${lib-foundation} ${lib-metal} ${lib-metalKit}
-        ${ffmpeg_lib} ${local_libs} ${OpenCV_LIBRARIES}
     )
     set_property(TARGET ${TARGET_NAME} APPEND_STRING PROPERTY
         COMPILE_FLAGS "-fobjc-arc")
@@ -190,6 +167,56 @@ if(CMAKE_HOST_WIN32)
             COMMENT "Depolying Qt ..."
         )    
     endif()
+elseif(CMAKE_HOST_APPLE)
+    if(CSJ_BUILD_PACKAGE)
+        add_custom_command(
+            TARGET ${TARGET_NAME}
+            POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory 
+                ${RESOURCE_DIR} 
+                "$<TARGET_BUNDLE_DIR:${TARGET_NAME}>/Contents/Resources"
+                COMMENT "Copy resource diretory ..."
+        )
+    else()
+        set_target_properties(${TARGET_NAME} PROPERTIES
+            BUILD_WITH_INSTALL_RPATH ON
+            INSTALL_RPATH "@executable_path/../Frameworks"
+        )
+
+        set_target_properties(${TARGET_NAME} PROPERTIES
+            MACOSX_RPATH ON
+            INSTALL_NAME_DIR "@rpath"
+        )
+
+        install(TARGETS ${TARGET_NAME}
+            BUNDLE DESTINATION ${CMAKE_INSTALL_PREFIX}
+            COMPONENT Runtime
+        )
+
+        install(FILES ${GENERATE_LIB_DIR}/libCSJMediaEngine.dylib
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.app/Contents/Frameworks
+            COMPONENT Runtime
+        )
+
+        set(DEVELOPER_ID "Apple Development: zxhas@foxmail.com (Q4LVL56W34)")
+        install(CODE "
+            execute_process(
+                COMMAND ${QTDIR}/bin/macdeployqt \"${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.app\"
+                        -always-overwrite
+                        -verbose=1
+                WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}
+                RESULT_VARIABLE deploy_result
+                
+                COMMAND codesign --force --deep --sign \"${DEVELOPER_ID}\" \"${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.app\"
+            )
+                
+            if(NOT deploy_result EQUAL 0)
+            message(STATUS \"Failed to run macdeployqt: ${deploy_result})\")
+            endif()"
+            COMPONENT Runtime
+        )
+    endif()
+else()
 endif()
 
 install(TARGETS ${TARGET_NAME}

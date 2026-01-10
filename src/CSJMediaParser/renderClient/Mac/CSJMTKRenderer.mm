@@ -1,5 +1,8 @@
-#include "MpegHeaders/CSJMediaRawData.h"
+#include "CSJMediaEngine/CSJMediaRawData.h"
 #include <Metal/Metal.h>
+
+using csjmediaengine::CSJVideoData;
+using csjmediaengine::CSJVideoFormatType;
 
 #import "CSJMediaShaderTypes.h"
 #import "CSJMTKRenderer.h"
@@ -141,7 +144,7 @@
 
 - (void)loadVideoComponentWithPixelFmt:(NSInteger)pixelFmt width:(NSInteger)width height:(NSInteger)height {
     switch (pixelFmt) {
-    case CSJVIDEO_FMT_YUV420P:
+    case csjmediaengine::CSJVIDEO_FMT_YUV420P:
         [self loadYUV420PComponentsWithWidth:width height:height];
         break;
     default:
@@ -175,7 +178,7 @@
 
     // opy data to buffer
     switch (m_videoFmt) {
-    case CSJVIDEO_FMT_YUV420P:
+    case csjmediaengine::CSJVIDEO_FMT_YUV420P:
         [self updateDatatoYUV420PWidthData:videoData];
         break;
     default:
