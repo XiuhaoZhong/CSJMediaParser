@@ -2015,7 +2015,7 @@ int CSJFFPlayerKernel::stream_component_open(int stream_index) {
         avctx->flags2 |= AV_CODEC_FLAG2_FAST;
     }
 
-    AVDictionary *codec_opts;
+    AVDictionary *codec_opts = NULL;
     opts = filter_codec_opts(codec_opts, avctx->codec_id, ic, ic->streams[stream_index], codec);
     /* Set multi-thread decoder mode. 
      * "auto" indiecates FFMpeg will select thread numbers automatically with the system properties  
@@ -2033,7 +2033,7 @@ int CSJFFPlayerKernel::stream_component_open(int stream_index) {
         m_pLogger->log_fatal("Open codec failed!");
         goto fail;
     }
-
+    
     if ((t = av_dict_get(opts, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
         //av_log(NULL, AV_LOG_ERROR, "Option %s not found.\n", t->key);
         m_pLogger->log_error("Option %s not found.\n", t->key);
@@ -2236,7 +2236,8 @@ int CSJFFPlayerKernel::read_thread() {
             av_dict_set(&m_pFormatOpts, "scan_all_pmts", NULL, AV_DICT_MATCH_CASE);
         }
 
-        if ((t = av_dict_get(m_pFormatOpts, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
+        t = av_dict_get(m_pFormatOpts, "", NULL, AV_DICT_IGNORE_SUFFIX);
+        if (t) {
             //av_log(NULL, AV_LOG_ERROR, "Option %s not found.\n", t->key);
             logger->log_error("Option %s not found.\n", t->key);
             ret = AVERROR_OPTION_NOT_FOUND;
@@ -2251,7 +2252,7 @@ int CSJFFPlayerKernel::read_thread() {
         //av_format_inject_global_side_data(ic);
 
         static int find_stream_info = 1;
-        AVDictionary *codec_opts;
+        AVDictionary *codec_opts = NULL;
         if (find_stream_info) {
             AVDictionary **opts = setup_find_stream_info_opts(ic, codec_opts);
             int orig_nb_streams = ic->nb_streams;
