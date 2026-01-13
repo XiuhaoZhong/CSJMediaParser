@@ -79,36 +79,70 @@ void MainWindow::initAboutMenu(QMenu *menu) {
 }
 
 void MainWindow::initUI() {
+
+    this->setAutoFillBackground(true);
+
     m_pCentrelWidget = new QWidget(this);
     this->setCentralWidget(m_pCentrelWidget);
-    QPalette pale(m_pCentrelWidget->palette());
-    pale.setColor(QPalette::Active, QPalette::Window, QColor(255,255,255));
-    m_pCentrelWidget->setAutoFillBackground(true);
-    m_pCentrelWidget->setPalette(pale);
+    m_pCentrelWidget->setStyleSheet(R"(
+        QWidget {
+            background-color: #adccadff;
+        }
+    )");
 
-    //QHBoxLayout *topHonrizontalLayout = new QHBoxLayout(m_pCentrelWidget);
     QVBoxLayout *mainLayout = new QVBoxLayout(m_pCentrelWidget);
 
-    QVBoxLayout *middleBoxLayout = new QVBoxLayout();
+    QVBoxLayout *headerBoxLayout = new QVBoxLayout();
+    mainLayout->addLayout(headerBoxLayout);
+    initHeaderLayout(headerBoxLayout);
 
-    mainLayout->addLayout(middleBoxLayout);
+    QHBoxLayout *optionsLayout = new QHBoxLayout();
+    mainLayout->addLayout(optionsLayout);
 
-    //topHonrizontalLayout->setStretchFactor(leftVBoxLayout, 1);
+    mainLayout->setStretchFactor(headerBoxLayout, 1);
+    mainLayout->setStretchFactor(optionsLayout, 1);
 
-    initMiddleLayout(middleBoxLayout);
+    QWidget *playerWidget = new QWidget();
+    playerWidget->setStyleSheet(R"(
+        QWidget {
+            border-radius: 20px;
+            background-color: #7FFFFF;
+        }
+    )");
 
-    QLabel *tipLabel = new QLabel(m_pMediaInfoWidget);
-    tipLabel->setText(QString("Here will show the media information!"));
+    QWidget *parserWidget = new QWidget();
+    parserWidget->setStyleSheet(R"(
+        QWidget {
+            border-radius: 20px;
+            background-color: #FF7FFF;
+        }
+    )");
+
+    QWidget *formatWidget = new QWidget();
+    formatWidget->setStyleSheet(R"(
+        QWidget {
+            border-radius: 20px;
+            background-color: #FFFF7F;
+        }
+    )");
+
+    optionsLayout->addWidget(playerWidget);
+    optionsLayout->addWidget(parserWidget);
+    optionsLayout->addWidget(formatWidget);
+
+    optionsLayout->setStretchFactor(playerWidget, 1);
+    optionsLayout->setStretchFactor(parserWidget, 1);
+    optionsLayout->setStretchFactor(formatWidget, 1);
 }
 
-void MainWindow::initMiddleLayout(QVBoxLayout *leftLayout) {
+void MainWindow::initHeaderLayout(QVBoxLayout *leftLayout) {
     if (!leftLayout) {
         return ;
     }
 
     m_pBaseOptWiget = new QWidget();
     QPalette pal(m_pBaseOptWiget->palette());
-    pal.setColor(QPalette::Active, QPalette::Window, QColor(196,196,196));
+    pal.setColor(QPalette::Window, QColor(196,196,196));
     m_pBaseOptWiget->setAutoFillBackground(true);
     m_pBaseOptWiget->setPalette(pal);
     leftLayout->addWidget(m_pBaseOptWiget);

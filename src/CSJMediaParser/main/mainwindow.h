@@ -26,7 +26,7 @@ protected:
 
     void initUI();
 
-    void initMiddleLayout(QVBoxLayout *leftLayout);
+    void initHeaderLayout(QVBoxLayout *leftLayout);
     //void initRightLayout(QVBoxLayout *rightLayout);
 
 protected slots:
