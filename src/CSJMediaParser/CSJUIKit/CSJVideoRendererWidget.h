@@ -59,6 +59,7 @@ public slots:
     void showDefaultImage();
 
 protected:
+    void showEvent(QShowEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
 

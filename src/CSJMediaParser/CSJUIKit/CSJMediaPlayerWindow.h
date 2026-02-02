@@ -4,10 +4,11 @@
 #define PLAYERWINDOW_WIDTH 1280
 #define PLAYERWINDOW_HEIGHT 960
 
-#include <QWidget>
+#include "CSJUIModules/CSJWidget.h"
 
 #include "Controllers/CSJPlayerController.h"
 
+class CSJWidget;
 class QPushButton;
 class CSJVideoRendererWidget;
 
@@ -17,7 +18,7 @@ typedef enum {
     PLAYSTATUS_PLAY,
 } PlayStatus;
 
-class CSJMediaPlayerWindow : public QWidget {
+class CSJMediaPlayerWindow : public CSJWidget {
     Q_OBJECT
 public:
     CSJMediaPlayerWindow(QWidget *parent = nullptr);
@@ -39,6 +40,7 @@ protected:
     void initPlayController();
 
 private:
+
     QWidget *m_pVideoThumbnailWiget = nullptr;
     CSJVideoRendererWidget *m_pDXWidget = nullptr;
     QWidget *m_pProgressWidget = nullptr;

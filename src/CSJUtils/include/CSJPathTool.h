@@ -26,11 +26,13 @@ public:
     fs::path getTextureDir();
     fs::path getImageDir();
     fs::path getShaderDir();
+    fs::path getStyleSheetDir();
 
     std::string getModelFileWithName(std::string& modelFileName);
     std::string getImageWithName(std::string& imageName);
     std::string getShaderFileWithName(std::string& shaderFileName);
     std::string getTextureWithName(std::string& textureFileName);
+    std::string getStyleSheetWithName(std::string& styleSheetsName);
 
 protected:
     CSJPathTool() = default;

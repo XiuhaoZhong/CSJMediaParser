@@ -37,7 +37,9 @@ public:
     ~CSJVideoRendererDXImpl();
 
     bool init(WId widgetID, int width, int height) override;
+    bool initForOffScreen(int width, int height) override;
     bool updateSence(double timeStamp) override;
+    bool fillTextureData(uint8_t *buf, int width, int height);
     void drawSence() override;
     void resize(int width, int height) override;
     void initialRenderComponents(CSJVideoFormatType fmtType, 
@@ -47,6 +49,8 @@ public:
     void setImage(const QString& imagePath) override;
 
 protected:
+    bool initD3D(int width, int height);
+
     bool createShaders();
 
     bool initShaders(std::string & vertShaderFile,
@@ -55,6 +59,15 @@ protected:
                      std::string & pixelCso);
 
     bool initRenderData();
+
+    bool createDepthStencilView(int width, int height, 
+                                ComPtr<ID3D11DepthStencilView> &depthStencilView);
+
+    bool createRenderTargetView(int width, int height, 
+                                ComPtr<ID3D11RenderTargetView> &targetView, 
+                                bool ONScreen = true);
+
+    void setViewPort(int width, int height);
 
     HRESULT CreateShaderFromFile(const WCHAR * csoFileNameOut,
                                  const WCHAR * hisFileName,
@@ -72,9 +85,19 @@ protected:
                           UINT bindFlags,
                           UINT CPUAccessFlags,
                           UINT MiscFlags,
-                          ComPtr<ID3D11Texture2D>& tex,
-                          ComPtr<ID3D11ShaderResourceView>& resourceView,
-                          D3D11_SRV_DIMENSION srvDemension = D3D11_SRV_DIMENSION_TEXTURE2D);
+                          ComPtr<ID3D11Texture2D>& tex);
+
+    bool createD3DTextureWithResourceView(int width, int height, 
+                                          DXGI_FORMAT format, 
+                                          UINT miplevels, 
+                                          UINT arraySize,
+                                          D3D11_USAGE usage,
+                                          UINT bindFlags,
+                                          UINT CPUAccessFlags,
+                                          UINT MiscFlags,
+                                          ComPtr<ID3D11Texture2D>& tex,
+                                          ComPtr<ID3D11ShaderResourceView>& resourceView,
+                                          D3D11_SRV_DIMENSION srvDemension = D3D11_SRV_DIMENSION_TEXTURE2D);
     bool createTextureForRGBA(int width, int height);
     bool createTexturesForYUV420(int width, int height);
     void createTextureSampler();
@@ -104,6 +127,7 @@ private:
     ComPtr<ID3D11Buffer>        m_pIndexBuffer;
     ComPtr<ID3D11Buffer>        m_ConstantBuffer;
 
+    bool       m_bOnScreenRender = true;// OnScreen rendering or offscreen renderding, default is onscreen rendering.
     HWND       m_hMainWnd;              // 主窗口句柄
     int        m_renderFPS;             // 渲染帧率
     int        m_ClientWidth;           // 视口宽度
@@ -123,6 +147,9 @@ private:
     ComPtr<ID3D11Device1>          m_pd3dDevice1;           // D3D11.1设备
     ComPtr<ID3D11DeviceContext1>   m_pd3dImmediateContext1; // D3D11.1设备上下文
     ComPtr<IDXGISwapChain1>        m_pSwapChain1;           // D3D11.1交换链
+
+    ComPtr<ID3D11Texture2D>        m_pOffScreenTex;         // D3D11Texture of offscreen render. 
+    ComPtr<ID3D11RenderTargetView> m_pOffScreenTargetView;  // 
 
     /* 常用资源 */
     ComPtr<ID3D11Texture2D>        m_pDepthStencilBuffer;  // 深度模板缓冲区

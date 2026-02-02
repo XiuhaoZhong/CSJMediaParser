@@ -12,6 +12,14 @@ using csjmediaengine::CSJVideoFormatType;
 using csjmediaengine::CSJVideoData;
 
 /**
+ * The render type of the Renderer.
+ */
+typedef enum {
+    CSJRenderType_ONSCREEN = 0,
+    CSJRenderType_OFFSCREEN
+} CSJRenderType;
+
+/**
  * This is the base class of video renderer, subclasses which implements
  * the interfaces of this will encasuplate the native renderer, subclasses
  * on windows implement with DirectX API, also, the subclasses on macOS
@@ -35,8 +43,12 @@ public:
 
     static std::shared_ptr<CSJVideoRenderer> getRendererInstance();
 
+    static std::shared_ptr<CSJVideoRenderer> getOffScreenRendererInstance();
+
     /**
-     * @brief Initializes renderer.
+     * @brief Initializes renderer. This function is for onscreen rendering, need 
+     *        the @param widgetID, which indecates the hwnd of the native window, 
+     *        including windows and MacOS.
      *
      * @param widgetID  the widget ID, for windows, it's the handle of a window.
      * @param width     width of widget.
@@ -45,6 +57,27 @@ public:
      * @return return true when success, of return false.
      */
     virtual bool init(WId widgetID, int width, int height) = 0;
+
+    /**
+     * @brief Initiliaze off screen render. This function is for offscreen rendering.
+     * 
+     * @param width     width of render area.
+     * @param height    height of render area.
+     * 
+     */
+    virtual bool initForOffScreen(int width, int height);
+
+    /**
+     * @brief Fill TextData, output the offscreen texture data to caller.
+     *        the @param width and @param height are used to check the size
+     *        of the current render area to avoid the error as the render 
+     *        area's size changing.
+     * 
+     * @param width     width of render area.
+     * @param height    height of render area.
+     * 
+     */
+    virtual bool fillTextureData(uint8_t *buf, int width, int height);
 
     /**
      * @brief Update the contents before draw it.
