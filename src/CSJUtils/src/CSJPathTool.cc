@@ -59,6 +59,10 @@ fs::path CSJPathTool::getShaderDir() {
 #endif
 }
 
+fs::path CSJPathTool::getStyleSheetDir() {
+    return getResourceDir().append("StyleSheets");
+}
+
 std::string CSJPathTool::getModelFileWithName(std::string &model_file_name) {
     return getModelDir().append(model_file_name).string();
 }
@@ -73,6 +77,10 @@ std::string CSJPathTool::getShaderFileWithName(std::string &shader_file_name) {
 
 std::string CSJPathTool::getTextureWithName(std::string &texture_file_name) {
     return getTextureDir().append(texture_file_name).string();
+}
+
+std::string CSJPathTool::getStyleSheetWithName(std::string &styleSheetsName) {
+    return getStyleSheetDir().append(styleSheetsName).string();
 }
 
 } // namespace csjutils 

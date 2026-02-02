@@ -174,16 +174,6 @@ void MainWindow::initHeaderLayout(QVBoxLayout *leftLayout) {
     leftLayout->setStretchFactor(m_pMediaInfoWidget, 2);
 }
 
-// void MainWindow::initRightLayout(QVBoxLayout *rightLayout) {
-//     if (!rightLayout) {
-//         return ;
-//     }
-
-//     CSJMediaDetailModule *module = new CSJMediaDetailModule();
-//     module->initWidthParentWidget(this);
-//     rightLayout->addWidget(module->getWidget());
-// }
-
 void MainWindow::onOpenMenuClicked() {
     QMessageBox::information(nullptr, "Tips", "Open File", QMessageBox::Ok);
 

@@ -37,70 +37,9 @@ bool CSJVideoRendererDXImpl::init(WId widgetID, int width, int height) {
         return false;
     }
 
-    m_ClientWidth  = width;
-    m_ClientHeight = height;
-    m_pixelFmt     = CSJVIDEO_FMT_NONE;
-
-    HRESULT hr = S_OK;
-
-    /* create D3D device and D3D device context. */
-    UINT createDeviceFlags = 0;
-#if defined(DEGUB) || defined(_DEBUG)
-    createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
-#endif
-
-    /* Deiver type array. */
-    D3D_DRIVER_TYPE driverTypes[] = {
-        D3D_DRIVER_TYPE_HARDWARE,
-        D3D_DRIVER_TYPE_WARP,
-        D3D_DRIVER_TYPE_REFERENCE
-    };
-    UINT numDriverTypes = ARRAYSIZE(driverTypes);
-
-    /* Feature level array */
-    D3D_FEATURE_LEVEL featureLevels[] = {
-        D3D_FEATURE_LEVEL_11_1,
-        D3D_FEATURE_LEVEL_11_0,
-    };
-    UINT numFeatureLevels = ARRAYSIZE(featureLevels);
-
-    D3D_FEATURE_LEVEL featureLevel;
-    D3D_DRIVER_TYPE d3dDriverType;
-    for (UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++) {
-        d3dDriverType = driverTypes[driverTypeIndex];
-        hr = D3D11CreateDevice(nullptr,
-                               d3dDriverType,
-                               nullptr,
-                               createDeviceFlags,
-                               featureLevels,
-                               numFeatureLevels,
-                               D3D11_SDK_VERSION,
-                               m_pd3dDevice.GetAddressOf(),
-                               &featureLevel,
-                               m_pd3dImmediateContext.GetAddressOf());
-
-        if (SUCCEEDED(hr)) {
-            break;
-        }
-    }
-
-    if (FAILED(hr)) {
-        //MessageBox(0, L"D3DllCreateDevice Failed", 0, 0);
+    if (!initD3D(width, height)) {
         return false;
     }
-
-    /* check if support feature level 11.0 or 11.1 */
-    if (featureLevel != D3D_FEATURE_LEVEL_11_0 &&
-        featureLevel != D3D_FEATURE_LEVEL_11_1) {
-        //MessageBox(0, L"Direct3D Feature Level 11 unsupported.", 0, 0);
-        return false;
-    }
-
-    /* check supported quality level of MSAA */
-    m_pd3dDevice->CheckMultisampleQualityLevels(DXGI_FORMAT_R8G8B8A8_UNORM,
-                                                4,
-                                                &m_4xMsaaQuality);
-    assert(m_4xMsaaQuality > 0);
 
     ComPtr<IDXGIDevice>   dxgiDevice   = nullptr;
     ComPtr<IDXGIAdapter>  dxgiAdapter  = nullptr;
@@ -121,7 +60,7 @@ bool CSJVideoRendererDXImpl::init(WId widgetID, int width, int height) {
                               reinterpret_cast<void **>(dxgiFactory1.GetAddressOf())));
 
     /* check the object includes IDXGIFactory2 interface or not */
-    hr = dxgiFactory1.As(&dxgiFactory2);
+    dxgiFactory1.As(&dxgiFactory2);
     if (dxgiFactory2) {
         /* including IDXGIFactory2 interface */
         HR(m_pd3dDevice.As(&m_pd3dDevice1));
@@ -189,6 +128,14 @@ bool CSJVideoRendererDXImpl::init(WId widgetID, int width, int height) {
                                          m_pSwapChain.GetAddressOf()));
     }
 
+    if (!createDepthStencilView(m_ClientWidth, m_ClientHeight, m_pDepthStencilView)) {
+        return false;
+    }
+
+    if (!createRenderTargetView(m_ClientWidth, m_ClientHeight, m_pRenderTargetView)) {
+        return false;
+    }
+
     if (!createShaders()) {
         return false;
     }
@@ -197,7 +144,36 @@ bool CSJVideoRendererDXImpl::init(WId widgetID, int width, int height) {
         return false;
     }
 
+    setViewPort(m_ClientWidth, m_ClientHeight);
+
     m_initSuccess = true;
+    return true;
+}
+
+bool CSJVideoRendererDXImpl::initForOffScreen(int width, int height) {
+    if (!initD3D(width, height)) {
+        return false;
+    }
+
+    m_bOnScreenRender = false;
+    if (!createRenderTargetView(width, height, m_pRenderTargetView, m_bOnScreenRender)) {
+        return false;
+    }
+
+    getCurrentContext()->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(), nullptr);
+
+    if (!createShaders()) {
+        return false;
+    }
+
+    if (!initRenderData()) {
+        return false;
+    }
+
+    setViewPort(m_ClientWidth, m_ClientHeight);
+
+    m_initSuccess = true;
+
     return true;
 }
 
@@ -258,6 +234,10 @@ bool CSJVideoRendererDXImpl::updateSence(double timeStamp) {
     return loadRenderContent;
 }
 
+bool CSJVideoRendererDXImpl::fillTextureData(uint8_t *buf, int width, int height) {
+    return false;
+}
+
 void CSJVideoRendererDXImpl::drawSence() {
     if (!m_initSuccess) {
         return ;
@@ -286,83 +266,40 @@ void CSJVideoRendererDXImpl::drawSence() {
 }
 
 void CSJVideoRendererDXImpl::resize(int width, int height) {
+
+    // Must cancel the binding of render resources, in case crashes when resize
+    // the window during the rendering.
+    getCurrentContext()->OMSetRenderTargets(NULL, NULL, NULL);
+
     m_ClientWidth = width;
     m_ClientHeight = height;
 
     ComPtr<ID3D11DeviceContext> curContext = getCurrentContext();
     ComPtr<ID3D11Device> curDevice         = getCurrentDevice();
-    ComPtr<IDXGISwapChain> curSwapChian    = getCurrentSwapChain();
-
+    
     assert(curContext);
     assert(curDevice);
-    assert(curSwapChian);
 
     /* Release relative resource the renderer pipeline using. */
     m_pRenderTargetView.Reset();
     m_pDepthStencilView.Reset();
     m_pDepthStencilBuffer.Reset();
 
-    /* Reset swap chain and recreate renderering target view. */
-    ComPtr<ID3D11Texture2D> backBuffer;
-    HR(curSwapChian->ResizeBuffers(1, m_ClientWidth, m_ClientHeight,
-                                   DXGI_FORMAT_R8G8B8A8_UNORM, 0));
-
-    HR(curSwapChian->GetBuffer(0, __uuidof(ID3D11Texture2D),
-                               reinterpret_cast<void**>(backBuffer.GetAddressOf())));
-
-    HR(curDevice->CreateRenderTargetView(backBuffer.Get(), nullptr,
-                                         m_pRenderTargetView.GetAddressOf()));
-
-    /* Setting debug object name. */
-    //D3D11SetDebugObjectName(backBuffer.Get(), "BackBuffer[0]");
-    backBuffer.Reset();
-
-    D3D11_TEXTURE2D_DESC depthStencilDesc;
-    depthStencilDesc.Width     = m_ClientWidth;
-    depthStencilDesc.Height    = m_ClientHeight;
-    depthStencilDesc.MipLevels = 1;
-    depthStencilDesc.ArraySize = 1;
-
-    /** DXGI_FORMAT_D24_UNORM_S8_UINT: 32bit z-buffer, 24 bits to depth and 8 bits
-     *  for stencil.
-     */
-    depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-
-    /* Using 4x MSAA, need to set MASS params to swap chain. */
-    if (m_Enable4xMsaa) {
-        depthStencilDesc.SampleDesc.Count   = 4;
-        depthStencilDesc.SampleDesc.Quality = m_4xMsaaQuality - 1;
-    } else {
-        depthStencilDesc.SampleDesc.Count   = 1;
-        depthStencilDesc.SampleDesc.Quality = 0;
+    if (!createRenderTargetView(width, height, m_pRenderTargetView, m_bOnScreenRender)) {
+        // TODO: create render target view failed.
+        return ;
     }
 
-    depthStencilDesc.Usage          = D3D11_USAGE_DEFAULT;
-    depthStencilDesc.BindFlags      = D3D11_BIND_DEPTH_STENCIL;
-    depthStencilDesc.CPUAccessFlags = 0;
-    depthStencilDesc.MiscFlags      = 0;
-
-    /* create depth buffer and depth tamplate view. */
-    HR(curDevice->CreateTexture2D(&depthStencilDesc, nullptr,
-                                  m_pDepthStencilBuffer.GetAddressOf()));
-
-    HR(curDevice->CreateDepthStencilView(m_pDepthStencilBuffer.Get(), nullptr,
-                                         m_pDepthStencilView.GetAddressOf()));
+    if (!createDepthStencilView(m_ClientWidth, m_ClientHeight, m_pDepthStencilView)) {
+        // TODO: create depth stencil view failed;
+        return ;
+    }
 
     /* Combine renderer target view and depth/tamplate buffer into pipeline. */
     curContext->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(),
                                    m_pDepthStencilView.Get());
 
-    /* Set viewport transition. */
-    m_ScreenViewport.TopLeftX = 0;
-    m_ScreenViewport.TopLeftY = 0;
-    m_ScreenViewport.Width    = static_cast<float>(m_ClientWidth);
-    m_ScreenViewport.Height   = static_cast<float>(m_ClientHeight);
-    m_ScreenViewport.MinDepth = 0.0f;
-    m_ScreenViewport.MaxDepth = 1.0f;
-
-    /* 设置视口尺寸 */
-    curContext->RSSetViewports(1, &m_ScreenViewport);
+    setViewPort(m_ClientWidth, m_ClientHeight);
 }
 
 void CSJVideoRendererDXImpl::initialRenderComponents(CSJVideoFormatType fmtType, 
@@ -384,6 +321,79 @@ void CSJVideoRendererDXImpl::setImage(const QString & imagePath) {
 
     m_bShowImage = true;
     m_bContentNeedUpdate = true;
+}
+
+bool CSJVideoRendererDXImpl::initD3D(int width, int height) {
+    if (width == 0 || height == 0) {
+        return false;
+    }
+
+    m_ClientWidth  = width;
+    m_ClientHeight = height;
+    m_pixelFmt     = CSJVIDEO_FMT_NONE;
+
+    HRESULT hr = S_OK;
+
+    /* create D3D device and D3D device context. */
+    UINT createDeviceFlags = 0;
+#if defined(DEGUB) || defined(_DEBUG)
+    createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
+
+    /* Deiver type array. */
+    D3D_DRIVER_TYPE driverTypes[] = {
+        D3D_DRIVER_TYPE_HARDWARE,
+        D3D_DRIVER_TYPE_WARP,
+        D3D_DRIVER_TYPE_REFERENCE
+    };
+    UINT numDriverTypes = ARRAYSIZE(driverTypes);
+
+    /* Feature level array */
+    D3D_FEATURE_LEVEL featureLevels[] = {
+        D3D_FEATURE_LEVEL_11_1,
+        D3D_FEATURE_LEVEL_11_0,
+    };
+    UINT numFeatureLevels = ARRAYSIZE(featureLevels);
+
+    D3D_FEATURE_LEVEL featureLevel;
+    D3D_DRIVER_TYPE d3dDriverType;
+    for (UINT driverTypeIndex = 0; driverTypeIndex < numDriverTypes; driverTypeIndex++) {
+        d3dDriverType = driverTypes[driverTypeIndex];
+        hr = D3D11CreateDevice(nullptr,
+                               d3dDriverType,
+                               nullptr,
+                               createDeviceFlags,
+                               featureLevels,
+                               numFeatureLevels,
+                               D3D11_SDK_VERSION,
+                               m_pd3dDevice.GetAddressOf(),
+                               &featureLevel,
+                               m_pd3dImmediateContext.GetAddressOf());
+
+        if (SUCCEEDED(hr)) {
+            break;
+        }
+    }
+
+    if (FAILED(hr)) {
+        //MessageBox(0, L"D3DllCreateDevice Failed", 0, 0);
+        return false;
+    }
+
+    /* check if support feature level 11.0 or 11.1 */
+    if (featureLevel != D3D_FEATURE_LEVEL_11_0 &&
+        featureLevel != D3D_FEATURE_LEVEL_11_1) {
+        //MessageBox(0, L"Direct3D Feature Level 11 unsupported.", 0, 0);
+        return false;
+    }
+
+    /* check supported quality level of MSAA */
+    m_pd3dDevice->CheckMultisampleQualityLevels(DXGI_FORMAT_R8G8B8A8_UNORM,
+                                                4,
+                                                &m_4xMsaaQuality);
+    assert(m_4xMsaaQuality > 0);
+
+    return true;
 }
 
 bool CSJVideoRendererDXImpl::createShaders() {
@@ -511,6 +521,120 @@ bool CSJVideoRendererDXImpl::initRenderData() {
     return true;
 }
 
+bool CSJVideoRendererDXImpl::createDepthStencilView(int width, int height, 
+                                                    ComPtr<ID3D11DepthStencilView> &depthStencilView) {
+    ComPtr<ID3D11Device> curDevice = getCurrentDevice();
+    if (!curDevice) {
+        return false;
+    }
+    
+    D3D11_TEXTURE2D_DESC depthStencilDesc;
+    depthStencilDesc.Width     = m_ClientWidth;
+    depthStencilDesc.Height    = m_ClientHeight;
+    depthStencilDesc.MipLevels = 1;
+    depthStencilDesc.ArraySize = 1;
+
+    /** DXGI_FORMAT_D24_UNORM_S8_UINT: 32bit z-buffer, 24 bits to depth and 8 bits
+     *  for stencil.
+     */
+    depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+
+    /* Using 4x MSAA, need to set MASS params to swap chain. */
+    if (m_Enable4xMsaa) {
+        depthStencilDesc.SampleDesc.Count   = 4;
+        depthStencilDesc.SampleDesc.Quality = m_4xMsaaQuality - 1;
+    } else {
+        depthStencilDesc.SampleDesc.Count   = 1;
+        depthStencilDesc.SampleDesc.Quality = 0;
+    }
+
+    depthStencilDesc.Usage          = D3D11_USAGE_DEFAULT;
+    depthStencilDesc.BindFlags      = D3D11_BIND_DEPTH_STENCIL;
+    depthStencilDesc.CPUAccessFlags = 0;
+    depthStencilDesc.MiscFlags      = 0;
+
+    /* create depth buffer and depth tamplate view. */
+    HR(curDevice->CreateTexture2D(&depthStencilDesc, nullptr,
+                                  m_pDepthStencilBuffer.ReleaseAndGetAddressOf()));
+
+    HR(curDevice->CreateDepthStencilView(m_pDepthStencilBuffer.Get(), nullptr,
+                                         m_pDepthStencilView.ReleaseAndGetAddressOf()));
+    
+    return true;
+}
+
+bool CSJVideoRendererDXImpl::createRenderTargetView(int width, int height, 
+                                                    ComPtr<ID3D11RenderTargetView> &targetView, 
+                                                    bool ONScreen) {
+    ComPtr<ID3D11Device> curDevice = getCurrentDevice();
+    if (!curDevice) {
+        return false;
+    }
+
+    if (ONScreen) {
+        ComPtr<IDXGISwapChain> curSwapChian = getCurrentSwapChain();
+        assert(curSwapChian);
+
+        /* Reset swap chain and recreate renderering target view. */
+        ComPtr<ID3D11Texture2D> backBuffer;
+        HR(curSwapChian->ResizeBuffers(1, m_ClientWidth, m_ClientHeight,
+                                    DXGI_FORMAT_R8G8B8A8_UNORM, 0));
+
+        HR(curSwapChian->GetBuffer(0, __uuidof(ID3D11Texture2D),
+                                reinterpret_cast<void**>(backBuffer.GetAddressOf())));
+
+        HR(curDevice->CreateRenderTargetView(backBuffer.Get(), nullptr,
+                                            m_pRenderTargetView.ReleaseAndGetAddressOf()));
+
+        /* Setting debug object name. */
+        //D3D11SetDebugObjectName(backBuffer.Get(), "BackBuffer[0]");
+        backBuffer.Reset();
+    } else {
+        bool res = createD3DTexture(width, 
+                                    height, 
+                                    DXGI_FORMAT_R8G8B8A8_UNORM, 
+                                    1, 
+                                    1, 
+                                    D3D11_USAGE_DEFAULT,
+                                    D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE,  
+                                    0,
+                                    D3D11_RESOURCE_MISC_GENERATE_MIPS, m_pOffScreenTex);
+
+        if (!res) {
+            return false;
+        }
+
+        HRESULT hr = curDevice->CreateRenderTargetView(m_pOffScreenTex.Get(), 
+                                                                nullptr, 
+                                                                m_pRenderTargetView.ReleaseAndGetAddressOf());
+        
+        if (FAILED(hr)) {
+            // TODO: Create render target view failed.
+            return false;
+        }
+
+    }
+
+    return true;
+}
+
+void CSJVideoRendererDXImpl::setViewPort(int width, int height) {
+    ComPtr<ID3D11DeviceContext> curContext = getCurrentContext();
+
+    assert(curContext);
+
+    /* Set viewport transition. */
+    m_ScreenViewport.TopLeftX = 0;
+    m_ScreenViewport.TopLeftY = 0;
+    m_ScreenViewport.Width    = static_cast<float>(m_ClientWidth);
+    m_ScreenViewport.Height   = static_cast<float>(m_ClientHeight);
+    m_ScreenViewport.MinDepth = 0.0f;
+    m_ScreenViewport.MaxDepth = 1.0f;
+
+    /* 设置视口尺寸 */
+    curContext->RSSetViewports(1, &m_ScreenViewport);
+}
+
 HRESULT CSJVideoRendererDXImpl::CreateShaderFromFile(const WCHAR *csoFileNameOut,
                                                      const WCHAR *hisFileName,
                                                      LPCSTR entryPoint,
@@ -578,17 +702,16 @@ bool CSJVideoRendererDXImpl::createTextureByFmtType(CSJVideoFormatType fmtType, 
     return res;
 }
 
-bool CSJVideoRendererDXImpl::createD3DTexture(int width, int height, 
-                                              DXGI_FORMAT format, 
+bool CSJVideoRendererDXImpl::createD3DTexture(int width, 
+                                              int height, 
+                                              DXGI_FORMAT format,
                                               UINT miplevels, 
-                                              UINT arraySize,
-                                              D3D11_USAGE usage,
-                                              UINT bindFlags,
-                                              UINT CPUAccessFlags,
-                                              UINT MiscFlags,
-                                              ComPtr<ID3D11Texture2D>& tex,
-                                              ComPtr<ID3D11ShaderResourceView>& resourceView,
-                                              D3D11_SRV_DIMENSION srvDemension /*= D3D11_SRV_DIMENSION_TEXTURE2D*/) {
+                                              UINT arraySize, 
+                                              D3D11_USAGE usage, 
+                                              UINT bindFlags, 
+                                              UINT CPUAccessFlags, 
+                                              UINT MiscFlags, 
+                                              ComPtr<ID3D11Texture2D> &tex) {
     ComPtr<ID3D11Device> curDevice = getCurrentDevice();
     if (!curDevice) {
         return false;
@@ -615,18 +738,53 @@ bool CSJVideoRendererDXImpl::createD3DTexture(int width, int height,
     HRESULT hr = curDevice->CreateTexture2D(&texDesc, 
                                             nullptr, 
                                             tex.ReleaseAndGetAddressOf());
+
     if (FAILED(hr)) {
         // texY create failed.
         return false;
     }
+    
+    return true;
+}
 
+bool CSJVideoRendererDXImpl::createD3DTextureWithResourceView(int width, int height, 
+                                                              DXGI_FORMAT format, 
+                                                              UINT miplevels, 
+                                                              UINT arraySize,
+                                                              D3D11_USAGE usage,
+                                                              UINT bindFlags,
+                                                              UINT CPUAccessFlags,
+                                                              UINT MiscFlags,
+                                                              ComPtr<ID3D11Texture2D>& tex,
+                                                              ComPtr<ID3D11ShaderResourceView>& resourceView,
+                                                              D3D11_SRV_DIMENSION srvDemension /*= D3D11_SRV_DIMENSION_TEXTURE2D*/) {
+    ComPtr<ID3D11Device> curDevice = getCurrentDevice();
+    if (!curDevice) {
+        return false;
+    }
+
+    bool res = createD3DTexture(width, 
+                                height, 
+                                format, 
+                                miplevels, 
+                                arraySize, 
+                                usage, 
+                                bindFlags, 
+                                CPUAccessFlags, 
+                                MiscFlags, 
+                                tex);
+
+    if (!res) {
+        return false;
+    }
+    
     D3D11_SHADER_RESOURCE_VIEW_DESC   srvDesc{};
     srvDesc.Format                    = format;
     srvDesc.ViewDimension             = srvDemension;
     srvDesc.Texture2D.MipLevels       = miplevels;
     srvDesc.Texture2D.MostDetailedMip = 0;
 
-    hr = curDevice->CreateShaderResourceView(tex.Get(),
+    HRESULT hr = curDevice->CreateShaderResourceView(tex.Get(),
                                              &srvDesc, 
                                              resourceView.ReleaseAndGetAddressOf());
     if (FAILED(hr)) {
@@ -690,17 +848,17 @@ bool CSJVideoRendererDXImpl::createTexturesForYUV420(int width, int height) {
         int w = i > 0 ? width / 2 : width;
         int h = i > 0 ? height / 2 : height;
 
-        res = createD3DTexture(width, 
-                               height, 
-                               DXGI_FORMAT_R8_UINT,
-                               1,
-                               1,
-                               D3D11_USAGE_DEFAULT, 
-                               D3D11_BIND_SHADER_RESOURCE, 
-                               D3D11_CPU_ACCESS_WRITE,
-                               D3D11_RESOURCE_MISC_GENERATE_MIPS,
-                               m_texYUV[i],
-                               m_resourceViewYUV[i]);
+        res = createD3DTextureWithResourceView(width, 
+                                               height, 
+                                               DXGI_FORMAT_R8_UINT,
+                                               1,
+                                               1,
+                                               D3D11_USAGE_DEFAULT, 
+                                               D3D11_BIND_SHADER_RESOURCE, 
+                                               D3D11_CPU_ACCESS_WRITE,
+                                               D3D11_RESOURCE_MISC_GENERATE_MIPS,
+                                               m_texYUV[i],
+                                               m_resourceViewYUV[i]);
                                 
         if (!res) {
             // TODO: create tex and resouce

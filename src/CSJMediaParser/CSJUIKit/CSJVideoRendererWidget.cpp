@@ -10,6 +10,8 @@ CSJVideoRendererWidget::CSJVideoRendererWidget(QWidget *parent)
     , m_renderType(NONE_RENDERING) {
 
     setAttribute(Qt::WA_PaintOnScreen, true);
+    setAttribute(Qt::WA_NativeWindow, true);
+    setAttribute(Qt::WA_OpaquePaintEvent, true);
 }
 
 CSJVideoRendererWidget::~CSJVideoRendererWidget() {
@@ -75,7 +77,13 @@ void CSJVideoRendererWidget::showDefaultImage() {
     m_spVideoRenderer->setImage("resources/Images/cross_street.jpeg");
 }
 
+void CSJVideoRendererWidget::showEvent(QShowEvent *event) {
+    QWidget::showEvent(event);
+}
+
 void CSJVideoRendererWidget::resizeEvent(QResizeEvent *event) {
+    QWidget::resizeEvent(event);
+
     if (!m_spVideoRenderer) {
         m_spVideoRenderer = CSJVideoRenderer::getRendererInstance();
         m_spVideoRenderer->init(winId(), width(), height());

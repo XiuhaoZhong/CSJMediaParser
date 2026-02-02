@@ -14,19 +14,27 @@
 #include "CSJVideoRendererWidget.h"
 
 CSJMediaPlayerWindow::CSJMediaPlayerWindow(QWidget *parent)
-    : QWidget(parent)
+    : CSJWidget(parent)
     , m_playStatus(PLAYSTATUS_STOP) {
-    initUI();
 
     setAttribute(Qt::WA_DeleteOnClose, true);
 
+    initUI();
+
     // Shows the center widget at the center of the screen.
     QPoint screenCenter = QApplication::screens().constFirst()->availableGeometry().center();
-    QRect curRect = this->geometry();
+    QRect curRect = geometry();
     setGeometry(QRect(screenCenter.rx() - curRect.width() / 2,
-                                       screenCenter.ry() - curRect.height() / 2,
-                                       curRect.width(),
-                                       curRect.height()));
+                        screenCenter.ry() - curRect.height() / 2,
+                        curRect.width(),
+                        curRect.height()));
+
+    setObjectName("CSJMediaPlayerWindow");
+    setStyleSheet(R"(
+        QWidget#CSJMediaPlayerWindow {
+            corner-radius: 5px;
+        }    
+    )");
 
 }
 
@@ -37,25 +45,27 @@ CSJMediaPlayerWindow::~CSJMediaPlayerWindow() {
 void CSJMediaPlayerWindow::initUI() {
     setFixedSize(QSize(PLAYERWINDOW_WIDTH, PLAYERWINDOW_HEIGHT));
 
-    QVBoxLayout *mianLayout = new QVBoxLayout(this);
+    QWidget *rootWidget = new QWidget(this);
+
+    setContentWidget(rootWidget);
+
+    QVBoxLayout *mainLayout = new QVBoxLayout(rootWidget);
 
     m_pVideoThumbnailWiget = new QWidget();
-    mianLayout->addWidget(m_pVideoThumbnailWiget);
+    mainLayout->addWidget(m_pVideoThumbnailWiget, 1);
 
     QPushButton *imageButton = new QPushButton(m_pVideoThumbnailWiget);
     imageButton->setText("Show Image");
 
-    QVBoxLayout *playerLayout = new QVBoxLayout();
+    QVBoxLayout *playerLayout = new QVBoxLayout(rootWidget);
     playerLayout->setSpacing(0);
-    mianLayout->addLayout(playerLayout);
+    mainLayout->addLayout(playerLayout, 6);
 
-    mianLayout->setStretchFactor(m_pVideoThumbnailWiget, 1);
-    mianLayout->setStretchFactor(playerLayout, 6);
-
-    m_pDXWidget = new CSJVideoRendererWidget(this);
+    m_pDXWidget = new CSJVideoRendererWidget(rootWidget);
     playerLayout->addWidget(m_pDXWidget);
+    m_pDXWidget->show();
 
-    connect(imageButton, SIGNAL(pressed()), m_pDXWidget, SLOT(showDefaultImage()));
+    connect(imageButton, &QPushButton::pressed, m_pDXWidget, &CSJVideoRendererWidget::showDefaultImage);
 
     QWidget *progressWidget = new QWidget();
     playerLayout->addWidget(progressWidget);
@@ -85,7 +95,7 @@ void CSJMediaPlayerWindow::show(bool bShow) {
     //     // TODO: stop player if the player is playing.
     // }
 
-    setVisible(bShow);
+    setVisible(true);
     m_pDXWidget->setRenderType(ACTIVE_RENDERING);
 }
 

@@ -14,6 +14,14 @@ CSJSpVideoRenderer CSJVideoRenderer::getRendererInstance() {
 #endif
 }
 
+bool CSJVideoRenderer::initForOffScreen(int width, int height) {
+    return false;
+}
+
+bool CSJVideoRenderer::fillTextureData(uint8_t *buf, int width, int height) {
+    return false;
+}
+
 std::array<float, 2> CSJVideoRenderer::computeVideoArea(int widgetW, int widgetH, int videoW, int videoH) {
     float resX = 0.0f;
     float resY = 0.0f;
