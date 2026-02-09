@@ -4,7 +4,9 @@
 #define PLAYERWINDOW_WIDTH 1280
 #define PLAYERWINDOW_HEIGHT 960
 
-#include "CSJUIModules/CSJWidget.h"
+#include <QWidget>
+
+//#include "CSJUIModules/CSJWidget.h"
 
 #include "Controllers/CSJPlayerController.h"
 
@@ -18,7 +20,7 @@ typedef enum {
     PLAYSTATUS_PLAY,
 } PlayStatus;
 
-class CSJMediaPlayerWindow : public CSJWidget {
+class CSJMediaPlayerWindow : public QWidget {
     Q_OBJECT
 public:
     CSJMediaPlayerWindow(QWidget *parent = nullptr);

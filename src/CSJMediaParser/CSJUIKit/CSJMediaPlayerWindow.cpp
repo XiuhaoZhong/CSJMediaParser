@@ -14,7 +14,7 @@
 #include "CSJVideoRendererWidget.h"
 
 CSJMediaPlayerWindow::CSJMediaPlayerWindow(QWidget *parent)
-    : CSJWidget(parent)
+    : QWidget(parent)
     , m_playStatus(PLAYSTATUS_STOP) {
 
     setAttribute(Qt::WA_DeleteOnClose, true);
@@ -45,9 +45,10 @@ CSJMediaPlayerWindow::~CSJMediaPlayerWindow() {
 void CSJMediaPlayerWindow::initUI() {
     setFixedSize(QSize(PLAYERWINDOW_WIDTH, PLAYERWINDOW_HEIGHT));
 
-    QWidget *rootWidget = new QWidget(this);
+    QVBoxLayout *contentLayout = new QVBoxLayout(this);
 
-    setContentWidget(rootWidget);
+    QWidget *rootWidget = new QWidget(this);
+    contentLayout->addWidget(rootWidget, 1);
 
     QVBoxLayout *mainLayout = new QVBoxLayout(rootWidget);
 

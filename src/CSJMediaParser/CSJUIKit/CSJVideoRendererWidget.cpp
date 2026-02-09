@@ -1,5 +1,6 @@
 #include "CSJVideoRendererWidget.h"
 
+#include <QPainter>
 #include <QDebug>
 
 #include <chrono>
@@ -12,6 +13,8 @@ CSJVideoRendererWidget::CSJVideoRendererWidget(QWidget *parent)
     setAttribute(Qt::WA_PaintOnScreen, true);
     setAttribute(Qt::WA_NativeWindow, true);
     setAttribute(Qt::WA_OpaquePaintEvent, true);
+
+    //connect(this, &CSJVideoRendererWidget::updateFrame, this, &CSJVideoRendererWidget::onUpdateFrame);
 }
 
 CSJVideoRendererWidget::~CSJVideoRendererWidget() {
@@ -77,6 +80,10 @@ void CSJVideoRendererWidget::showDefaultImage() {
     m_spVideoRenderer->setImage("resources/Images/cross_street.jpeg");
 }
 
+void CSJVideoRendererWidget::onUpdateFrame() {
+    update();
+}
+
 void CSJVideoRendererWidget::showEvent(QShowEvent *event) {
     QWidget::showEvent(event);
 }
@@ -84,9 +91,8 @@ void CSJVideoRendererWidget::showEvent(QShowEvent *event) {
 void CSJVideoRendererWidget::resizeEvent(QResizeEvent *event) {
     QWidget::resizeEvent(event);
 
-    if (!m_spVideoRenderer) {
-        m_spVideoRenderer = CSJVideoRenderer::getRendererInstance();
-        m_spVideoRenderer->init(winId(), width(), height());
+    if (!initRenderer()) {
+        return ;
     }
 
     m_spVideoRenderer->resize(width(), height());
@@ -124,10 +130,31 @@ void CSJVideoRendererWidget::wheelEvent(QWheelEvent *event) {
 
 }
 
-void CSJVideoRendererWidget::internalRender() {
+bool CSJVideoRendererWidget::initRenderer() {
+    // TODO: initialze the renderer by offscreen rendering.
+
     if (!m_spVideoRenderer) {
-        m_spVideoRenderer = CSJVideoRenderer::getRendererInstance();
-        m_spVideoRenderer->init(winId(), width(), height());
+        if (!m_spVideoRenderer) {
+            m_spVideoRenderer = CSJVideoRenderer::getRendererInstance();
+            /**
+             * Currently, there will be a problem if use offscreen rendering when use 
+             * customized CSJWidget, the problem is that if I extend a QWidget to customize
+             * the UI style, there must set WA_TranslucentBackground attribte, and then 
+             * the DirectX/Metal rendering will conflict with qt, so now I won't use the 
+             * customized CSJWidget, and use the default UI style to compelte the functionalities
+             * first.
+             */
+            //m_spVideoRenderer->initForOffScreen(width(), height());
+            m_spVideoRenderer->init(winId(), width(), height());
+        }
+    }
+
+    return true;
+}
+
+void CSJVideoRendererWidget::internalRender() {
+    if (!initRenderer()) {
+        return ;
     }
 
     while (true) {
