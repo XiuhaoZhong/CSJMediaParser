@@ -26,7 +26,7 @@ int main(int argc, char *argv[]) {
     engineInfo.printEngineInfo();
 
     QApplication a(argc, argv);
-    CSJMainWindow w;
+    MainWindow w;
 
     w.show();
 

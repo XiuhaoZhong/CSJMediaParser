@@ -39,7 +39,7 @@ CSJMainWindow::CSJMainWindow(QWidget *parent)
     setObjectName("CSJMainWindow");
     setStyleSheet(R"(
         QWidget#CSJMainWindow {
-            corner-radius: 5px;
+            corner-radius: 10px;
             background-color: #4E94CE;
         }    
     )");
@@ -61,8 +61,8 @@ void CSJMainWindow::createTitleBar() {
     // 深色主题：background-color: #2C3E50; color: #FFFFFF;
     m_titleBar->setStyleSheet(R"(
         QWidget#titleBar {
-            border-top-left-radius: 5px;
-            border-top-right-radius: 5px;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
         }
 
         QWidget {
@@ -78,11 +78,11 @@ void CSJMainWindow::createTitleBar() {
         }
 
         QWidget#BtnWidget {
-            border-top-right-radius: 5px;
+            border-top-right-radius: 10px;
         }   
 
         QPushButton#CloseBtn {
-            border-top-right-radius: 5px;
+            border-top-right-radius: 10px;
         }
 
         QPushButton {
@@ -200,27 +200,31 @@ void CSJMainWindow::initWidgets() {
 void CSJMainWindow::assembleLayout() {
     // 创建主容器控件，承载标题栏和QMainWindow的中心部件
     QWidget *mainContainer = new QWidget();
+    mainContainer->setObjectName("mainContainer");
     QVBoxLayout *mainLayout = new QVBoxLayout(mainContainer);
     mainLayout->setSpacing(0);
     mainLayout->setContentsMargins(0, 0, 0, 0);
 
     // 添加自定义标题栏
     mainLayout->addWidget(m_titleBar);
+    mainLayout->addWidget(this->menuBar());
 
     // 添加QMainWindow的原有中央部件容器（保留菜单栏、工具栏、中心部件）
     QWidget *centralContainer = new QWidget();
     centralContainer->setObjectName("centralContainer");
     centralContainer->setStyleSheet(R"(
         QWidget#centralContainer {
+            border-bottom-right-radius: 10px;
+            border-bottom-left-radius: 10px;
             background-color:  #FFFFFA;
         }
     )");
     QVBoxLayout *centralLayout = new QVBoxLayout(centralContainer);
     centralLayout->setSpacing(0);
-    centralLayout->setContentsMargins(0, 0, 0, 0);
+    centralLayout->setContentsMargins(10, 0, 10, 0);
 
     // 添加菜单栏（若需菜单栏在标题栏下方，直接添加）
-    centralLayout->addWidget(this->menuBar());
+    //centralLayout->addWidget(this->menuBar());
     QWidget *centralWidget = new QWidget();
     centralWidget->setStyleSheet("background-color: #F8F9FA;");
     centralLayout->addWidget(centralWidget, 1);

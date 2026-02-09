@@ -1,10 +1,10 @@
 #ifndef __CSJVIDEORENDERERWIDGET_H__
 #define __CSJVIDEORENDERERWIDGET_H__
 
-#include <QWidget>
-
 #include <memory>
 #include <thread>
+
+#include <QWidget>
 
 #include "renderClient/CSJVideoRenderer.h"
 #include "CSJMediaEngine/CSJVideoPresentDelegate.h"
@@ -55,8 +55,12 @@ public:
      */
     void setImagePath(QString& image_path);
 
+signals:
+    void updateFrame();
+
 public slots:
     void showDefaultImage();
+    void onUpdateFrame();
 
 protected:
     void showEvent(QShowEvent *event) override;
@@ -70,14 +74,15 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;
 
+    bool initRenderer();
     void internalRender();
 
 private:
     CSJSpVideoRenderer m_spVideoRenderer = nullptr;
 
-    RenderMode m_renderType;
-    bool       m_exitRenderThread = false;
-    QString    m_imagePath;
+    RenderMode      m_renderType;
+    bool            m_exitRenderThread = false;
+    QString         m_imagePath;
 
     std::unique_ptr<std::thread> m_pRenderThread;
 };
