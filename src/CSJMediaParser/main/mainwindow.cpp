@@ -24,8 +24,8 @@
 #include "Controllers/CSJMediaDetailModule.h"
 #include "Controllers/CSJMediaSPFDataController.h"
 
-#define MAINWINDOW_WIDTH 640
-#define MAINWINDOW_HEIGHT 480
+#define MAINWINDOW_WIDTH 800//640
+#define MAINWINDOW_HEIGHT 560//480
 #define MENUBAR_HEIGHT 35
 
 MainWindow::MainWindow(QWidget *parent)
@@ -60,22 +60,22 @@ void MainWindow::initFileMenu(QMenu *menu) {
 
     QAction *openAction = menu->addAction("Select File");
     openAction->setShortcut(Qt::CTRL | Qt::Key_O);
-    connect(openAction, SIGNAL(triggered(bool)), this, SLOT(onSelectMediaFile()));
+    connect(openAction, &QAction::triggered, this, &MainWindow::onSelectMediaFile);
 
     QAction *closeAction = menu->addAction("Close File");
-    connect(closeAction, SIGNAL(triggered(bool)), this, SLOT(onCloseMenuClicked()));
+    connect(closeAction, &QAction::triggered, this, &MainWindow::onCloseMenuClicked);
 }
 
 void MainWindow::initSettingsMenu(QMenu *menu) {
     QAction *colorSettingAction = menu->addAction("Color Settings");
-    connect(colorSettingAction, SIGNAL(triggered(bool)), this, SLOT(onSettingsMenuClicked()));
+    connect(colorSettingAction, &QAction::triggered, this, &MainWindow::onSettingsMenuClicked);
 }
 
 void MainWindow::initAboutMenu(QMenu *menu) {
     QAction *pegVerAction = menu->addAction("Version");
     QAction *aboutAction = menu->addAction("About");
-    connect(aboutAction, SIGNAL(triggered(bool)), this, SLOT(onAboutMenuClicked()));
-    connect(pegVerAction, SIGNAL(triggered()), this, SLOT(onVerActionClicked()));
+    connect(aboutAction, &QAction::triggered, this, &MainWindow::onAboutMenuClicked);
+    connect(pegVerAction, &QAction::triggered, this, &MainWindow::onVerActionClicked);
 }
 
 void MainWindow::initUI() {
@@ -84,8 +84,9 @@ void MainWindow::initUI() {
 
     m_pCentrelWidget = new QWidget(this);
     this->setCentralWidget(m_pCentrelWidget);
+    this->setObjectName("centerWidget");
     m_pCentrelWidget->setStyleSheet(R"(
-        QWidget {
+        QWidget#centerWidget {
             background-color: #adccadff;
         }
     )");
@@ -93,14 +94,11 @@ void MainWindow::initUI() {
     QVBoxLayout *mainLayout = new QVBoxLayout(m_pCentrelWidget);
 
     QVBoxLayout *headerBoxLayout = new QVBoxLayout();
-    mainLayout->addLayout(headerBoxLayout);
+    mainLayout->addLayout(headerBoxLayout, 1);
     initHeaderLayout(headerBoxLayout);
 
     QHBoxLayout *optionsLayout = new QHBoxLayout();
-    mainLayout->addLayout(optionsLayout);
-
-    mainLayout->setStretchFactor(headerBoxLayout, 1);
-    mainLayout->setStretchFactor(optionsLayout, 1);
+    mainLayout->addLayout(optionsLayout, 1);
 
     QWidget *playerWidget = new QWidget();
     playerWidget->setStyleSheet(R"(
@@ -126,17 +124,13 @@ void MainWindow::initUI() {
         }
     )");
 
-    optionsLayout->addWidget(playerWidget);
-    optionsLayout->addWidget(parserWidget);
-    optionsLayout->addWidget(formatWidget);
-
-    optionsLayout->setStretchFactor(playerWidget, 1);
-    optionsLayout->setStretchFactor(parserWidget, 1);
-    optionsLayout->setStretchFactor(formatWidget, 1);
+    optionsLayout->addWidget(playerWidget, 1);
+    optionsLayout->addWidget(parserWidget, 1);
+    optionsLayout->addWidget(formatWidget, 1);
 }
 
-void MainWindow::initHeaderLayout(QVBoxLayout *leftLayout) {
-    if (!leftLayout) {
+void MainWindow::initHeaderLayout(QVBoxLayout *headerLayout) {
+    if (!headerLayout) {
         return ;
     }
 
@@ -145,10 +139,7 @@ void MainWindow::initHeaderLayout(QVBoxLayout *leftLayout) {
     pal.setColor(QPalette::Window, QColor(196,196,196));
     m_pBaseOptWiget->setAutoFillBackground(true);
     m_pBaseOptWiget->setPalette(pal);
-    leftLayout->addWidget(m_pBaseOptWiget);
-
-    m_pMediaInfoWidget = new QWidget();
-    leftLayout->addWidget(m_pMediaInfoWidget);
+    headerLayout->addWidget(m_pBaseOptWiget);
 
     QVBoxLayout *optLayout = new QVBoxLayout(m_pBaseOptWiget);
     optLayout->setSpacing(5);
@@ -156,7 +147,7 @@ void MainWindow::initHeaderLayout(QVBoxLayout *leftLayout) {
     m_pSelectFileBtn = new QPushButton();
     m_pSelectFileBtn->setText(QString("Select"));
     m_pSelectFileBtn->setFixedWidth(100);
-    connect(m_pSelectFileBtn, SIGNAL(pressed()), this, SLOT(onSelectMediaFile()));
+    connect(m_pSelectFileBtn, &QPushButton::pressed, this, &MainWindow::onSelectMediaFile);
 
     m_pSourceInputEdit = new QLineEdit();
     m_pSourceInputEdit->setPlaceholderText(QString("Choose a file or input a url"));
@@ -164,19 +155,15 @@ void MainWindow::initHeaderLayout(QVBoxLayout *leftLayout) {
     m_pOpenFileBtn = new QPushButton();
     m_pOpenFileBtn->setText("Open");
     m_pOpenFileBtn->setFixedWidth(100);
-    connect(m_pOpenFileBtn, SIGNAL(pressed()), this, SLOT(onOpenMediaFile()));
+    connect(m_pOpenFileBtn, &QPushButton::pressed, this, &MainWindow::onOpenMediaFile);
 
     optLayout->addWidget(m_pSelectFileBtn);
     optLayout->addWidget(m_pSourceInputEdit);
     optLayout->addWidget(m_pOpenFileBtn);
-
-    leftLayout->setStretchFactor(m_pBaseOptWiget, 1);
-    leftLayout->setStretchFactor(m_pMediaInfoWidget, 2);
 }
 
 void MainWindow::onOpenMenuClicked() {
     QMessageBox::information(nullptr, "Tips", "Open File", QMessageBox::Ok);
-
 }
 
 void MainWindow::onCloseMenuClicked() {
