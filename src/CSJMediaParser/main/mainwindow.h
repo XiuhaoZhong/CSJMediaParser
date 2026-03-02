@@ -7,6 +7,7 @@ class QLineEdit;
 class QLabel;
 class QPushButton;
 class QVBoxLayout;
+class QHBoxLayout;
 class QWidget;
 class CSJVideoRendererWidget;
 
@@ -26,7 +27,7 @@ protected:
 
     void initUI();
 
-    void initHeaderLayout(QVBoxLayout *headerLayout);
+    void initLogoArea(QHBoxLayout *headerLayout);
     //void initRightLayout(QVBoxLayout *rightLayout);
 
 protected slots:
@@ -35,6 +36,10 @@ protected slots:
     void onSettingsMenuClicked();
     void onAboutMenuClicked();
     void onVerActionClicked();
+
+    void onPlayerEntanceClicked();
+    void onParserEntranceClicked();
+    void onFormatFactoryEntranceClicked();
 
     void onSelectMediaFile();
     void onOpenMediaFile();

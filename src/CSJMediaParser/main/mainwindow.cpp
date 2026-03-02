@@ -15,24 +15,26 @@
 #include <QLineEdit>
 #include <QGroupBox>
 #include <QFileDialog>
+#include <QGraphicsBlurEffect>
 
 #include "CSJUtils/CSJStringUtils.h"
 #include "CSJUIKit/CSJDialog.h"
 #include "CSJUIKit/CSJPopupWidget.h"
 #include "CSJUIKit/CSJMediaPlayerWindow.h"
 #include "CSJUIKit/CSJAccordionWidget.h"
+#include "CSJUIModules/CSJGlassWidget.h"
 #include "Controllers/CSJMediaDetailModule.h"
 #include "Controllers/CSJMediaSPFDataController.h"
 
-#define MAINWINDOW_WIDTH 800//640
-#define MAINWINDOW_HEIGHT 560//480
+#define MAINWINDOW_WIDTH 600
+#define MAINWINDOW_HEIGHT 420
 #define MENUBAR_HEIGHT 35
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent) {
 
-    setMinimumSize(QSize(MAINWINDOW_WIDTH, MAINWINDOW_HEIGHT));
-
+    setFixedSize(QSize(MAINWINDOW_WIDTH, MAINWINDOW_HEIGHT));
+    
     initMenuBar();
 
     initUI();
@@ -84,82 +86,97 @@ void MainWindow::initUI() {
 
     m_pCentrelWidget = new QWidget(this);
     this->setCentralWidget(m_pCentrelWidget);
-    this->setObjectName("centerWidget");
+    m_pCentrelWidget->setObjectName("centerWidget");
     m_pCentrelWidget->setStyleSheet(R"(
         QWidget#centerWidget {
-            background-color: #adccadff;
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                                           stop:0 #a1e9df, stop:1 #029eb9);
         }
     )");
 
     QVBoxLayout *mainLayout = new QVBoxLayout(m_pCentrelWidget);
 
-    QVBoxLayout *headerBoxLayout = new QVBoxLayout();
+    QHBoxLayout *headerBoxLayout = new QHBoxLayout();
     mainLayout->addLayout(headerBoxLayout, 1);
-    initHeaderLayout(headerBoxLayout);
+    initLogoArea(headerBoxLayout);
 
     QHBoxLayout *optionsLayout = new QHBoxLayout();
     mainLayout->addLayout(optionsLayout, 1);
 
-    QWidget *playerWidget = new QWidget();
-    playerWidget->setStyleSheet(R"(
-        QWidget {
-            border-radius: 20px;
-            background-color: #7FFFFF;
-        }
-    )");
+    QWidget *playerWidget = new CSJGlassWidget();
+    QPushButton *playerEntranceBtn = new QPushButton("Media Player");
+    QVBoxLayout *playerEntranceLayout = new QVBoxLayout(playerWidget);
+    playerEntranceLayout->setAlignment(Qt::AlignCenter);
+    playerEntranceLayout->setContentsMargins(5, 5, 5 , 5);
+    playerEntranceLayout->addWidget(playerEntranceBtn, 1);
+    connect(playerEntranceBtn, &QPushButton::clicked, this, &MainWindow::onPlayerEntanceClicked);
 
     QWidget *parserWidget = new QWidget();
+    parserWidget->setObjectName("parserWidget");
     parserWidget->setStyleSheet(R"(
-        QWidget {
+        QWidget#parserWidget {
             border-radius: 20px;
-            background-color: #FF7FFF;
+            background-color: rgb(255, 128, 255);
         }
     )");
+    QPushButton *mediaParserEntranceBtn = new QPushButton("Media Parser");
+    QVBoxLayout *mediaParserEntranceLayout = new QVBoxLayout(parserWidget);
+    mediaParserEntranceLayout->setAlignment(Qt::AlignCenter);
+    mediaParserEntranceLayout->setContentsMargins(5, 5, 5 , 5);
+    mediaParserEntranceLayout->addWidget(mediaParserEntranceBtn, 1);
+    connect(mediaParserEntranceBtn, &QPushButton::clicked, this, &MainWindow::onParserEntranceClicked);
 
     QWidget *formatWidget = new QWidget();
+    formatWidget->setObjectName("formatWidget");
     formatWidget->setStyleSheet(R"(
-        QWidget {
+        QWidget#formatWidget {
             border-radius: 20px;
             background-color: #FFFF7F;
         }
     )");
+    QPushButton *formatFactoryEntranceBtn = new QPushButton("Format Factory");
+    QVBoxLayout *formatFactoryEntranceLayout = new QVBoxLayout(formatWidget);
+    formatFactoryEntranceLayout->setAlignment(Qt::AlignCenter);
+    formatFactoryEntranceLayout->setContentsMargins(5, 5, 5 , 5);
+    formatFactoryEntranceLayout->addWidget(formatFactoryEntranceBtn, 1);
+    connect(formatFactoryEntranceBtn, &QPushButton::clicked, this, &MainWindow::onParserEntranceClicked);
 
     optionsLayout->addWidget(playerWidget, 1);
     optionsLayout->addWidget(parserWidget, 1);
     optionsLayout->addWidget(formatWidget, 1);
 }
 
-void MainWindow::initHeaderLayout(QVBoxLayout *headerLayout) {
+void MainWindow::initLogoArea(QHBoxLayout *headerLayout) {
     if (!headerLayout) {
         return ;
     }
 
-    m_pBaseOptWiget = new QWidget();
-    QPalette pal(m_pBaseOptWiget->palette());
-    pal.setColor(QPalette::Window, QColor(196,196,196));
-    m_pBaseOptWiget->setAutoFillBackground(true);
-    m_pBaseOptWiget->setPalette(pal);
-    headerLayout->addWidget(m_pBaseOptWiget);
+    QWidget *logoWidget = new QWidget();
+    logoWidget->setStyleSheet(R"(
+        QWidget {
+            background-color: #807FFFFF;
+            border-radius: 20px;
+        }
+    )");
 
-    QVBoxLayout *optLayout = new QVBoxLayout(m_pBaseOptWiget);
-    optLayout->setSpacing(5);
-    optLayout->setAlignment(Qt::AlignTop);
-    m_pSelectFileBtn = new QPushButton();
-    m_pSelectFileBtn->setText(QString("Select"));
-    m_pSelectFileBtn->setFixedWidth(100);
-    connect(m_pSelectFileBtn, &QPushButton::pressed, this, &MainWindow::onSelectMediaFile);
+    headerLayout->addWidget(logoWidget, 1);
 
-    m_pSourceInputEdit = new QLineEdit();
-    m_pSourceInputEdit->setPlaceholderText(QString("Choose a file or input a url"));
+    QHBoxLayout *layout = new QHBoxLayout(logoWidget);
+    layout->setAlignment(Qt::AlignCenter);
 
-    m_pOpenFileBtn = new QPushButton();
-    m_pOpenFileBtn->setText("Open");
-    m_pOpenFileBtn->setFixedWidth(100);
-    connect(m_pOpenFileBtn, &QPushButton::pressed, this, &MainWindow::onOpenMediaFile);
+    QLabel *logoLabel = new QLabel("Welcome to CSJ Media Space!");
+    logoLabel->setAlignment(Qt::AlignCenter);
+    logoLabel->setStyleSheet(R"(
+        QLabel {
+            font-family: "Georgia";
+            font-size: 32px;
+            font-weight: bold;
+            font-style: italic;
+            background-color: transparent;
+        }    
+    )");
 
-    optLayout->addWidget(m_pSelectFileBtn);
-    optLayout->addWidget(m_pSourceInputEdit);
-    optLayout->addWidget(m_pOpenFileBtn);
+    layout->addWidget(logoLabel, 1);
 }
 
 void MainWindow::onOpenMenuClicked() {
@@ -179,18 +196,26 @@ void MainWindow::onAboutMenuClicked() {
 }
 
 void MainWindow::onVerActionClicked() {
-    // QString ffmpegVer = CSJMpegTool::getFFMpegVersion();
+    QString ffmpegVer("Current ffmpeg version: customer compiled!");
 
-    // CSJDialog *dialog = new CSJDialog(ffmpegVer);
-    // int res = dialog->exec();
-    // if (res == 0) {
-    //     return ;
-    // }
+    CSJDialog *dialog = new CSJDialog(ffmpegVer);
+    int res = dialog->exec();
+    if (res == 0) {
+        return ;
+    }
+}
 
-
-    //std::shared_ptr<CSJMediaPlayerWindow> playerWindow = std::make_shared<CSJMediaPlayerWindow>();
+void MainWindow::onPlayerEntanceClicked() {
     CSJMediaPlayerWindow *playerWindow = new CSJMediaPlayerWindow();
     playerWindow->show(true);
+}
+
+void MainWindow::onParserEntranceClicked() {
+
+}
+
+void MainWindow::onFormatFactoryEntranceClicked() {
+
 }
 
 void MainWindow::onSelectMediaFile() {
