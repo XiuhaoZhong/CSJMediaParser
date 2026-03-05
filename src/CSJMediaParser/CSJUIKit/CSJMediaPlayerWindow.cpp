@@ -12,12 +12,18 @@
 #include <QPushButton>
 
 #include "CSJVideoRendererWidget.h"
+#include "CSJPlayerControllerWidget.h"
+
+static int player_window_width = 1280;
+static int player_window_height = 760;
 
 CSJMediaPlayerWindow::CSJMediaPlayerWindow(QWidget *parent)
     : QWidget(parent)
     , m_playStatus(PLAYSTATUS_STOP) {
 
     setAttribute(Qt::WA_DeleteOnClose, true);
+    setAttribute(Qt::WA_PaintOnScreen);
+    setMinimumSize(640, 380);
 
     initUI();
 
@@ -29,13 +35,6 @@ CSJMediaPlayerWindow::CSJMediaPlayerWindow(QWidget *parent)
                         curRect.width(),
                         curRect.height()));
 
-    setObjectName("CSJMediaPlayerWindow");
-    setStyleSheet(R"(
-        QWidget#CSJMediaPlayerWindow {
-            corner-radius: 5px;
-        }    
-    )");
-
 }
 
 CSJMediaPlayerWindow::~CSJMediaPlayerWindow() {
@@ -43,7 +42,7 @@ CSJMediaPlayerWindow::~CSJMediaPlayerWindow() {
 }
 
 void CSJMediaPlayerWindow::initUI() {
-    setFixedSize(QSize(PLAYERWINDOW_WIDTH, PLAYERWINDOW_HEIGHT));
+    resize(QSize(player_window_width, player_window_height));
 
     QVBoxLayout *contentLayout = new QVBoxLayout(this);
 
@@ -52,38 +51,41 @@ void CSJMediaPlayerWindow::initUI() {
 
     QVBoxLayout *mainLayout = new QVBoxLayout(rootWidget);
 
-    m_pVideoThumbnailWiget = new QWidget();
-    mainLayout->addWidget(m_pVideoThumbnailWiget, 1);
+    // QPushButton *imageButton = new QPushButton(m_pVideoThumbnailWiget);
+    // imageButton->setText("Show Image");
+    // connect(imageButton, &QPushButton::pressed, m_pDXWidget, &CSJVideoRendererWidget::showDefaultImage);
 
-    QPushButton *imageButton = new QPushButton(m_pVideoThumbnailWiget);
-    imageButton->setText("Show Image");
-
-    QVBoxLayout *playerLayout = new QVBoxLayout(rootWidget);
+    QVBoxLayout *playerLayout = new QVBoxLayout();
     playerLayout->setSpacing(0);
-    mainLayout->addLayout(playerLayout, 6);
+    mainLayout->addLayout(playerLayout, 18);
+    mainLayout->setSpacing(10);
 
-    m_pDXWidget = new CSJVideoRendererWidget(rootWidget);
+    m_pDXWidget = new CSJVideoRendererWidget();
     playerLayout->addWidget(m_pDXWidget);
     m_pDXWidget->show();
 
-    connect(imageButton, &QPushButton::pressed, m_pDXWidget, &CSJVideoRendererWidget::showDefaultImage);
+    CSJPlayerControllerWidget *ctrlWidget = new CSJPlayerControllerWidget(this);
+    playerLayout->addWidget(ctrlWidget, 1);
 
-    QWidget *progressWidget = new QWidget();
-    playerLayout->addWidget(progressWidget);
-    progressWidget->setFixedHeight(20);
-    progressWidget->setStyleSheet(QString("background-color:#C77A7A"));
+    setWindowTitle("CSJMediaPlayer");
+    setStyleSheet("QWidget {background-color: #1A202C;}");
 
-    m_pMediaControlWidget = new QWidget();
-    playerLayout->addWidget(m_pMediaControlWidget);
-    m_pMediaControlWidget->setFixedHeight(60);
-    m_pMediaControlWidget->setStyleSheet(QString("background-color:#C7ABAB"));
-    initControllWidget();
-    initPlayController();
+    connect(ctrlWidget, &CSJPlayerControllerWidget::play, m_pDXWidget, &CSJVideoRendererWidget::showDefaultImage);
 
-    m_pAudioWaveWidget = new QWidget();
-    playerLayout->addWidget(m_pAudioWaveWidget);
-    m_pAudioWaveWidget->setFixedHeight(100);
-    m_pAudioWaveWidget->setStyleSheet(QString("background-color:#C4C4C4"));
+    // QVBoxLayout *controllerLayout = new QVBoxLayout();
+    // mainLayout->addLayout(controllerLayout, 1);
+
+    // QWidget *progressWidget = new QWidget();
+    // controllerLayout->addWidget(progressWidget);
+    // progressWidget->setFixedHeight(20);
+    // progressWidget->setStyleSheet(QString("background-color:#C77A7A"));
+
+    // m_pMediaControlWidget = new QWidget();
+    // controllerLayout->addWidget(m_pMediaControlWidget);
+    // m_pMediaControlWidget->setFixedHeight(60);
+    // m_pMediaControlWidget->setStyleSheet(QString("background-color:#C7ABAB"));
+    // initControllWidget();
+    // initPlayController();
 }
 
 void CSJMediaPlayerWindow::show(bool bShow) {

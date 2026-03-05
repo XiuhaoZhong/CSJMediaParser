@@ -1,9 +1,6 @@
 #ifndef __CSJMEDIAPLAYERWINDOW_H__
 #define __CSJMEDIAPLAYERWINDOW_H__
 
-#define PLAYERWINDOW_WIDTH 1280
-#define PLAYERWINDOW_HEIGHT 960
-
 #include <QWidget>
 
 //#include "CSJUIModules/CSJWidget.h"
@@ -42,12 +39,9 @@ protected:
     void initPlayController();
 
 private:
-
-    QWidget *m_pVideoThumbnailWiget = nullptr;
     CSJVideoRendererWidget *m_pDXWidget = nullptr;
     QWidget *m_pProgressWidget = nullptr;
     QWidget *m_pMediaControlWidget = nullptr;
-    QWidget *m_pAudioWaveWidget = nullptr;
 
     QPushButton *m_pPlayBtn;
     QPushButton *m_pStopBtn;

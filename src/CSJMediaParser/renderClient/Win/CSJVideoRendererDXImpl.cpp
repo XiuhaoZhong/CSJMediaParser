@@ -243,6 +243,8 @@ void CSJVideoRendererDXImpl::drawSence() {
         return ;
     }
 
+    std::lock_guard<std::mutex> guard(m_renderMtx);
+
     auto curContext = getCurrentContext();
     auto curSwapChain = getCurrentSwapChain();
 
@@ -266,6 +268,12 @@ void CSJVideoRendererDXImpl::drawSence() {
 }
 
 void CSJVideoRendererDXImpl::resize(int width, int height) {
+
+    if (width < 1 || height < 1) {
+        return ;
+    }
+
+    std::lock_guard<std::mutex> guard(m_renderMtx);
 
     // Must cancel the binding of render resources, in case crashes when resize
     // the window during the rendering.
