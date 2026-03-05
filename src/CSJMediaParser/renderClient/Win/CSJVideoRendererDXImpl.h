@@ -136,6 +136,7 @@ private:
     UINT       m_4xMsaaQuality;         // MSAA支持的质量等级             
     bool       m_initSuccess = false;   // whether Direct3D is initialized or not.
     HANDLE     m_pInitEvent = NULL;     // 初始化成功之后的通知
+    std::mutex m_renderMtx;
     CSJLogger *m_pLogger;  
 
     /* Direct3D 11 */
