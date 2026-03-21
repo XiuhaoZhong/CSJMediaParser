@@ -23,4 +23,16 @@ typedef struct CSJMediaVertexData {
     vector_float2 texCoord;
 } CSJMediaVertexData;
 
+typedef struct Vertex {
+    float position[3];
+    float texCoord[2];
+} Vertex;
+
+struct Vertex vertices[] = {
+    {-1,  1, 0}, {0, 0},
+    { 1,  1, 0}, {1, 0},
+    {-1, -1, 0}, {0, 1},
+    { 1, -1, 0}, {1, 1},
+};
+
 #endif // __CSJMEDIASHADERTYPES_H__

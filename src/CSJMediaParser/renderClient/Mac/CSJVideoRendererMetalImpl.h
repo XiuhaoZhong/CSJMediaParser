@@ -3,7 +3,7 @@
 
 #include "renderClient/CSJVideoRenderer.h"
 
-#import "CSJMTKRenderer.h"
+#import "CSJMetalRenderer.h"
 
 class CSJVideoRendererMetalImpl: public CSJVideoRenderer {
 public:
@@ -11,9 +11,10 @@ public:
     ~CSJVideoRendererMetalImpl();
 
     bool init(WId widgetID, int width, int height) override;
+    bool init(WId widgetID, int width, int height, float pixelRatio) override;
     bool updateSence(double timeStamp) override;
     void drawSence() override;
-    void resize(int width, int height) override;
+    void updateDrawableSize(int width, int height, float pixelRatio) override;
 
     virtual void initialRenderComponents(CSJVideoFormatType fmtType,
                                          int width, int height) override;
@@ -23,7 +24,7 @@ public:
     virtual void setImage(const QString& imagePath) {};
 
 private:
-    CSJMTKRenderer *m_pRenderer;
+    CSJMetalRenderer *m_pRenderer;
 };
 
 #endif // __CSJVIDEORENDERERMETAL_H__

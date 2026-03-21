@@ -1,24 +1,22 @@
 #include "CSJVideoRendererMetalImpl.h"
 
-#include <QDebug>
-
 #import <Cocoa/Cocoa.h>
 #import <dispatch/dispatch.h>
 
-#import "CSJMTKRenderer.h"
+#import "CSJMetalRenderer.h"
 
 CSJVideoRendererMetalImpl::CSJVideoRendererMetalImpl() {
 
 #if __has_feature(objc_arc)
-    qDebug() << "ARC is ON";
+    NSLog(@"ARC is ON");
 #else
-    qDebug() << "ARC is OFF";
+    NSLog(@"ARC is OFF");
 #endif
 
 }
 
 CSJVideoRendererMetalImpl::~CSJVideoRendererMetalImpl() {
-    qDebug() << "CSJVideoRendererMetalImpl destoryed!";
+    NSLog(@"CSJVideoRendererMetalImpl destoryed!");
 
 #if __has_feature(objc_arc)
 
@@ -28,26 +26,28 @@ CSJVideoRendererMetalImpl::~CSJVideoRendererMetalImpl() {
     }
 #endif
 
-
 }
 
 bool CSJVideoRendererMetalImpl::init(WId widgetID, int width, int height) {
-    //NSView *view = (NSView *)widgetID;
+    /* This interface is for Windows, not macOS, so return false in MacOS. */
+    return false;
+}
 
+bool CSJVideoRendererMetalImpl::init(WId widgetID, int width, int height, float pixelRatio) {
     NSView *view = (__bridge NSView *)((void *)widgetID);
     if (!view) {
         return false;
     }
 
     CGRect rect = {{0, 0}, {(CGFloat)width, (CGFloat)height}};
-    CSJMTKRenderer *renderer = [[CSJMTKRenderer alloc] initWithFrame:rect parent:view];
+    CSJMetalRenderer *renderer = [[CSJMetalRenderer alloc] initWithFrameWithView:view 
+                                                                           frame:rect 
+                                                                       pixelRatio:pixelRatio];
     if (!renderer) {
         return false;
     }
 
     m_pRenderer = renderer;
-
-    return true;
 }
 
 bool CSJVideoRendererMetalImpl::updateSence(double timeStamp) {
@@ -58,9 +58,9 @@ bool CSJVideoRendererMetalImpl::updateSence(double timeStamp) {
 void CSJVideoRendererMetalImpl::drawSence() {
     dispatch_queue_t mainQueue = dispatch_get_main_queue();//dispatch_get_global_queue( QOS_CLASS_USER_INITIATED, 0);
 
-    __weak CSJMTKRenderer *weakRender = m_pRenderer;
+    __weak CSJMetalRenderer *weakRender = m_pRenderer;
     dispatch_async(mainQueue, ^(){
-        __strong CSJMTKRenderer *renderer = weakRender;
+        __strong CSJMetalRenderer *renderer = weakRender;
         if (renderer) {
             [renderer drawContent];
         }
@@ -69,8 +69,13 @@ void CSJVideoRendererMetalImpl::drawSence() {
     //[m_pRenderer drawContent];
 }
 
-void CSJVideoRendererMetalImpl::resize(int width, int height) {
-
+void CSJVideoRendererMetalImpl::updateDrawableSize(int width, int height, 
+                                                   float pixelRatio) {
+    if (!m_pRenderer) {
+        return ;
+    }
+                  
+    [m_pRenderer updateDrawable:width height:height pixelRatio:pixelRatio];
 }
 
 void CSJVideoRendererMetalImpl::initialRenderComponents(CSJVideoFormatType fmtType,

@@ -39,7 +39,7 @@ protected:
     void initPlayController();
 
 private:
-    CSJVideoRendererWidget *m_pDXWidget = nullptr;
+    CSJVideoRendererWidget *m_pVideoRenderWidget = nullptr;
     QWidget *m_pProgressWidget = nullptr;
     QWidget *m_pMediaControlWidget = nullptr;
 
