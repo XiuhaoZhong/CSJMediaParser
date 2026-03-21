@@ -13,6 +13,9 @@ CSJVideoRendererWidget::CSJVideoRendererWidget(QWidget *parent)
     setAttribute(Qt::WA_PaintOnScreen, true);
     setAttribute(Qt::WA_NativeWindow, true);
     setAttribute(Qt::WA_OpaquePaintEvent, true);
+    setAttribute(Qt::WA_NoSystemBackground);
+
+    setAutoFillBackground(false);
 
     //connect(this, &CSJVideoRendererWidget::updateFrame, this, &CSJVideoRendererWidget::onUpdateFrame);
 }
@@ -21,7 +24,7 @@ CSJVideoRendererWidget::~CSJVideoRendererWidget() {
     qDebug() << "CSJVideoRendererWidget destoryed!";
 
     m_exitRenderThread = true;
-    if (m_pRenderThread->joinable()) {
+    if (m_pRenderThread && m_pRenderThread->joinable()) {
         m_pRenderThread->join();
     }
 }
@@ -95,7 +98,13 @@ void CSJVideoRendererWidget::resizeEvent(QResizeEvent *event) {
         return ;
     }
 
+#ifdef __APPLE__
+    m_spVideoRenderer->updateDrawableSize(width(), height(), devicePixelRatio());
+#elif _WIN32
     m_spVideoRenderer->resize(width(), height());
+#else
+
+#endif
 }
 
 void CSJVideoRendererWidget::paintEvent(QPaintEvent *event) {
@@ -145,7 +154,11 @@ bool CSJVideoRendererWidget::initRenderer() {
              * first.
              */
             //m_spVideoRenderer->initForOffScreen(width(), height());
+#if __APPLE__
+            m_spVideoRenderer->init(winId(), width(), height(), devicePixelRatio());
+#elif _WIN32
             m_spVideoRenderer->init(winId(), width(), height());
+#endif
         }
     }
 

@@ -61,17 +61,19 @@ elseif (CMAKE_HOST_APPLE)# settings on MacOS
     #find_package(OpenCV REQUIRED)
 
     # src on MacOS
-    file(GLOB RENDERER_IMPL_FILES "${SRC_ROOT}/renderClient/Mac/*")
+    file(GLOB_RECURSE RENDERER_IMPL_FILES "${SRC_ROOT}/renderClient/Mac/*")
 
     find_library(lib-foundation Foundation)
     find_library(lib-metal Metal)
     find_library(lib-metalKit MetalKit)
+    find_library(lib-quartzcore QuartzCore)
 
     link_directories(${GENERATE_LIB_DIR})
     include_directories(${SRC_ROOT}  ${GENERATE_HEADERS_DIR})
 
     include_directories(${SRC_ROOT} 
                         ${QTDIR}/lib/QtGui.framework/Headers)
+    
 endif()
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
@@ -110,7 +112,7 @@ if(CMAKE_HOST_WIN32)
     )
 elseif(CMAKE_HOST_APPLE)
     target_link_libraries(${TARGET_NAME} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets
-        ${lib-foundation} ${lib-metal} ${lib-metalKit}
+        ${lib-foundation} ${lib-metal} ${lib-metalKit} ${lib-quartzcore}
     )
     set_property(TARGET ${TARGET_NAME} APPEND_STRING PROPERTY
         COMPILE_FLAGS "-fobjc-arc")

@@ -22,7 +22,6 @@ CSJMediaPlayerWindow::CSJMediaPlayerWindow(QWidget *parent)
     , m_playStatus(PLAYSTATUS_STOP) {
 
     setAttribute(Qt::WA_DeleteOnClose, true);
-    setAttribute(Qt::WA_PaintOnScreen);
     setMinimumSize(640, 380);
 
     initUI();
@@ -44,12 +43,7 @@ CSJMediaPlayerWindow::~CSJMediaPlayerWindow() {
 void CSJMediaPlayerWindow::initUI() {
     resize(QSize(player_window_width, player_window_height));
 
-    QVBoxLayout *contentLayout = new QVBoxLayout(this);
-
-    QWidget *rootWidget = new QWidget(this);
-    contentLayout->addWidget(rootWidget, 1);
-
-    QVBoxLayout *mainLayout = new QVBoxLayout(rootWidget);
+    QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
     // QPushButton *imageButton = new QPushButton(m_pVideoThumbnailWiget);
     // imageButton->setText("Show Image");
@@ -60,9 +54,9 @@ void CSJMediaPlayerWindow::initUI() {
     mainLayout->addLayout(playerLayout, 18);
     mainLayout->setSpacing(10);
 
-    m_pDXWidget = new CSJVideoRendererWidget();
-    playerLayout->addWidget(m_pDXWidget);
-    m_pDXWidget->show();
+    m_pVideoRenderWidget = new CSJVideoRendererWidget();
+    playerLayout->addWidget(m_pVideoRenderWidget);
+    //m_pVideoRenderWidget->show();
 
     CSJPlayerControllerWidget *ctrlWidget = new CSJPlayerControllerWidget(this);
     playerLayout->addWidget(ctrlWidget, 1);
@@ -70,10 +64,12 @@ void CSJMediaPlayerWindow::initUI() {
     setWindowTitle("CSJMediaPlayer");
     setStyleSheet("QWidget {background-color: #1A202C;}");
 
-    connect(ctrlWidget, &CSJPlayerControllerWidget::play, m_pDXWidget, &CSJVideoRendererWidget::showDefaultImage);
+    //connect(ctrlWidget, &CSJPlayerControllerWidget::play, m_pDXWidget, &CSJVideoRendererWidget::showDefaultImage);
 
     // QVBoxLayout *controllerLayout = new QVBoxLayout();
     // mainLayout->addLayout(controllerLayout, 1);
+    // setLayout(mainLayout);
+    // mainLayout->activate();
 
     // QWidget *progressWidget = new QWidget();
     // controllerLayout->addWidget(progressWidget);
@@ -99,7 +95,7 @@ void CSJMediaPlayerWindow::show(bool bShow) {
     // }
 
     setVisible(true);
-    m_pDXWidget->setRenderType(ACTIVE_RENDERING);
+    m_pVideoRenderWidget->setRenderType(ACTIVE_RENDERING);
 }
 
 void CSJMediaPlayerWindow::onPlayBtnClicked() {

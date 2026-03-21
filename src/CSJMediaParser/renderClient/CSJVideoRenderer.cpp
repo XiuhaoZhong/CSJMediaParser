@@ -68,3 +68,11 @@ std::array<float, 2> CSJVideoRenderer::computeVideoArea(int widgetW, int widgetH
 
     return {resX, resY};
 }
+
+void CSJVideoRenderer::resize(int width, int height) {
+
+}
+
+void CSJVideoRenderer::updateDrawableSize(int width, int height, float pixelRatio) {
+
+}

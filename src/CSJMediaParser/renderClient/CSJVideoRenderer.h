@@ -58,6 +58,22 @@ public:
      */
     virtual bool init(WId widgetID, int width, int height) = 0;
 
+#if __APPLE__
+    /**
+     * @brief Initializes renderer. This function is for onscreen rendering, need 
+     *        the @param widgetID, which indecates the hwnd of the native window, 
+     *        including windows and MacOS.
+     *
+     * @param widgetID   the widget ID, for windows, it's the handle of a window.
+     * @param width      width of widget.
+     * @param height     height of widget.
+     * @param pixelRatio the pixel ratio on the screen.
+     *
+     * @return return true when success, of return false.
+     */
+    virtual bool init(WId widgetID, int width, int height, float pixelRatio) = 0;
+#endif
+
     /**
      * @brief Initiliaze off screen render. This function is for offscreen rendering.
      * 
@@ -97,7 +113,17 @@ public:
      * @param width  new width of the widget.
      * @param height new height of the widget.
      */
-    virtual void resize(int width, int height) = 0;
+    virtual void resize(int width, int height);
+
+    /**
+     * @brief Update drawable size for CAMetalLayer, this function is for 
+     *        macOS.
+     * 
+     * @param width      new width of the widget.      
+     * @param height     new height of the widget.
+     * @param pixelRatio the pixel ratio on the screen.
+     */
+    virtual void updateDrawableSize(int width, int height, float pixelRatio);
 
     /**
      * @brief Load the video frame components for specific video pixel format,
