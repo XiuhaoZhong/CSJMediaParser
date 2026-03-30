@@ -1,5 +1,8 @@
 #include "CSJMediaEngine/CSJMediaRawData.h"
 
+#include <atomic>
+
+#include <Foundation/Foundation.h>
 #include <Metal/Metal.h>
 #include <QuartzCore/CAMetalLayer.h>
 
@@ -8,6 +11,13 @@ using csjmediaengine::CSJVideoFormatType;
 
 #import "CSJMediaShaderTypes.h"
 #import "CSJMetalRenderer.h"
+#import "CSJMetalHelper.h"
+
+// Define the index array.
+// Triangle 1: 0 -> 1 -> 2 (left-bottom, right-bottom, left-top)
+// Triangle 2: 1 -> 3 -> 2 (right-bottom, right-top, left-top)
+// Notice: In metal clockwise is the positive direction.
+static uint16_t indices[] = { 0, 1, 2, 1, 3, 2 };
 
 @interface CSJMetalRenderer ()
 
@@ -17,30 +27,37 @@ using csjmediaengine::CSJVideoFormatType;
 @property(nonatomic, assign) NSInteger videoWidth;
 @property(nonatomic, assign) NSInteger videoHeight;
 
-@property(nonatomic, assign) MTLPixelFormat               videoPixelFmt;
-@property(nonatomic, strong) MTLVertexDescriptor         *vertexDescriptor;
-@property(nonatomic, strong) MTLRenderPipelineDescriptor *renderPipeLineDesc;
-@property(nonatomic, strong) CAMetalLayer                *metalLayer;
+@property(nonatomic, assign) MTLPixelFormat                  videoPixelFmt;
+@property(nonatomic, strong) MTLVertexDescriptor            *vertexDescriptor;
+@property(nonatomic, strong) MTLRenderPipelineDescriptor    *renderPipeLineDesc;
+@property(nonatomic, strong) CAMetalLayer                   *metalLayer;
 
-@property(nonatomic, strong) MTLVertexDescriptor         *rgbaVertDesc;
-@property(nonatomic, strong) id<MTLRenderPipelineState>   rgbaPipeline;
-@property(nonatomic, strong) id<MTLBuffer>                rgbaVertexBuffer;
+@property(nonatomic, strong) id<MTLTexture>                  texY;
+@property(nonatomic, strong) id<MTLTexture>                  texU;
+@property(nonatomic, strong) id<MTLTexture>                  texV;
+@property(nonatomic, strong) id<MTLTexture>                  texRGBA;
 
-@property(nonatomic, strong) NSLock *videoDataLock;
+@property(nonatomic, strong) id<MTLDevice>                   device;
+@property(nonatomic, strong) id<MTLCommandQueue>             commandQueue;
+
+@property(nonatomic, strong) MTLVertexDescriptor            *rgbaVertDesc;
+@property(nonatomic, strong) id<MTLRenderPipelineState>      rgbaPipeline;
+@property(nonatomic, strong) id<MTLBuffer>                   rgbaVertexBuffer;
+@property(nonatomic, strong) id<MTLBuffer>                   rgbaIndexBuffer;
+@property(nonatomic, strong) NSMutableArray<id<MTLTexture>> *rgbaTexs;
+@property(nonatomic, strong) MTLTextureDescriptor           *texDescriptor;
+
+@property(nonatomic, assign) NSUInteger                      currentTexIdx;
+@property(nonatomic, assign) NSUInteger                      renderMode; // 0: null, 1:rgba, 2:yuv
+
+@property(nonatomic, strong) NSString                       *imagePath;
+@property(nonatomic, strong) NSLock                         *videoDataLock;
 
 @end
 
 @implementation CSJMetalRenderer {
-    id<MTLDevice>         m_pDevice;
-    id<MTLCommandQueue>   m_pCommandQueue;
-
-    id<MTLTexture>        m_texY;
-    id<MTLTexture>        m_texU;
-    id<MTLTexture>        m_texV;
-    id<MTLTexture>        m_texRGBA;
-
-    CSJVideoFormatType    m_videoFmt;
-    MTLTextureDescriptor *texDescriptor;
+    std::atomic<bool>     _contentUpdate;
+    CSJVideoFormatType    _videoFmt;;
 }
 
 - (instancetype)initWithFrameWithView:(NSView *)view 
@@ -48,15 +65,15 @@ using csjmediaengine::CSJVideoFormatType;
                            pixelRatio:(float)pixelRatio {
     self = [super init];
 
-    m_pDevice = MTLCreateSystemDefaultDevice();
-    m_pCommandQueue = [m_pDevice newCommandQueue];
+    _device = MTLCreateSystemDefaultDevice();
+    _commandQueue = [_device newCommandQueue];
 
     _width = frame.size.width;
     _height = frame.size.height;
     view.wantsLayer = YES;
 
     _metalLayer = [CAMetalLayer layer];
-    _metalLayer.device = m_pDevice;
+    _metalLayer.device = _device;
     _metalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm;
     _metalLayer.framebufferOnly = YES;
     _metalLayer.opaque = YES;
@@ -67,22 +84,22 @@ using csjmediaengine::CSJVideoFormatType;
                   height:CGRectGetHeight(frame)
               pixelRatio:pixelRatio];
 
+    _videoWidth = 0;
+    _videoHeight = 0;
+
+    _rgbaTexs = nil;
+    _currentTexIdx = 0;
+    _renderMode = 0;
+
+    _rgbaPipeline = nil;
+
+    _contentUpdate = false;
+
     return self;
 }
 
 - (void)dealloc {
     NSLog(@"CSJMTKRenderer is dealloc");
-#if __has_feature(objc_arc)
-
-#else
-    [_renderPipeLineDesc release];
-
-    [m_texY release];
-    [m_texU release];
-    [m_texV release];
-
-    [super dealloc];
-#endif
 }
 
 - (void)releaseResources {
@@ -90,11 +107,11 @@ using csjmediaengine::CSJVideoFormatType;
 }
 
 - (void)setupRGBAPipeline {
-    if (!m_pDevice) {
+    if (!_device) {
         return ;
     }
 
-    id<MTLLibrary> lib = [m_pDevice newDefaultLibrary];
+    id<MTLLibrary> lib = [_device newDefaultLibrary];
     id<MTLFunction> vertFunc = [lib newFunctionWithName:@"rbgaVertShader"];
     id<MTLFunction> fragFunc = [lib newFunctionWithName:@"rgbaFragShader"];
 
@@ -104,7 +121,7 @@ using csjmediaengine::CSJVideoFormatType;
     desc.colorAttachments[0].pixelFormat = _metalLayer.pixelFormat;
 
     NSError *err = nil;
-    _rgbaPipeline = [m_pDevice newRenderPipelineStateWithDescriptor:desc error:&err];
+    _rgbaPipeline = [_device newRenderPipelineStateWithDescriptor:desc error:&err];
 
     _rgbaVertDesc = [[MTLVertexDescriptor alloc] init];
     _rgbaVertDesc.attributes[0].format = MTLVertexFormatFloat3;
@@ -117,9 +134,13 @@ using csjmediaengine::CSJVideoFormatType;
 
     _rgbaVertDesc.layouts[0].stride = sizeof(struct Vertex);
 
-    _rgbaVertexBuffer = [m_pDevice newBufferWithBytes:vertices
-                                               length:sizeof(vertices)
-                                              options:MTLResourceStorageModeShared];
+    _rgbaVertexBuffer = [_device newBufferWithBytes:vertices
+                                             length:sizeof(vertices)
+                                            options:MTLResourceStorageModeShared];
+
+    _rgbaIndexBuffer = [_device newBufferWithBytes:indices 
+                                            length:sizeof(indices) 
+                                           options:MTLResourceStorageModeShared];
 
     // Setting vertex buffer into encoder.
     // [encoder setVertexBuffer:_rgbaVertexBuffer offset:0 atIndex:0];
@@ -135,6 +156,12 @@ using csjmediaengine::CSJVideoFormatType;
     NSInteger h = height * pixelRatio;
 
     _metalLayer.drawableSize = CGSizeMake(w, h);
+}
+
+- (void)setImageWithPath:(NSString *)imagePath {
+    _imagePath = [imagePath copy];
+    _renderMode = 1;
+    _contentUpdate = true;
 }
 
 - (void)updateDrawableSizeWithWidth:(NSInteger)width 
@@ -157,7 +184,7 @@ using csjmediaengine::CSJVideoFormatType;
     }
 
     id<CAMetalDrawable> drawable = _metalLayer.nextDrawable;
-    id<MTLCommandQueue> command_queue = m_pDevice.newCommandQueue;
+    id<MTLCommandQueue> command_queue = _device.newCommandQueue;
     id<MTLCommandBuffer> command_buffer = command_queue.commandBuffer;
 
     MTLRenderPassDescriptor *pass = MTLRenderPassDescriptor.renderPassDescriptor;
@@ -179,7 +206,7 @@ using csjmediaengine::CSJVideoFormatType;
 // - (void)drawInMTKView:(MTKView *)view {
 
 //     @autoreleasepool {
-//         id<MTLCommandBuffer> commandBuffer = [m_pCommandQueue commandBuffer];
+//         id<MTLCommandBuffer> commandBuffer = [_commandQueue commandBuffer];
 //         commandBuffer.label = @"Render Commands";
 
 //         MTLRenderPassDescriptor* onScreenDescriptor = view.currentRenderPassDescriptor;
@@ -238,7 +265,7 @@ using csjmediaengine::CSJVideoFormatType;
 
     _videoWidth = width;
     _videoHeight = height;
-    m_videoFmt = (CSJVideoFormatType)pixelFmt;
+    _videoFmt = (CSJVideoFormatType)pixelFmt;
 }
 
 - (void)updateVideoFrameWithData:(void *)pData {
@@ -250,7 +277,7 @@ using csjmediaengine::CSJVideoFormatType;
 
     [_videoDataLock lock];
 
-    if (videoData->getFmtType() != m_videoFmt ||
+    if (videoData->getFmtType() != _videoFmt ||
         videoData->getWidth() != _videoWidth ||
         videoData->getHeight() != _videoHeight) {
 
@@ -262,7 +289,7 @@ using csjmediaengine::CSJVideoFormatType;
     }
 
     // opy data to buffer
-    switch (m_videoFmt) {
+    switch (_videoFmt) {
     case csjmediaengine::CSJVIDEO_FMT_YUV420P:
         [self updateDatatoYUV420PWidthData:videoData];
         break;
@@ -279,23 +306,23 @@ using csjmediaengine::CSJVideoFormatType;
                                                                                       height:(NSInteger)height
                                                                                    mipmapped:NO];
 
-    m_texY = [m_pDevice newTextureWithDescriptor:texDesc];
+    _texY = [_device newTextureWithDescriptor:texDesc];
 
     texDesc.width = width / 2;
     texDesc.height = height / 2;
 
-    m_texU = [m_pDevice newTextureWithDescriptor:texDesc];
-    m_texV = [m_pDevice newTextureWithDescriptor:texDesc];
+    _texU = [_device newTextureWithDescriptor:texDesc];
+    _texV = [_device newTextureWithDescriptor:texDesc];
 }
 
 - (void)updateDatatoYUV420PWidthData:(CSJVideoData *)videoData {
     MTLRegion regionY = {{0,0,0}, {(NSUInteger)_videoWidth, (NSUInteger)_videoHeight, 1}};
-    [m_texY replaceRegion:regionY mipmapLevel:0 withBytes:videoData->getyuvY() bytesPerRow:_videoWidth];
+    [_texY replaceRegion:regionY mipmapLevel:0 withBytes:videoData->getyuvY() bytesPerRow:_videoWidth];
 
     MTLRegion regionUV = {{0,0,0}, {(NSUInteger)_videoWidth / 2, (NSUInteger)_videoHeight / 2, 1}};
-    [m_texU replaceRegion:regionUV mipmapLevel:0 withBytes:videoData->getyuvU() bytesPerRow:_videoWidth / 4];
+    [_texU replaceRegion:regionUV mipmapLevel:0 withBytes:videoData->getyuvU() bytesPerRow:_videoWidth / 4];
 
-    [m_texV replaceRegion:regionUV mipmapLevel:0 withBytes:videoData->getyuvV() bytesPerRow:_videoWidth / 4];
+    [_texV replaceRegion:regionUV mipmapLevel:0 withBytes:videoData->getyuvV() bytesPerRow:_videoWidth / 4];
 }
 
 - (void)loadRGBAComponentsWithWidth:(NSInteger)width height:(NSInteger)height {
@@ -304,11 +331,34 @@ using csjmediaengine::CSJVideoFormatType;
                                                                                       height:(NSInteger)height
                                                                                    mipmapped:NO];
 
-    m_texY = [m_pDevice newTextureWithDescriptor:texDesc];
+    _texY = [_device newTextureWithDescriptor:texDesc];
 }
 
 - (void)updateVideoDatatoRGBWithData:(CSJVideoData *)data {
 
+}
+
+- (void)renderRGBAWithEncoder:(id<MTLRenderCommandEncoder>)encoder {
+    if (!encoder) {
+        return ;
+    }
+
+    // Bind rgba pipeline
+    [encoder setRenderPipelineState:self.rgbaPipeline];
+    
+    // Bind vertex buffer
+    [encoder setVertexBuffer:self.rgbaVertexBuffer offset:0 atIndex:0];
+    
+    // Draw primitives
+    //[encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:3];
+
+    [encoder setFragmentTexture:self.rgbaTexs[self.currentTexIdx] atIndex:0];
+
+    [encoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle 
+                        indexCount:6
+                         indexType:MTLIndexTypeUInt16 
+                       indexBuffer:self.rgbaIndexBuffer 
+                 indexBufferOffset:0];
 }
 
 @end

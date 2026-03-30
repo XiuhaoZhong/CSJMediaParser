@@ -19,6 +19,8 @@ else()
     set(APP_OUTPUT_DIR   "${APP_OUTPUT_DIR}/Release")
 endif()
 
+set(RESOURCE_DIR "${PROJ_ROOT_DIR}/resources")
+
 file(MAKE_DIRECTORY "${APP_OUTPUT_DIR}")
 
 if(MSVC)

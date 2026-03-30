@@ -172,54 +172,51 @@ if(CMAKE_HOST_WIN32)
         )    
     endif()
 elseif(CMAKE_HOST_APPLE)
-    if(CSJ_BUILD_PACKAGE)
-        add_custom_command(
-            TARGET ${TARGET_NAME}
-            POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_directory 
-                ${RESOURCE_DIR} 
-                "$<TARGET_BUNDLE_DIR:${TARGET_NAME}>/Contents/Resources"
-                COMMENT "Copy resource diretory ..."
-        )
-    else()
-        set_target_properties(${TARGET_NAME} PROPERTIES
-            BUILD_WITH_INSTALL_RPATH ON
-            INSTALL_RPATH "@executable_path/../Frameworks"
-        )
+    set_target_properties(${TARGET_NAME} PROPERTIES
+        BUILD_WITH_INSTALL_RPATH ON
+        INSTALL_RPATH "@executable_path/../Frameworks"
+    )
 
-        set_target_properties(${TARGET_NAME} PROPERTIES
-            MACOSX_RPATH ON
-            INSTALL_NAME_DIR "@rpath"
-        )
+    set_target_properties(${TARGET_NAME} PROPERTIES
+        MACOSX_RPATH ON
+        INSTALL_NAME_DIR "@rpath"
+    )
 
-        install(TARGETS ${TARGET_NAME}
-            BUNDLE DESTINATION ${CMAKE_INSTALL_PREFIX}
-            COMPONENT Runtime
-        )
+    install(TARGETS ${TARGET_NAME}
+        BUNDLE DESTINATION ${CMAKE_INSTALL_PREFIX}
+        COMPONENT Runtime
+    )
 
-        install(FILES ${GENERATE_LIB_DIR}/libCSJMediaEngine.dylib
-            DESTINATION ${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.app/Contents/Frameworks
-            COMPONENT Runtime
-        )
+    install(FILES ${GENERATE_LIB_DIR}/libCSJMediaEngine.dylib
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.app/Contents/Frameworks
+        COMPONENT Runtime
+    )
 
-        set(DEVELOPER_ID "Apple Development: zxhas@foxmail.com (Q4LVL56W34)")
-        install(CODE "
-            execute_process(
-                COMMAND ${QTDIR}/bin/macdeployqt \"${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.app\"
-                        -always-overwrite
-                        -verbose=1
-                WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}
-                RESULT_VARIABLE deploy_result
-                
-                COMMAND codesign --force --deep --sign \"${DEVELOPER_ID}\" \"${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.app\"
-            )
-                
-            if(NOT deploy_result EQUAL 0)
-            message(STATUS \"Failed to run macdeployqt: ${deploy_result})\")
-            endif()"
-            COMPONENT Runtime
+    install(DIRECTORY ${RESOURCE_DIR}/Images
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.app/Contents/Resources
+    )
+
+    install(DIRECTORY ${RESOURCE_DIR}/MetalShaders
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.app/Contents/Resources
+    )
+
+    set(DEVELOPER_ID "Apple Development: zxhas@foxmail.com (Q4LVL56W34)")
+    install(CODE "
+        execute_process(
+            COMMAND ${QTDIR}/bin/macdeployqt \"${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.app\"
+                    -always-overwrite
+                    -verbose=1
+            WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}
+            RESULT_VARIABLE deploy_result
+            
+            COMMAND codesign --force --deep --sign \"${DEVELOPER_ID}\" \"${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.app\"
         )
-    endif()
+            
+        if(NOT deploy_result EQUAL 0)
+        message(STATUS \"Failed to run macdeployqt: ${deploy_result})\")
+        endif()"
+        COMPONENT Runtime
+    )
 else()
 endif()
 

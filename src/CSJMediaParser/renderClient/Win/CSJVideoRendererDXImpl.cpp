@@ -31,7 +31,7 @@ CSJVideoRendererDXImpl::~CSJVideoRendererDXImpl() {
 
 }
 
-bool CSJVideoRendererDXImpl::init(WId widgetID, int width, int height) {
+bool CSJVideoRendererDXImpl::init(CSJWindowID widgetID, int width, int height) {
     m_hMainWnd = (HWND)widgetID;
     if (!m_hMainWnd) {
         return false;
@@ -177,7 +177,7 @@ bool CSJVideoRendererDXImpl::initForOffScreen(int width, int height) {
     return true;
 }
 
-bool CSJVideoRendererDXImpl::updateSence(double timeStamp) {
+bool CSJVideoRendererDXImpl::updateScene(double timeStamp) {
     // If load the render content successfully or not.
     bool loadRenderContent = false;
 
@@ -238,7 +238,7 @@ bool CSJVideoRendererDXImpl::fillTextureData(uint8_t *buf, int width, int height
     return false;
 }
 
-void CSJVideoRendererDXImpl::drawSence() {
+void CSJVideoRendererDXImpl::drawScene() {
     if (!m_initSuccess) {
         return ;
     }
@@ -259,7 +259,7 @@ void CSJVideoRendererDXImpl::drawSence() {
                                       0.0f);
 
     // check shader.  
-    bool need_render = updateSence(0.0);
+    bool need_render = updateScene(0.0);
     if (m_pixelFmt != CSJVIDEO_FMT_NONE) {
         curContext->DrawIndexed(6, 0, 0);
     }
@@ -320,9 +320,9 @@ void CSJVideoRendererDXImpl::updateVideoFrame(CSJVideoData *videoData) {
     m_bContentNeedUpdate = true;
 }
 
-void CSJVideoRendererDXImpl::setImage(const QString & imagePath) {
+void CSJVideoRendererDXImpl::setImage(const std::string & imagePath) {
     std::lock_guard lock(m_videoMtx);
-    m_curImagePath = imagePath;
+    m_curImagePath = std::string(imagePath);
 
     CSJVideoData *fakeVideoData = new CSJVideoData(CSJVIDEO_FMT_RGB24, nullptr, 0, 0);
     m_curVideoData = std::move(fakeVideoData);
@@ -811,7 +811,7 @@ bool CSJVideoRendererDXImpl::createTextureForRGBA(int width, int height) {
     }
 
     if (m_bShowImage) {
-        std::wstring image = m_curImagePath.toStdWString();
+        std::wstring image = CSJStringUtil::string2wstring(m_curImagePath);
         ComPtr<ID3D11Device> curDevice = getCurrentDevice();
         assert(curDevice);
         HRESULT hr = DirectX::CreateWICTextureFromFile(curDevice.Get(), 

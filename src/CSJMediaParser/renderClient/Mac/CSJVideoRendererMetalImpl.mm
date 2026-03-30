@@ -28,13 +28,13 @@ CSJVideoRendererMetalImpl::~CSJVideoRendererMetalImpl() {
 
 }
 
-bool CSJVideoRendererMetalImpl::init(WId widgetID, int width, int height) {
+bool CSJVideoRendererMetalImpl::init(CSJWindowID widgetID, int width, int height) {
     /* This interface is for Windows, not macOS, so return false in MacOS. */
     return false;
 }
 
-bool CSJVideoRendererMetalImpl::init(WId widgetID, int width, int height, float pixelRatio) {
-    NSView *view = (__bridge NSView *)((void *)widgetID);
+bool CSJVideoRendererMetalImpl::init(CSJWindowID widgetID, int width, int height, float pixelRatio) {
+    NSView *view = (__bridge NSView *)(widgetID);
     if (!view) {
         return false;
     }
@@ -50,23 +50,26 @@ bool CSJVideoRendererMetalImpl::init(WId widgetID, int width, int height, float 
     m_pRenderer = renderer;
 }
 
-bool CSJVideoRendererMetalImpl::updateSence(double timeStamp) {
-    //[m_pRenderer drawContent];
-    return false;
+bool CSJVideoRendererMetalImpl::updateScene(double timeStamp) {
+    if (!m_pRenderer) {
+        return false;
+    }
+
+
+    return true;
 }
 
-void CSJVideoRendererMetalImpl::drawSence() {
-    dispatch_queue_t mainQueue = dispatch_get_main_queue();//dispatch_get_global_queue( QOS_CLASS_USER_INITIATED, 0);
+void CSJVideoRendererMetalImpl::drawScene() {
+    if (!m_pRenderer) {
+        return ;
+    }
 
-    __weak CSJMetalRenderer *weakRender = m_pRenderer;
-    dispatch_async(mainQueue, ^(){
-        __strong CSJMetalRenderer *renderer = weakRender;
-        if (renderer) {
-            [renderer drawContent];
-        }
-    });
+    bool need_update = updateScene(0.0);
+    if (!need_update) {
+        return ;
+    }
 
-    //[m_pRenderer drawContent];
+    [m_pRenderer drawContent];
 }
 
 void CSJVideoRendererMetalImpl::updateDrawableSize(int width, int height, 
@@ -93,4 +96,13 @@ void CSJVideoRendererMetalImpl::updateVideoFrame(CSJVideoData *pData) {
     }
 
     [m_pRenderer updateVideoFrameWithData:(void *)pData];
+}
+
+void CSJVideoRendererMetalImpl::setImage(const std::string &imagePath) {
+    if (!m_pRenderer) {
+        return ;
+    }
+
+    NSString * image_path = [NSString stringWithUTF8String:imagePath.c_str()];
+    [m_pRenderer setImageWithPath:image_path];
 }
