@@ -36,17 +36,17 @@ public:
     CSJVideoRendererDXImpl();
     ~CSJVideoRendererDXImpl();
 
-    bool init(WId widgetID, int width, int height) override;
+    bool init(CSJWindowID widgetID, int width, int height) override;
     bool initForOffScreen(int width, int height) override;
-    bool updateSence(double timeStamp) override;
+    bool updateScene(double timeStamp) override;
     bool fillTextureData(uint8_t *buf, int width, int height);
-    void drawSence() override;
+    void drawScene() override;
     void resize(int width, int height) override;
     void initialRenderComponents(CSJVideoFormatType fmtType, 
                                  int width, int height) override;
     void updateVideoFrame(CSJVideoData *videoData) override;
 
-    void setImage(const QString& imagePath) override;
+    void setImage(const std::string& imagePath) override;
 
 protected:
     bool initD3D(int width, int height);
@@ -166,7 +166,7 @@ private:
 
     std::mutex                     m_videoMtx;
     CSJVideoData*                  m_curVideoData;
-    QString                        m_curImagePath;
+    std::string                    m_curImagePath;
 
     /*********************************************************
      * Textures for YUV

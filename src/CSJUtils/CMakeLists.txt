@@ -25,12 +25,19 @@ endif()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+if(APPLE)
+    #find_package(lib-coreFoundation CoreFoundation)
+endif()
+
 add_library(${TARGET_NAME} SHARED ${CSJUTIL_SRC_FILES} ${CSJUTIL_HEADER_FILES})
 add_dependencies(${TARGET_NAME} COPY_UTIL_HEADERS)
 
 target_compile_definitions(${TARGET_NAME} PRIVATE CSJUTILS_EXPORTS)
 
 target_link_libraries(${TARGET_NAME} PUBLIC spdlog::spdlog)
+if(APPLE)
+    target_link_libraries(${TARGET_NAME} PRIVATE "-framework CoreFoundation")
+endif()
 
 if(CMAKE_HOST_WIN32)
     add_custom_command(

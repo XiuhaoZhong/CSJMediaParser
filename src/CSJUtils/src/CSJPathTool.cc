@@ -2,7 +2,38 @@
 
 #include <filesystem>
 
+#if defined(__APPLE__)
+
+#include <CoreFoundation/CoreFoundation.h>
+
+#endif
+
 namespace csjutils {
+
+#if defined(__APPLE__)
+
+static std::string getAppResourcePath() {
+    CFBundleRef mainBundle = CFBundleGetMainBundle();
+    if (!mainBundle) {
+        return "";
+    }
+
+    CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(mainBundle);
+    if (!resourcesURL) {
+        return "";
+    }
+
+    char path[PATH_MAX];
+    if (CFURLGetFileSystemRepresentation(resourcesURL, TRUE, (UInt8 *)path, PATH_MAX)) {
+        CFRelease(resourcesURL);
+        return std::string(path);
+    }
+
+    CFRelease(resourcesURL);
+    return "";
+}
+
+#endif 
 
 CSJPathTool* CSJPathTool::getInstance() {
     static  CSJPathTool instance;
@@ -48,7 +79,11 @@ fs::path CSJPathTool::getTextureDir() {
 }
 
 fs::path CSJPathTool::getImageDir() {
+#if defined(__APPLE__)
+    return getAppResourcePath().append("/images");
+#else
     return getResourceDir().append("images");
+#endif
 }
 
 fs::path CSJPathTool::getShaderDir() {

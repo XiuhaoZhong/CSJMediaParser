@@ -3,13 +3,15 @@
 
 #include <QWidget>
 #include <memory>
-
+#include <string>
 #include <array>
 
 #include "CSJMediaEngine/CSJMediaRawData.h"
 
 using csjmediaengine::CSJVideoFormatType;
 using csjmediaengine::CSJVideoData;
+
+typedef void* CSJWindowID;
 
 /**
  * The render type of the Renderer.
@@ -56,7 +58,7 @@ public:
      *
      * @return return true when success, of return false.
      */
-    virtual bool init(WId widgetID, int width, int height) = 0;
+    virtual bool init(CSJWindowID widgetID, int width, int height) = 0;
 
 #if __APPLE__
     /**
@@ -71,7 +73,7 @@ public:
      *
      * @return return true when success, of return false.
      */
-    virtual bool init(WId widgetID, int width, int height, float pixelRatio) = 0;
+    virtual bool init(CSJWindowID widgetID, int width, int height, float pixelRatio) = 0;
 #endif
 
     /**
@@ -100,12 +102,12 @@ public:
      *
      * @param timeStamp the time stamp of drawing.
      */
-    virtual bool updateSence(double timeStamp) = 0;
+    virtual bool updateScene(double timeStamp) = 0;
 
     /**
      * @brief Draw the widget's content.
      */
-    virtual void drawSence() = 0;
+    virtual void drawScene() = 0;
 
     /**
      * @brief Resize renderer context when the size of widget changes.
@@ -148,7 +150,7 @@ public:
      * @brief Set the picture that will be rendered in this widget.
      * 
      */
-    virtual void setImage(const QString& imagePath) = 0;
+    virtual void setImage(const std::string& imagePath) = 0;
 
     std::array<float, 2> computeVideoArea(int widgetW, int widgetH,
                                           int videoW, int videoH);

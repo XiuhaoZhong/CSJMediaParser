@@ -68,7 +68,7 @@ void CSJVideoRendererWidget::updateVideoFrame(CSJVideoData *videoData) {
     }
 
     m_spVideoRenderer->updateVideoFrame(videoData);
-    m_spVideoRenderer->drawSence();
+    m_spVideoRenderer->drawScene();
 }
 
 void CSJVideoRendererWidget::setImagePath(QString &image_path) {
@@ -155,9 +155,9 @@ bool CSJVideoRendererWidget::initRenderer() {
              */
             //m_spVideoRenderer->initForOffScreen(width(), height());
 #if __APPLE__
-            m_spVideoRenderer->init(winId(), width(), height(), devicePixelRatio());
+            m_spVideoRenderer->init(reinterpret_cast<void*>(winId()), width(), height(), devicePixelRatio());
 #elif _WIN32
-            m_spVideoRenderer->init(winId(), width(), height());
+            m_spVideoRenderer->init(reinterpret_cast<void*>(winId()), width(), height());
 #endif
         }
     }
@@ -175,7 +175,7 @@ void CSJVideoRendererWidget::internalRender() {
             break;
         }
 
-        m_spVideoRenderer->drawSence();
+        m_spVideoRenderer->drawScene();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(33));
     }

@@ -10,10 +10,10 @@ public:
     CSJVideoRendererMetalImpl();
     ~CSJVideoRendererMetalImpl();
 
-    bool init(WId widgetID, int width, int height) override;
-    bool init(WId widgetID, int width, int height, float pixelRatio) override;
-    bool updateSence(double timeStamp) override;
-    void drawSence() override;
+    bool init(CSJWindowID widgetID, int width, int height) override;
+    bool init(CSJWindowID widgetID, int width, int height, float pixelRatio) override;
+    bool updateScene(double timeStamp) override;
+    void drawScene() override;
     void updateDrawableSize(int width, int height, float pixelRatio) override;
 
     virtual void initialRenderComponents(CSJVideoFormatType fmtType,
@@ -21,7 +21,7 @@ public:
 
     virtual void updateVideoFrame(CSJVideoData *videoData) override;
 
-    virtual void setImage(const QString& imagePath) {};
+    virtual void setImage(const std::string& imagePath) override;
 
 private:
     CSJMetalRenderer *m_pRenderer;

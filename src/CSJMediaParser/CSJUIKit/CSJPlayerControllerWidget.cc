@@ -1,9 +1,13 @@
 #include "CSJPlayerControllerWidget.h"
 
+#include "CSJUtils/CSJPathTool.h"
+
 #include <QPushButton>
 #include <QSlider>
 #include <QLabel>
 #include <QHBoxLayout>
+
+using namespace csjutils;
 
 CSJPlayerControllerWidget::CSJPlayerControllerWidget(QWidget *parent) 
     : QWidget(parent) {
@@ -73,6 +77,8 @@ void CSJPlayerControllerWidget::onPlayBtnClicked() {
     if (m_pPlayBtn->text() == "Play") {
         m_pPlayBtn->setText("Resume");
         m_pStopBtn->setEnabled(true);
+        std::string imageName("cross_street.jpg");
+        std::string imagePath = CSJPathTool::getInstance()->getImageWithName(imageName);
         emit play();
     } else if (m_pPlayBtn->text() == "Pause") {
         m_pPlayBtn->setText("Play");

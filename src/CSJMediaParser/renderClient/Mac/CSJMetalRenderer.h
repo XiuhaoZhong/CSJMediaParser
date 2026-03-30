@@ -20,6 +20,10 @@
 
 - (void)updateDrawable:(NSInteger)width height:(NSInteger)height pixelRatio:(float)pixelRatio;
 
+- (void)setImageWithPath:(NSString *)imagePath;
+
 - (void)drawContent;
+
+- (BOOL)updateSceneWithTimeStamp:(float)timeStamp;
 
 @end
