@@ -22,7 +22,8 @@
 
 - (void)setImageWithPath:(NSString *)imagePath;
 
-- (void)drawContent;
+// if updateContent is NO, only render background.
+- (void)drawContent:(BOOL)updateContent;
 
 - (BOOL)updateSceneWithTimeStamp:(float)timeStamp;
 
