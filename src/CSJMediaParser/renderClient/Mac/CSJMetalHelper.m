@@ -8,6 +8,15 @@ id<MTLTexture> createTextureFromImageFile(id<MTLDevice> device, NSString *imageP
     }
 
     CGImageRef cgImage = [image CGImageForProposedRect:nil context:nil hints:nil];
+
+    return createTextureFromCGImage(device, cgImage);
+}
+
+id<MTLTexture> createTextureFromCGImage(id<MTLDevice> device, CGImageRef cgImage) {
+    if (!device || !cgImage) {
+        return nil;
+    }
+
     NSUInteger width = CGImageGetWidth(cgImage);
     NSUInteger height = CGImageGetHeight(cgImage);
 

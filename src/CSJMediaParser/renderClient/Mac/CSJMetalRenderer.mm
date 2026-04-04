@@ -5,6 +5,7 @@
 #include <Foundation/Foundation.h>
 #include <Metal/Metal.h>
 #include <QuartzCore/CAMetalLayer.h>
+#include <objc/NSObjCRuntime.h>
 
 using csjmediaengine::CSJVideoData;
 using csjmediaengine::CSJVideoFormatType;
@@ -47,10 +48,11 @@ static uint16_t indices[] = { 0, 1, 2, 1, 3, 2 };
 @property(nonatomic, strong) NSMutableArray<id<MTLTexture>> *rgbaTexs;
 @property(nonatomic, strong) MTLTextureDescriptor           *texDescriptor;
 
-@property(nonatomic, assign) NSUInteger                      currentTexIdx;
+@property(nonatomic, assign) NSUInteger                      idelTexIndex;
 @property(nonatomic, assign) NSUInteger                      renderMode; // 0: null, 1:rgba, 2:yuv
-
+@property(nonatomic, assign) NSUInteger                      rgbaFromBuffer; // 0: from image file, 1: from buffer
 @property(nonatomic, strong) NSString                       *imagePath;
+
 @property(nonatomic, strong) NSLock                         *videoDataLock;
 
 @end
@@ -88,8 +90,9 @@ static uint16_t indices[] = { 0, 1, 2, 1, 3, 2 };
     _videoHeight = 0;
 
     _rgbaTexs = nil;
-    _currentTexIdx = 0;
+    _idelTexIndex = 1;
     _renderMode = 0;
+    _rgbaFromBuffer = 0;
 
     _rgbaPipeline = nil;
 
@@ -103,6 +106,14 @@ static uint16_t indices[] = { 0, 1, 2, 1, 3, 2 };
 }
 
 - (void)releaseResources {
+
+}
+
+- (void)createRGBATextures {
+    // TODO: create rgba textures.
+}
+
+- (void)setupRGBATextures {
 
 }
 
@@ -161,6 +172,7 @@ static uint16_t indices[] = { 0, 1, 2, 1, 3, 2 };
 - (void)setImageWithPath:(NSString *)imagePath {
     _imagePath = [imagePath copy];
     _renderMode = 1;
+    _rgbaFromBuffer = 0;
     _contentUpdate = true;
 }
 
@@ -178,7 +190,67 @@ static uint16_t indices[] = { 0, 1, 2, 1, 3, 2 };
     _metalLayer.drawableSize = CGSizeMake(w, h);
 }
 
-- (void)drawContent {
+- (void)updateRGBATexture {
+    if (!self.rgbaTexs) {
+        self.rgbaTexs = [NSMutableArray array];
+    }
+
+    BOOL replaceTex = NO;
+    if (self.rgbaTexs.count == 2) {
+        replaceTex = YES; 
+    }
+
+    if (self.rgbaFromBuffer) {
+        // TODO: update rgba texture from buffer.
+        return ;
+    } else {
+        // update rgba texture from image file.
+        id<MTLTexture> idelTexture = nil;
+        if (!replaceTex) {
+            idelTexture = createTextureFromImageFile(self.device, self.imagePath);
+            [self.rgbaTexs addObject:idelTexture];
+        } else {
+            NSUInteger texW = idelTexture.width;
+            NSUInteger texH = idelTexture.height;
+
+            NSImage *image = [[NSImage alloc] initWithContentsOfFile:self.imagePath];
+            if (!image) {
+                return nil;
+            }
+
+            CGImageRef cgImage = [image CGImageForProposedRect:nil context:nil hints:nil];
+            if (texW != CGImageGetWidth(cgImage) || texH != CGImageGetHeight(cgImage)) {
+                idelTexture = createTextureFromCGImage(self.device, cgImage);
+            }
+
+            self.rgbaTexs[self.idelTexIndex] = idelTexture;
+        }
+    }
+}
+
+- (void)updateYUVTexture {
+    
+}
+
+- (BOOL)updateSceneWithTimeStamp:(float)timeStamp {
+    if (!_contentUpdate) {
+        return NO;
+    }
+
+    if (self.renderMode == 1) {
+        // update rgba texture.
+        [self updateRGBATexture];
+    } else if (self.renderMode == 2) {
+        // update yuv texture.
+        [self updateYUVTexture];
+    }
+
+    _contentUpdate = NO;
+
+    return YES;
+}
+
+- (void)drawContent:(BOOL)updateContent {
     if (!_metalLayer) {
         return ;
     }
@@ -195,6 +267,13 @@ static uint16_t indices[] = { 0, 1, 2, 1, 3, 2 };
     id<MTLRenderCommandEncoder> renderEncoder = [command_buffer renderCommandEncoderWithDescriptor:pass];
 
     // add render command;
+    if (updateContent) {
+        if (self.renderMode == 1) {
+            [self renderRGBAWithEncoder:renderEncoder];
+        } else if (self.renderMode == 2) {
+            [self renderYUVWithEncoder:renderEncoder];   
+        }
+    }
 
     [renderEncoder endEncoding];
 
@@ -343,22 +422,34 @@ static uint16_t indices[] = { 0, 1, 2, 1, 3, 2 };
         return ;
     }
 
-    // Bind rgba pipeline
-    [encoder setRenderPipelineState:self.rgbaPipeline];
-    
-    // Bind vertex buffer
-    [encoder setVertexBuffer:self.rgbaVertexBuffer offset:0 atIndex:0];
-    
-    // Draw primitives
-    //[encoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:3];
+    id<MTLTexture> renderTex = self.rgbaTexs[1 - self.idelTexIndex];
+    if (!renderTex) {
+        return ;
+    }
 
-    [encoder setFragmentTexture:self.rgbaTexs[self.currentTexIdx] atIndex:0];
+    if (!self.rgbaPipeline) {
+        [self setupRGBAPipeline];
 
+        // Bind rgba pipeline.
+        [encoder setRenderPipelineState:self.rgbaPipeline];
+
+        // Bind vertex buffer.
+        [encoder setVertexBuffer:self.rgbaVertexBuffer offset:0 atIndex:0];
+    }
+    
+    // Bind texture.
+    [encoder setFragmentTexture:renderTex atIndex:0];
+
+    // Draw primitives.
     [encoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle 
                         indexCount:6
                          indexType:MTLIndexTypeUInt16 
                        indexBuffer:self.rgbaIndexBuffer 
                  indexBufferOffset:0];
+}
+
+- (void)renderYUVWithEncoder:(id<MTLRenderCommandEncoder>)encoder {
+
 }
 
 @end

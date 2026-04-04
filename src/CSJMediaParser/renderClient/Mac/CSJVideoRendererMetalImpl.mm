@@ -55,8 +55,7 @@ bool CSJVideoRendererMetalImpl::updateScene(double timeStamp) {
         return false;
     }
 
-
-    return true;
+    return [m_pRenderer updateSceneWithTimeStamp:0.0];
 }
 
 void CSJVideoRendererMetalImpl::drawScene() {
@@ -65,11 +64,11 @@ void CSJVideoRendererMetalImpl::drawScene() {
     }
 
     bool need_update = updateScene(0.0);
-    if (!need_update) {
-        return ;
+    if (need_update) {
+        // TODO: draw
     }
 
-    [m_pRenderer drawContent];
+    [m_pRenderer drawContent:need_update];
 }
 
 void CSJVideoRendererMetalImpl::updateDrawableSize(int width, int height, 
