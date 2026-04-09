@@ -7,12 +7,22 @@
 #include <QuartzCore/CAMetalLayer.h>
 #include <objc/NSObjCRuntime.h>
 
+#include "CSJUtils/CSJPathTool.h"
+
 using csjmediaengine::CSJVideoData;
 using csjmediaengine::CSJVideoFormatType;
+using csjutils::CSJPathTool;
 
-#import "CSJMediaShaderTypes.h"
+#import "Shaders/CSJMediaShaderTypes.h"
 #import "CSJMetalRenderer.h"
 #import "CSJMetalHelper.h"
+
+static struct Vertex vertices[] = {
+    {-1,  1, 0}, {0, 0},
+    { 1,  1, 0}, {1, 0},
+    {-1, -1, 0}, {0, 1},
+    { 1, -1, 0}, {1, 1},
+};
 
 // Define the index array.
 // Triangle 1: 0 -> 1 -> 2 (left-bottom, right-bottom, left-top)
@@ -90,7 +100,7 @@ static uint16_t indices[] = { 0, 1, 2, 1, 3, 2 };
     _videoHeight = 0;
 
     _rgbaTexs = nil;
-    _idelTexIndex = 1;
+    _idelTexIndex = 0;
     _renderMode = 0;
     _rgbaFromBuffer = 0;
 
@@ -122,9 +132,23 @@ static uint16_t indices[] = { 0, 1, 2, 1, 3, 2 };
         return ;
     }
 
-    id<MTLLibrary> lib = [_device newDefaultLibrary];
-    id<MTLFunction> vertFunc = [lib newFunctionWithName:@"rbgaVertShader"];
-    id<MTLFunction> fragFunc = [lib newFunctionWithName:@"rgbaFragShader"];
+    std::string shader_file_name("default.metallib");
+    std::string shaderPath = CSJPathTool::getInstance()->getShaderFileWithName(shader_file_name);
+    if (shaderPath.size() > 0) {
+
+    }
+    NSString *metallibPath = [[NSString alloc] initWithUTF8String:shaderPath.c_str()];
+
+    NSError *error = nil;
+    id<MTLLibrary> lib = [_device newLibraryWithFile:metallibPath error:&error];
+    if (!lib || error) {
+        NSLog(@"❌ 加载 metallib 失败：%@", error.localizedDescription);
+        return nil;
+    }
+
+    //id<MTLLibrary> lib = [_device newDefaultLibrary];
+    id<MTLFunction> vertFunc = [lib newFunctionWithName:@"rgbaVertexShader"];
+    id<MTLFunction> fragFunc = [lib newFunctionWithName:@"rgbaFragmentShader"];
 
     MTLRenderPipelineDescriptor *desc = [[MTLRenderPipelineDescriptor alloc] init];
     desc.vertexFunction = vertFunc;
@@ -152,10 +176,6 @@ static uint16_t indices[] = { 0, 1, 2, 1, 3, 2 };
     _rgbaIndexBuffer = [_device newBufferWithBytes:indices 
                                             length:sizeof(indices) 
                                            options:MTLResourceStorageModeShared];
-
-    // Setting vertex buffer into encoder.
-    // [encoder setVertexBuffer:_rgbaVertexBuffer offset:0 atIndex:0];
-    // [encoder drawPrimitives:MTLPrimitiveTypeTriangleStrip vertexStart:0 vertexCount:4];
 }
 
 - (void)updateDrawable:(NSInteger)width height:(NSInteger)height pixelRatio:(float)pixelRatio {
@@ -225,6 +245,7 @@ static uint16_t indices[] = { 0, 1, 2, 1, 3, 2 };
 
             self.rgbaTexs[self.idelTexIndex] = idelTexture;
         }
+        self.idelTexIndex = 1 - self.idelTexIndex;
     }
 }
 
@@ -280,58 +301,6 @@ static uint16_t indices[] = { 0, 1, 2, 1, 3, 2 };
     [command_buffer presentDrawable:drawable];
     [command_buffer commit];
 }
-
-// invoke when draw content.
-// - (void)drawInMTKView:(MTKView *)view {
-
-//     @autoreleasepool {
-//         id<MTLCommandBuffer> commandBuffer = [_commandQueue commandBuffer];
-//         commandBuffer.label = @"Render Commands";
-
-//         MTLRenderPassDescriptor* onScreenDescriptor = view.currentRenderPassDescriptor;
-//         if (onScreenDescriptor != nil) {
-//             id<MTLRenderCommandEncoder> renderEncoder = [commandBuffer renderCommandEncoderWithDescriptor:onScreenDescriptor];
-
-//             //onScreenDescriptor.colorAttachments[0].texture = drawable.texture;
-//             //onScreenDescriptor.colorAttachments[0].loadAction = MTLLoadActionClear;
-//             //onScreenDescriptor.colorAttachments[0].clearColor = MTLClearColorMake(0.0, 1.0, 1.0, 1.0);
-//             _renderView.clearColor = MTLClearColorMake(0.0, 0.5, 0.5, 1.0);
-
-//             MTLViewport viewPort = {0, 0, _width, _height, 0.0, 1.0};
-//             [renderEncoder setViewport:viewPort];
-
-//             [renderEncoder endEncoding];
-
-//             if (view.currentDrawable) {
-//                 [commandBuffer presentDrawable:view.currentDrawable];
-//             }
-//         }
-
-//         [commandBuffer commit];
-//     }
-// }
-
-// invoked when view's layout changed, including change resolution, size.
-// - (void)mtkView:(MTKView *)view drawableSizeWillChange:(CGSize)size {
-//     NSLog(@"MTKView size has changed!");
-// }
-
-// - (void)loadMetalWithView:(nonnull MTKView *)view {
-//     view.depthStencilPixelFormat = MTLPixelFormatDepth32Float_Stencil8;
-//     view.colorPixelFormat = MTLPixelFormatBGRA8Unorm_sRGB;
-
-//     _vertexDescriptor = [[MTLVertexDescriptor alloc] init];
-
-//     // Position
-//     _vertexDescriptor.attributes[VertexAttributePosition].format = MTLVertexFormatFloat3;
-//     _vertexDescriptor.attributes[VertexAttributePosition].offset = 0;
-//     _vertexDescriptor.attributes[VertexAttributePosition].bufferIndex = CSJMediaVertexBufferIndex;
-
-//     // texCoord
-//     _vertexDescriptor.attributes[VertexAttributeTexCoord].format = MTLVertexFormatFloat2;
-//     _vertexDescriptor.attributes[VertexAttributeTexCoord].offset = 12;
-//     _vertexDescriptor.attributes[VertexAttributeTexCoord].bufferIndex = CSJMediaVertexBufferIndex;
-// }
 
 - (void)loadVideoComponentWithPixelFmt:(NSInteger)pixelFmt width:(NSInteger)width height:(NSInteger)height {
     switch (pixelFmt) {

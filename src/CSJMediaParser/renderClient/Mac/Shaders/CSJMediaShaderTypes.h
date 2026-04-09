@@ -28,11 +28,4 @@ typedef struct Vertex {
     float texCoord[2];
 } Vertex;
 
-struct Vertex vertices[] = {
-    {-1,  1, 0}, {0, 0},
-    { 1,  1, 0}, {1, 0},
-    {-1, -1, 0}, {0, 1},
-    { 1, -1, 0}, {1, 1},
-};
-
 #endif // __CSJMEDIASHADERTYPES_H__
