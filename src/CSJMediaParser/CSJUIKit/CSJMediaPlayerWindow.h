@@ -33,6 +33,8 @@ public slots:
     void onFastForwardBtnClicked();
     void onFastBackBtnClicked();
 
+    void onSetImage();
+
 protected:
     void initControllWidget();
 

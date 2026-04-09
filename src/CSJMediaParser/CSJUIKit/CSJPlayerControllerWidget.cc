@@ -48,6 +48,7 @@ CSJPlayerControllerWidget::CSJPlayerControllerWidget(QWidget *parent)
 
     QPushButton *playBtn = new QPushButton("Play");
     QPushButton *stopBtn = new QPushButton("Stop");
+    QPushButton *imageBtn = new QPushButton("Image Test");
 
     QSlider *progressSlider = new QSlider(Qt::Horizontal);
     progressSlider->setRange(0, 100);
@@ -59,11 +60,13 @@ CSJPlayerControllerWidget::CSJPlayerControllerWidget(QWidget *parent)
 
     layout->addWidget(playBtn);
     layout->addWidget(stopBtn);
+    layout->addWidget(imageBtn);
     layout->addWidget(progressSlider, 1);
     layout->addWidget(volumeSlider);
 
     m_pPlayBtn = playBtn;
     m_pStopBtn = stopBtn;
+    m_pImageBtn = imageBtn;
     m_pProgressSlider = progressSlider;
     m_pVolumeSlider = volumeSlider;
 
@@ -71,6 +74,7 @@ CSJPlayerControllerWidget::CSJPlayerControllerWidget(QWidget *parent)
 
     connect(m_pPlayBtn, &QPushButton::clicked, this, &CSJPlayerControllerWidget::onPlayBtnClicked);
     connect(m_pStopBtn, &QPushButton::clicked, this, &CSJPlayerControllerWidget::onStopBtnClicked);
+    connect(m_pImageBtn, &QPushButton::clicked, this, &CSJPlayerControllerWidget::onImageBtnClicked);
 }
 
 void CSJPlayerControllerWidget::onPlayBtnClicked() {
@@ -92,4 +96,8 @@ void CSJPlayerControllerWidget::onStopBtnClicked() {
     m_pStopBtn->setEnabled(false);
     m_pPlayBtn->setText("Play");
     emit stop();
+}
+
+void CSJPlayerControllerWidget::onImageBtnClicked() {
+    emit showImage();
 }

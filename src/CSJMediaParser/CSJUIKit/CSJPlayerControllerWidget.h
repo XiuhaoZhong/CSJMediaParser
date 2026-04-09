@@ -17,13 +17,17 @@ signals:
     void resume();
     void stop();
 
+    void showImage();
+
 public slots:
     void onPlayBtnClicked();
     void onStopBtnClicked();
+    void onImageBtnClicked();
 
 private:
     QPushButton *m_pPlayBtn;
     QPushButton *m_pStopBtn;
+    QPushButton *m_pImageBtn;
     QSlider     *m_pVolumeSlider;
     QSlider     *m_pProgressSlider;
 };

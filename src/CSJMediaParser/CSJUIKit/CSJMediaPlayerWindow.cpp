@@ -64,6 +64,8 @@ void CSJMediaPlayerWindow::initUI() {
     setWindowTitle("CSJMediaPlayer");
     setStyleSheet("QWidget {background-color: #1A202C;}");
 
+    connect(ctrlWidget, &CSJPlayerControllerWidget::showImage, this, &CSJMediaPlayerWindow::onSetImage);
+
     //connect(ctrlWidget, &CSJPlayerControllerWidget::play, m_pDXWidget, &CSJVideoRendererWidget::showDefaultImage);
 
     // QVBoxLayout *controllerLayout = new QVBoxLayout();
@@ -169,6 +171,14 @@ void CSJMediaPlayerWindow::onFastBackBtnClicked() {
     }
 
     qDebug() << "[LOG] Fast backward... ";
+}
+
+void CSJMediaPlayerWindow::onSetImage() {
+    if (!m_pVideoRenderWidget) {
+        return ;
+    }
+
+    m_pVideoRenderWidget->showDefaultImage();
 }
 
 void CSJMediaPlayerWindow::initControllWidget() {

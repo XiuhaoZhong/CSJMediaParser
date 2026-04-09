@@ -6,6 +6,10 @@
 #include <chrono>
 #include <thread>
 
+#include "CSJUtils/CSJPathTool.h"
+
+using namespace csjutils;
+
 CSJVideoRendererWidget::CSJVideoRendererWidget(QWidget *parent)
     : QWidget(parent)
     , m_renderType(NONE_RENDERING) {
@@ -79,6 +83,13 @@ void CSJVideoRendererWidget::showDefaultImage() {
     if (!m_spVideoRenderer)  {
         return ;
     }
+
+    std::string imageName("cross_street.jpg");
+    std::string imagePath = CSJPathTool::getInstance()->getImageWithName(imageName);
+    qDebug() << "Image Path: " << imagePath;
+
+    m_spVideoRenderer->setImage(imagePath);
+    
 
     m_spVideoRenderer->setImage("resources/Images/cross_street.jpeg");
 }

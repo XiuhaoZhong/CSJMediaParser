@@ -128,6 +128,25 @@ set_target_properties(${TARGET_NAME} PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
 
+if(CMAKE_HOST_APPLE)
+    file(GLOB SHADER_SOURCES "${SRC_ROOT}/renderClient/Mac/Shaders/*.metal")
+
+    set(METAL_OUTPUT "${SRC_ROOT}/renderClient/Mac/Shaders/default.metallib")
+#xcrun -sdk macosx metal CSJMediaShaders.metal -o default.metallib
+    add_custom_command(
+        OUTPUT ${METAL_OUTPUT}
+        COMMAND xcrun -sdk macosx metal 
+            ${SHADER_SOURCES}
+            -o ${METAL_OUTPUT}
+        DEPENDS ${SHADER_SOURCES}
+        COMMENT "Building Metal library (default.metallib)"
+    )
+
+    add_custom_target(MetalShaders ALL DEPENDS ${METAL_OUTPUT})
+
+    add_dependencies(${TARGET_NAME} MetalShaders)
+endif()
+
 target_link_libraries(${TARGET_NAME} PUBLIC CSJUtils)
 target_link_libraries(${TARGET_NAME} PUBLIC CSJMediaEngine)
 
@@ -196,8 +215,8 @@ elseif(CMAKE_HOST_APPLE)
         DESTINATION ${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.app/Contents/Resources
     )
 
-    install(DIRECTORY ${RESOURCE_DIR}/MetalShaders
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.app/Contents/Resources
+    install(FILES "${SRC_ROOT}/renderClient/Mac/Shaders/default.metallib"
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.app/Contents/Resources/MetalShaders
     )
 
     set(DEVELOPER_ID "Apple Development: zxhas@foxmail.com (Q4LVL56W34)")

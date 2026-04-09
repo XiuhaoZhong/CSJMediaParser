@@ -29,7 +29,7 @@ static std::string getAppResourcePath() {
         return std::string(path);
     }
 
-    CFRelease(resourcesURL);
+    //CFRelease(resourcesURL);
     return "";
 }
 
@@ -67,7 +67,7 @@ fs::path CSJPathTool::getExecuteDir() {
 }
 
 fs::path CSJPathTool::getResourceDir() {
-    return getExecuteDir().append("resources");
+    return getExecuteDir().append("Resources");
 }
 
 fs::path CSJPathTool::getModelDir() {
@@ -90,7 +90,7 @@ fs::path CSJPathTool::getShaderDir() {
 #ifdef _WIN32
     return getResourceDir().append("DXShaders");
 #else
-    return getResourceDir().append("MetalShaders");
+    return getAppResourcePath().append("/MetalShaders");
 #endif
 }
 
