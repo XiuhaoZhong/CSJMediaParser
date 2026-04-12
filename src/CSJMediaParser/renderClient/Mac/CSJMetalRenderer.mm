@@ -18,10 +18,10 @@ using csjutils::CSJPathTool;
 #import "CSJMetalHelper.h"
 
 static struct Vertex vertices[] = {
-    {-1.0,  1.0, 0.0}, {0.0, 0.0},
-    {-1.0, -1.0, 0.0}, {0.0, 1.0},
-    { 1.0,  1.0, 0.0}, {1.0, 0.0},
-    { 1.0, -1.0, 0.0}, {1.0, 1.0},
+    {-1.0,  1.0, 0.0, 0.0, 0.0},
+    {-1.0, -1.0, 0.0, 0.0, 1.0},
+    { 1.0,  1.0, 0.0, 1.0, 0.0},
+    { 1.0, -1.0, 0.0, 1.0, 1.0},
 };
 
 // Define the index array.
@@ -159,6 +159,7 @@ static uint16_t indices[] = { 0, 1, 2, 2, 1, 3};
     _rgbaVertDesc.attributes[1].bufferIndex = 0;
 
     _rgbaVertDesc.layouts[0].stride = sizeof(struct Vertex);
+    _rgbaVertDesc.layouts[0].stepFunction = MTLVertexStepFunctionPerVertex;
 
     MTLRenderPipelineDescriptor *desc = [[MTLRenderPipelineDescriptor alloc] init];
     desc.vertexFunction = vertFunc;
@@ -235,7 +236,7 @@ static uint16_t indices[] = { 0, 1, 2, 2, 1, 3};
 
             NSImage *image = [[NSImage alloc] initWithContentsOfFile:self.imagePath];
             if (!image) {
-                return nil;
+                return ;
             }
 
             CGImageRef cgImage = [image CGImageForProposedRect:nil context:nil hints:nil];

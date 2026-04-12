@@ -80,7 +80,7 @@ fs::path CSJPathTool::getTextureDir() {
 
 fs::path CSJPathTool::getImageDir() {
 #if defined(__APPLE__)
-    return getAppResourcePath().append("/images");
+    return getAppResourcePath().append("/Images");
 #else
     return getResourceDir().append("images");
 #endif
