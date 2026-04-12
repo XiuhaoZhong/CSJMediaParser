@@ -18,17 +18,17 @@ using csjutils::CSJPathTool;
 #import "CSJMetalHelper.h"
 
 static struct Vertex vertices[] = {
-    {-1,  1, 0}, {0, 0},
-    { 1,  1, 0}, {1, 0},
-    {-1, -1, 0}, {0, 1},
-    { 1, -1, 0}, {1, 1},
+    {-1.0,  1.0, 0.0}, {0.0, 0.0},
+    {-1.0, -1.0, 0.0}, {0.0, 1.0},
+    { 1.0,  1.0, 0.0}, {1.0, 0.0},
+    { 1.0, -1.0, 0.0}, {1.0, 1.0},
 };
 
 // Define the index array.
 // Triangle 1: 0 -> 1 -> 2 (left-bottom, right-bottom, left-top)
 // Triangle 2: 1 -> 3 -> 2 (right-bottom, right-top, left-top)
 // Notice: In metal clockwise is the positive direction.
-static uint16_t indices[] = { 0, 1, 2, 1, 3, 2 };
+static uint16_t indices[] = { 0, 1, 2, 2, 1, 3};
 
 @interface CSJMetalRenderer ()
 
@@ -146,17 +146,8 @@ static uint16_t indices[] = { 0, 1, 2, 1, 3, 2 };
         return nil;
     }
 
-    //id<MTLLibrary> lib = [_device newDefaultLibrary];
     id<MTLFunction> vertFunc = [lib newFunctionWithName:@"rgbaVertexShader"];
     id<MTLFunction> fragFunc = [lib newFunctionWithName:@"rgbaFragmentShader"];
-
-    MTLRenderPipelineDescriptor *desc = [[MTLRenderPipelineDescriptor alloc] init];
-    desc.vertexFunction = vertFunc;
-    desc.fragmentFunction = fragFunc;
-    desc.colorAttachments[0].pixelFormat = _metalLayer.pixelFormat;
-
-    NSError *err = nil;
-    _rgbaPipeline = [_device newRenderPipelineStateWithDescriptor:desc error:&err];
 
     _rgbaVertDesc = [[MTLVertexDescriptor alloc] init];
     _rgbaVertDesc.attributes[0].format = MTLVertexFormatFloat3;
@@ -168,6 +159,15 @@ static uint16_t indices[] = { 0, 1, 2, 1, 3, 2 };
     _rgbaVertDesc.attributes[1].bufferIndex = 0;
 
     _rgbaVertDesc.layouts[0].stride = sizeof(struct Vertex);
+
+    MTLRenderPipelineDescriptor *desc = [[MTLRenderPipelineDescriptor alloc] init];
+    desc.vertexFunction = vertFunc;
+    desc.fragmentFunction = fragFunc;
+    desc.colorAttachments[0].pixelFormat = _metalLayer.pixelFormat;
+    desc.vertexDescriptor = _rgbaVertDesc;
+
+    NSError *err = nil;
+    _rgbaPipeline = [_device newRenderPipelineStateWithDescriptor:desc error:&err];
 
     _rgbaVertexBuffer = [_device newBufferWithBytes:vertices
                                              length:sizeof(vertices)
@@ -288,12 +288,11 @@ static uint16_t indices[] = { 0, 1, 2, 1, 3, 2 };
     id<MTLRenderCommandEncoder> renderEncoder = [command_buffer renderCommandEncoderWithDescriptor:pass];
 
     // add render command;
-    if (updateContent) {
-        if (self.renderMode == 1) {
-            [self renderRGBAWithEncoder:renderEncoder];
-        } else if (self.renderMode == 2) {
-            [self renderYUVWithEncoder:renderEncoder];   
-        }
+
+    if (self.renderMode == 1) {
+        [self renderRGBAWithEncoder:renderEncoder];
+    } else if (self.renderMode == 2) {
+        [self renderYUVWithEncoder:renderEncoder];   
     }
 
     [renderEncoder endEncoding];
@@ -398,22 +397,22 @@ static uint16_t indices[] = { 0, 1, 2, 1, 3, 2 };
 
     if (!self.rgbaPipeline) {
         [self setupRGBAPipeline];
-
-        // Bind rgba pipeline.
-        [encoder setRenderPipelineState:self.rgbaPipeline];
-
-        // Bind vertex buffer.
-        [encoder setVertexBuffer:self.rgbaVertexBuffer offset:0 atIndex:0];
     }
+
+    // Bind rgba pipeline.
+    [encoder setRenderPipelineState:self.rgbaPipeline];
     
+    // Bind vertex buffer.
+    [encoder setVertexBuffer:self.rgbaVertexBuffer offset:0 atIndex:0];
+
     // Bind texture.
     [encoder setFragmentTexture:renderTex atIndex:0];
 
     // Draw primitives.
-    [encoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle 
+    [encoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle
                         indexCount:6
-                         indexType:MTLIndexTypeUInt16 
-                       indexBuffer:self.rgbaIndexBuffer 
+                         indexType:MTLIndexTypeUInt16
+                       indexBuffer:self.rgbaIndexBuffer
                  indexBufferOffset:0];
 }
 
