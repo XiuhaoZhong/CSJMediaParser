@@ -3,13 +3,12 @@
 
 #include <QWidget>
 
-//#include "CSJUIModules/CSJWidget.h"
-
 #include "Controllers/CSJPlayerController.h"
 
 class CSJWidget;
 class QPushButton;
 class CSJVideoRendererWidget;
+class CSJPlayerControllerWidget;
 
 typedef enum {
     PLAYSTATUS_STOP = 0,
@@ -35,23 +34,11 @@ public slots:
 
     void onSetImage();
 
-protected:
-    void initControllWidget();
-
-    void initPlayController();
-
 private:
-    CSJVideoRendererWidget *m_pVideoRenderWidget = nullptr;
-    QWidget *m_pProgressWidget = nullptr;
-    QWidget *m_pMediaControlWidget = nullptr;
-
-    QPushButton *m_pPlayBtn;
-    QPushButton *m_pStopBtn;
-    QPushButton *m_pFastForwardBtn;
-    QPushButton *m_pFastBackBtn;
-
-    CSJUniqPlayerController m_playController;
-    PlayStatus              m_playStatus;
+    CSJVideoRendererWidget    *m_pVideoRenderWidget = nullptr;
+    CSJUniqPlayerController    m_playController;              /* Player function controller. */
+    CSJPlayerControllerWidget *m_playerCtrlWidget = nullptr;  /* Player controller UI. */
+    PlayStatus                 m_playStatus;
 };
 
 #endif

@@ -101,3 +101,70 @@ void CSJPlayerControllerWidget::onStopBtnClicked() {
 void CSJPlayerControllerWidget::onImageBtnClicked() {
     emit showImage();
 }
+
+// The following code is references for setting button style.
+// static void function() {
+//     m_pPlayBtn->setStyleSheet(R"(
+//         QPushButton {
+//             background-color: #4CAF50; /* 正常状态背景色 */
+//             color: white;
+//             border-radius: 5px;
+//             padding: 8px;
+//         }
+//         QPushButton:disabled {
+//             background-color: #cccccc; /* 禁用状态背景色 */
+//             color: #666666;
+//         }
+//         QPushButton:pressed {
+//             background-color: #45a049; /* 按下状态背景色 */
+//         }
+//     )");
+
+//     m_pStopBtn->setStyleSheet(R"(
+//         QPushButton {
+//             background-color: #4CAF50; /* 正常状态背景色 */
+//             color: white;
+//             border-radius: 5px;
+//             padding: 8px;
+//         }
+//         QPushButton:disabled {
+//             background-color: #cccccc; /* 禁用状态背景色 */
+//             color: #666666;
+//         }
+//         QPushButton:pressed {
+//             background-color: #45a049; /* 按下状态背景色 */
+//         }
+//     )");
+
+//     m_pFastBackBtn->setStyleSheet(R"(
+//         QPushButton {
+//             background-color: #4CAF50; /* 正常状态背景色 */
+//             color: white;
+//             border-radius: 5px;
+//             padding: 8px;
+//         }
+//         QPushButton:disabled {
+//             background-color: #cccccc; /* 禁用状态背景色 */
+//             color: #666666;
+//         }
+//         QPushButton:pressed {
+//             background-color: #45a049; /* 按下状态背景色 */
+//         }
+//     )");
+
+//     m_pFastForwardBtn->setStyleSheet(R"(
+//         QPushButton {
+//             background-color: #4CAF50; /* 正常状态背景色 */
+//             color: white;
+//             border-radius: 5px;
+//             padding: 8px;
+//         }
+//         QPushButton:disabled {
+//             background-color: #cccccc; /* 禁用状态背景色 */
+//             color: #666666;
+//         }
+//         QPushButton:pressed {
+//             background-color: #45a049; /* 按下状态背景色 */
+//         }
+//     )");
+// }

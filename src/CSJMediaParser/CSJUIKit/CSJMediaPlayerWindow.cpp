@@ -45,10 +45,6 @@ void CSJMediaPlayerWindow::initUI() {
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
-    // QPushButton *imageButton = new QPushButton(m_pVideoThumbnailWiget);
-    // imageButton->setText("Show Image");
-    // connect(imageButton, &QPushButton::pressed, m_pDXWidget, &CSJVideoRendererWidget::showDefaultImage);
-
     QVBoxLayout *playerLayout = new QVBoxLayout();
     playerLayout->setSpacing(0);
     mainLayout->addLayout(playerLayout, 18);
@@ -56,7 +52,6 @@ void CSJMediaPlayerWindow::initUI() {
 
     m_pVideoRenderWidget = new CSJVideoRendererWidget();
     playerLayout->addWidget(m_pVideoRenderWidget);
-    //m_pVideoRenderWidget->show();
 
     CSJPlayerControllerWidget *ctrlWidget = new CSJPlayerControllerWidget(this);
     playerLayout->addWidget(ctrlWidget, 1);
@@ -65,37 +60,10 @@ void CSJMediaPlayerWindow::initUI() {
     setStyleSheet("QWidget {background-color: #1A202C;}");
 
     connect(ctrlWidget, &CSJPlayerControllerWidget::showImage, this, &CSJMediaPlayerWindow::onSetImage);
-
-    //connect(ctrlWidget, &CSJPlayerControllerWidget::play, m_pDXWidget, &CSJVideoRendererWidget::showDefaultImage);
-
-    // QVBoxLayout *controllerLayout = new QVBoxLayout();
-    // mainLayout->addLayout(controllerLayout, 1);
-    // setLayout(mainLayout);
-    // mainLayout->activate();
-
-    // QWidget *progressWidget = new QWidget();
-    // controllerLayout->addWidget(progressWidget);
-    // progressWidget->setFixedHeight(20);
-    // progressWidget->setStyleSheet(QString("background-color:#C77A7A"));
-
-    // m_pMediaControlWidget = new QWidget();
-    // controllerLayout->addWidget(m_pMediaControlWidget);
-    // m_pMediaControlWidget->setFixedHeight(60);
-    // m_pMediaControlWidget->setStyleSheet(QString("background-color:#C7ABAB"));
-    // initControllWidget();
-    // initPlayController();
+    m_playerCtrlWidget = ctrlWidget;
 }
 
 void CSJMediaPlayerWindow::show(bool bShow) {
-    // if (bShow == m_pCenterWidget->isVisible()) {
-    //     return ;
-    // }
-
-    // m_pCenterWidget->setVisible(bShow);
-    // if (!bShow) {
-    //     // TODO: stop player if the player is playing.
-    // }
-
     setVisible(true);
     m_pVideoRenderWidget->setRenderType(ACTIVE_RENDERING);
 }
@@ -179,97 +147,4 @@ void CSJMediaPlayerWindow::onSetImage() {
     }
 
     m_pVideoRenderWidget->showDefaultImage();
-}
-
-void CSJMediaPlayerWindow::initControllWidget() {
-    m_pPlayBtn = new QPushButton("Play"); // play, pause and resume is the same button, switch by play status.
-    m_pStopBtn = new QPushButton("Stop", m_pMediaControlWidget);
-    m_pStopBtn->setEnabled(false);
-    m_pFastForwardBtn = new QPushButton ("FF");
-    m_pFastForwardBtn->setEnabled(false);
-    m_pFastBackBtn =  new QPushButton ("FB");
-    m_pFastBackBtn->setEnabled(false);
-
-    QHBoxLayout *layout = new QHBoxLayout(m_pMediaControlWidget);
-    layout->addWidget(m_pPlayBtn);
-    layout->addWidget(m_pStopBtn);
-    layout->addWidget(m_pFastForwardBtn);
-    layout->addWidget(m_pFastBackBtn);
-
-    connect(m_pPlayBtn, &QPushButton::clicked, this, &CSJMediaPlayerWindow::onPlayBtnClicked);
-    connect(m_pStopBtn, &QPushButton::clicked, this, &CSJMediaPlayerWindow::onStopBtnClicked);
-    connect(m_pFastForwardBtn, &QPushButton::clicked, this, &CSJMediaPlayerWindow::onFastForwardBtnClicked);
-    connect(m_pFastBackBtn, &QPushButton::clicked, this, &CSJMediaPlayerWindow::onFastBackBtnClicked);
-
-    m_pPlayBtn->setStyleSheet(R"(
-        QPushButton {
-            background-color: #4CAF50; /* 正常状态背景色 */
-            color: white;
-            border-radius: 5px;
-            padding: 8px;
-        }
-        QPushButton:disabled {
-            background-color: #cccccc; /* 禁用状态背景色 */
-            color: #666666;
-        }
-        QPushButton:pressed {
-            background-color: #45a049; /* 按下状态背景色 */
-        }
-    )");
-
-    m_pStopBtn->setStyleSheet(R"(
-        QPushButton {
-            background-color: #4CAF50; /* 正常状态背景色 */
-            color: white;
-            border-radius: 5px;
-            padding: 8px;
-        }
-        QPushButton:disabled {
-            background-color: #cccccc; /* 禁用状态背景色 */
-            color: #666666;
-        }
-        QPushButton:pressed {
-            background-color: #45a049; /* 按下状态背景色 */
-        }
-    )");
-
-    m_pFastBackBtn->setStyleSheet(R"(
-        QPushButton {
-            background-color: #4CAF50; /* 正常状态背景色 */
-            color: white;
-            border-radius: 5px;
-            padding: 8px;
-        }
-        QPushButton:disabled {
-            background-color: #cccccc; /* 禁用状态背景色 */
-            color: #666666;
-        }
-        QPushButton:pressed {
-            background-color: #45a049; /* 按下状态背景色 */
-        }
-    )");
-
-    m_pFastForwardBtn->setStyleSheet(R"(
-        QPushButton {
-            background-color: #4CAF50; /* 正常状态背景色 */
-            color: white;
-            border-radius: 5px;
-            padding: 8px;
-        }
-        QPushButton:disabled {
-            background-color: #cccccc; /* 禁用状态背景色 */
-            color: #666666;
-        }
-        QPushButton:pressed {
-            background-color: #45a049; /* 按下状态背景色 */
-        }
-    )");
-}
-
-void CSJMediaPlayerWindow::initPlayController() {
-    if (m_playController) {
-        return ;
-    }
-
-    m_playController = CSJPlayerController::createPlayerController();
 }
