@@ -1,7 +1,7 @@
 #ifndef __CSJVIDEORENDERERMETAL_H__
 #define __CSJVIDEORENDERERMETAL_H__
 
-#include "renderClient/CSJVideoRenderer.h"
+#include "CSJRenderEngine/CSJVideoRenderer.h"
 
 #import "CSJMetalRenderer.h"
 
