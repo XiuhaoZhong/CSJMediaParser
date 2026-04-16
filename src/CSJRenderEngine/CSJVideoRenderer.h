@@ -5,6 +5,8 @@
 #include <string>
 #include <array>
 
+#include "CSJRenderEngine_Export.h"
+
 #include "CSJMediaEngine/CSJMediaRawData.h"
 
 using csjmediaengine::CSJVideoFormatType;
@@ -37,7 +39,7 @@ typedef enum {
  * set the yuv buffers with a  CSJVideoData instance, and must include pixel
  * format, width and height.
  */
-class CSJVideoRenderer {
+class CSJRENDERENGINE_API CSJVideoRenderer {
 public:
     CSJVideoRenderer() {};
     virtual ~CSJVideoRenderer() {};
