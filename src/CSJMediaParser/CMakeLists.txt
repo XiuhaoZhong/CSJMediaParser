@@ -42,49 +42,25 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Gui)
 
 file(GLOB MAIN_SOURCE_FILES "${SRC_ROOT}/main/*")
 file(GLOB UIKIT_SOURCE_FILES "${SRC_ROOT}/CSJUIKit/*")
-file(GLOB RENDERER_SOURCE_FILES "${SRC_ROOT}/renderClient/*")
 file(GLOB CONTROLLER_SOURCE_FILES "${SRC_ROOT}/Controllers/*")
 file(GLOB UIMODULES_SOURCE_FILES "${SRC_ROOT}/CSJUIModules/*")
 file(GLOB LOCK_SOURCE_FILES "${SRC_ROOT}/RWLock/*")
 
 if(CMAKE_HOST_WIN32)
-# settings on Windows
-    file(GLOB RENDERER_IMPL_FILES "${SRC_ROOT}/renderClient/Win/*")
-    set(NativeRenderLib d3d11 dxgi dxguid d3dcompiler)
-    link_directories(${GENERATE_LIB_DIR})
 
-    include_directories(${SRC_ROOT}  ${GENERATE_HEADERS_DIR})
 elseif (CMAKE_HOST_APPLE)# settings on MacOS
-    # USE ARC
-    add_compile_options(-x objective-c++)
-
-    #find_package(OpenCV REQUIRED)
-
-    # src on MacOS
-    file(GLOB_RECURSE RENDERER_IMPL_FILES "${SRC_ROOT}/renderClient/Mac/*")
-
-    find_library(lib-foundation Foundation)
-    find_library(lib-metal Metal)
-    find_library(lib-metalKit MetalKit)
-    find_library(lib-quartzcore QuartzCore)
-
-    link_directories(${GENERATE_LIB_DIR})
-    include_directories(${SRC_ROOT}  ${GENERATE_HEADERS_DIR})
-
-    include_directories(${SRC_ROOT} 
-                        ${QTDIR}/lib/QtGui.framework/Headers)
     
 endif()
+
+link_directories(${GENERATE_LIB_DIR})
+include_directories(${SRC_ROOT}  ${GENERATE_HEADERS_DIR})
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(${TARGET_NAME}
         MANUAL_FINALIZATION
         ${MAIN_SOURCE_FILES}
         ${UIKIT_SOURCE_FILES}
-        ${RENDER_SOURCES}
         ${CONTROLLER_SOURCE_FILES}
-        ${RENDERER_SOURCE_FILES}
-        ${RENDERER_IMPL_FILES}
         ${LOCK_SOURCE_FILES}
         ${UIMODULES_SOURCE_FILES}
     )
@@ -128,27 +104,9 @@ set_target_properties(${TARGET_NAME} PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
 
-if(CMAKE_HOST_APPLE)
-    file(GLOB SHADER_SOURCES "${SRC_ROOT}/renderClient/Mac/Shaders/*.metal")
-
-    set(METAL_OUTPUT "${SRC_ROOT}/renderClient/Mac/Shaders/default.metallib")
-#xcrun -sdk macosx metal CSJMediaShaders.metal -o default.metallib
-    add_custom_command(
-        OUTPUT ${METAL_OUTPUT}
-        COMMAND xcrun -sdk macosx metal 
-            ${SHADER_SOURCES}
-            -o ${METAL_OUTPUT}
-        DEPENDS ${SHADER_SOURCES}
-        COMMENT "Building Metal library (default.metallib)"
-    )
-
-    add_custom_target(MetalShaders ALL DEPENDS ${METAL_OUTPUT})
-
-    add_dependencies(${TARGET_NAME} MetalShaders)
-endif()
-
 target_link_libraries(${TARGET_NAME} PUBLIC CSJUtils)
 target_link_libraries(${TARGET_NAME} PUBLIC CSJMediaEngine)
+target_link_libraries(${TARGET_NAME} PUBLIC CSJRenderEngine)
 
 add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy 
@@ -211,11 +169,16 @@ elseif(CMAKE_HOST_APPLE)
         COMPONENT Runtime
     )
 
+    install(FILES ${GENERATE_LIB_DIR}/libCSJRenderEngine.dylib
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.app/Contents/Frameworks
+        COMPONENT Runtime
+    )
+
     install(DIRECTORY ${RESOURCE_DIR}/Images
         DESTINATION ${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.app/Contents/Resources
     )
 
-    install(FILES "${SRC_ROOT}/renderClient/Mac/Shaders/default.metallib"
+    install(FILES "${PROJ_ROOT_DIR}/src/CSJRenderEngine/Mac/Shaders/default.metallib"
         DESTINATION ${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.app/Contents/Resources/MetalShaders
     )
 

@@ -1,9 +1,9 @@
 #include "CSJVideoRenderer.h"
 
 #ifdef _WIN32
-#include "renderClient/Win/CSJVideoRendererDXImpl.h"
+#include "Win/CSJVideoRendererDXImpl.h"
 #elif __APPLE__
-#include "renderClient/Mac/CSJVideoRendererMetalImpl.h"
+#include "Mac/CSJVideoRendererMetalImpl.h"
 #endif
 
 CSJSpVideoRenderer CSJVideoRenderer::getRendererInstance() {

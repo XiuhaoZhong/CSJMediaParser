@@ -20,7 +20,7 @@
 // extern "C" {
 // #endif
 
-// // TODO: Define symbols need to be exported.
+// TODO: Define symbols need to be exported.
 
 // #ifdef __cplusplus
 // }

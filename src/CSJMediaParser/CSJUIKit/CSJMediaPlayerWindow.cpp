@@ -76,34 +76,14 @@ void CSJMediaPlayerWindow::onPlayBtnClicked() {
 
     if (m_playStatus == PLAYSTATUS_STOP) {
         qDebug() << "[LOG] Start playing... ";
-
         m_playController->start();
-        m_playStatus = PLAYSTATUS_PLAY;
-
-        m_pPlayBtn->setText("Pause");
-        m_pFastForwardBtn->setEnabled(true);
-        m_pFastBackBtn->setEnabled(true);
     } else if (m_playStatus == PLAYSTATUS_PAUSE) {
         qDebug() << "[LOG] Resume playing... ";
-
         m_playController->resume();
-        m_playStatus = PLAYSTATUS_PLAY;
-
-        m_pPlayBtn->setText("Pause");
-        m_pFastForwardBtn->setEnabled(false);
-        m_pFastBackBtn->setEnabled(false);
     } else if (m_playStatus == PLAYSTATUS_PLAY) {
         qDebug() << "[LOG] Pause playing... ";
-
         m_playController->pause();
-        m_playStatus = PLAYSTATUS_PAUSE;
-
-        m_pPlayBtn->setText("Resume");
-        m_pFastForwardBtn->setEnabled(true);
-        m_pFastBackBtn->setEnabled(true);
     }
-
-    m_pStopBtn->setEnabled(true);
 }
 
 void CSJMediaPlayerWindow::onStopBtnClicked() {
@@ -116,11 +96,6 @@ void CSJMediaPlayerWindow::onStopBtnClicked() {
 
     m_playController->stop();
     m_playStatus = PLAYSTATUS_STOP;
-
-    m_pPlayBtn->setText("Play");
-    m_pStopBtn->setEnabled(false);
-    m_pFastForwardBtn->setEnabled(false);
-    m_pFastBackBtn->setEnabled(false);
 }
 
 void CSJMediaPlayerWindow::onFastForwardBtnClicked() {

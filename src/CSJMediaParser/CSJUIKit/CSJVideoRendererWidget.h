@@ -6,7 +6,7 @@
 
 #include <QWidget>
 
-#include "renderClient/CSJVideoRenderer.h"
+#include "CSJRenderEngine/CSJVideoRenderer.h"
 #include "CSJMediaEngine/CSJVideoPresentDelegate.h"
 
 using csjmediaengine::CSJVideoPresentDelegate;

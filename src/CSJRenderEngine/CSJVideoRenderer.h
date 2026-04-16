@@ -1,7 +1,6 @@
 #ifndef __CSJVIDEORENDERER_H__
 #define __CSJVIDEORENDERER_H__
 
-#include <QWidget>
 #include <memory>
 #include <string>
 #include <array>
