@@ -46,12 +46,6 @@ file(GLOB CONTROLLER_SOURCE_FILES "${SRC_ROOT}/Controllers/*")
 file(GLOB UIMODULES_SOURCE_FILES "${SRC_ROOT}/CSJUIModules/*")
 file(GLOB LOCK_SOURCE_FILES "${SRC_ROOT}/RWLock/*")
 
-if(CMAKE_HOST_WIN32)
-
-elseif (CMAKE_HOST_APPLE)# settings on MacOS
-    
-endif()
-
 link_directories(${GENERATE_LIB_DIR})
 include_directories(${SRC_ROOT}  ${GENERATE_HEADERS_DIR})
 

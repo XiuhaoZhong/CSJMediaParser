@@ -9,7 +9,7 @@
 #include <mutex>
 #include <array>
 
-#include "renderClient/CSJVideoRenderer.h"
+#include "CSJRenderEngine/CSJVideoRenderer.h"
 
 template <typename T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;

@@ -7,6 +7,7 @@ set(TARGET_NAME "CSJRenderEngine")
 set(CSJRENDERENGINE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 
 if(MSVC)
+    add_definitions(-DUNICODE -D_UNICODE)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
 endif()
 
@@ -73,7 +74,9 @@ endif()
 target_compile_definitions(${TARGET_NAME} PRIVATE CSJRENDERENGINE_EXPORTS)
 
 if(CMAKE_HOST_WIN32)
-    
+     target_link_libraries(${TARGET_NAME} PRIVATE 
+        ${NativeRenderLib}
+    )
 elseif(CMAKE_HOST_APPLE)
     target_link_libraries(${TARGET_NAME} PRIVATE 
         ${lib-foundation} ${lib-metal} ${lib-metalKit} ${lib-quartzcore} ${lib-coreGraphic} ${lib-appKit}
