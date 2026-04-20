@@ -74,12 +74,13 @@ endif()
 target_compile_definitions(${TARGET_NAME} PRIVATE CSJRENDERENGINE_EXPORTS)
 
 if(CMAKE_HOST_WIN32)
-     target_link_libraries(${TARGET_NAME} PRIVATE 
+    target_link_libraries(${TARGET_NAME} PRIVATE 
         ${NativeRenderLib}
     )
 elseif(CMAKE_HOST_APPLE)
     target_link_libraries(${TARGET_NAME} PRIVATE 
-        ${lib-foundation} ${lib-metal} ${lib-metalKit} ${lib-quartzcore} ${lib-coreGraphic} ${lib-appKit}
+        ${lib-foundation} ${lib-metal} ${lib-metalKit} 
+        ${lib-quartzcore} ${lib-coreGraphic} ${lib-appKit}
     )
 else()
 endif()
