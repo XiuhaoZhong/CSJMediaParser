@@ -38,6 +38,8 @@ public:
     CSJVideoData();
 
     CSJVideoData(CSJVideoFormatType fmtType, uint8_t* data, int width, int height);
+    CSJVideoData(CSJVideoFormatType fmtType, int width, int height, double pts, 
+                    double timeStamp, double duration, uint8_t *data);
 
     ~CSJVideoData();
 
@@ -53,27 +55,25 @@ public:
     uint8_t* getyuvU() const;
     uint8_t* getyuvV() const;
 
-    uint8_t* getRGB24() const;
-
     int getWidth() const;
-
     int getHeight() const;
+    double getDuration() const;
+    double getPts() const;
+    double getTimeStamp() const;
 
 protected:
-    void initWithYUV420();
-    void initWithRGB24();
+    void initWithYUV420(uint8_t* data);
+    void initWithRGB24(uint8_t* data);
 
 private:
-    CSJVideoFormatType m_fmtType;
-    uint8_t           *m_data;
-    int                m_width;
-    int                m_height;
+    CSJVideoFormatType m_fmtType    = CSJVIDEO_FMT_NONE;
+    uint8_t           *m_pData      = nullptr;
+    int                m_iWidth     = 0;
+    int                m_iHeight    = 0;
 
-    uint8_t           *m_dataY = nullptr;
-    uint8_t           *m_dataU = nullptr;
-    uint8_t           *m_dataV = nullptr;
-
-    uint8_t           *m_dataRGB24 = nullptr;
+    double             m_dPts       = 0.0;
+    double             m_dTimeStamp = 0.0;
+    double             m_dDuration  = 0.0;
 };
 
 class CSJMEDIAENGINE_API CSJAudioData {
@@ -90,11 +90,11 @@ public:
     CSJAudioData& operator=(CSJAudioData && audioData);
 
 private:
-    CSJAudioFormatType m_fmtType;
-    uint8_t           *m_data;
-    int                m_sampleRate;
-    int                m_channels;
-    int                m_bitsPerSample;
+    CSJAudioFormatType m_fmtType        = CSJAUDIO_FMT_NONE;
+    uint8_t           *m_pData          = nullptr;
+    int                m_iSampleRate    = 0;
+    int                m_iChannels      = 0;
+    int                m_iBitsPerSample = 0;
 };
 
 } // namespace csjmediaengine

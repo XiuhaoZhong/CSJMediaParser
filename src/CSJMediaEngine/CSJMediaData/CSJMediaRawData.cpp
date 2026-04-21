@@ -39,100 +39,83 @@ CSJVideoFormatType string2VideoType(std::wstring &fmtString) {
     return CSJVIDEO_FMT_NONE;
 }
 
-CSJVideoData::CSJVideoData()
-    : m_fmtType(CSJVIDEO_FMT_NONE)
-    , m_data(nullptr)
-    , m_width(0)
-    , m_height(0) {
+CSJVideoData::CSJVideoData() {
+
 }
 
 CSJVideoData::CSJVideoData(CSJVideoFormatType fmtType, uint8_t* data, int width, int height)
     : m_fmtType(fmtType)
-    , m_data(data)
-    , m_width(width)
-    , m_height(height) {
+    , m_pData(nullptr)
+    , m_iWidth(width)
+    , m_iHeight(height) {
 
     if (fmtType == CSJVIDEO_FMT_NV12) {
-        initWithYUV420();
+        initWithYUV420(data);
     } else if (fmtType == CSJVIDEO_FMT_RGB24) {
-        initWithRGB24();
+        initWithRGB24(data);
+    }
+}
+
+CSJVideoData::CSJVideoData(CSJVideoFormatType fmtType, int width, int height, double pts, 
+                    double timeStamp, double duration, uint8_t *data)
+    : m_fmtType(fmtType)
+    , m_pData(nullptr)
+    , m_iWidth(width)
+    , m_iHeight(height)
+    , m_dPts(pts)
+    , m_dTimeStamp(timeStamp)
+    , m_dDuration(duration) {
+            
+    if (fmtType == CSJVIDEO_FMT_NV12) {
+        initWithYUV420(data);
+    } else if (fmtType == CSJVIDEO_FMT_RGB24) {
+        initWithRGB24(data);
     }
 }
 
 CSJVideoData::~CSJVideoData() {
-    /*if (m_data) {
-        delete m_data;
-        m_data = nullptr;
-    }*/
-
-    if (m_dataY) {
-        delete[] m_dataY;
-        m_dataY = nullptr;
-    }
-
-    if (m_dataU) {
-        delete[] m_dataU;
-        m_dataU = nullptr;
-    }
-
-    if (m_dataV) {
-        delete[] m_dataV;
-        m_dataV = nullptr;
-    }
-
-    if (m_dataRGB24) {
-        delete[] m_dataRGB24;
-        m_dataRGB24 = nullptr;
+    if (m_pData) {
+        delete m_pData;
+        m_pData = nullptr;
     }
 }
 
 CSJVideoData::CSJVideoData(CSJVideoData && videoData)
     : m_fmtType(videoData.m_fmtType)
-    , m_data(videoData.m_data)
-    , m_width(videoData.m_width)
-    , m_height(videoData.m_height) {
+    , m_pData(videoData.m_pData)
+    , m_iWidth(videoData.m_iWidth)
+    , m_iHeight(videoData.m_iHeight)
+    , m_dPts(videoData.m_dPts)
+    , m_dTimeStamp(videoData.m_dTimeStamp)
+    , m_dDuration(videoData.m_dDuration) {
 
-    videoData.m_fmtType = CSJVIDEO_FMT_NONE;
-    videoData.m_data = nullptr;
-    videoData.m_width = 0;
-    videoData.m_height = 0;
-
-    m_dataY = videoData.m_dataY;
-    m_dataU = videoData.m_dataU;
-    m_dataV = videoData.m_dataV;
-
-    m_dataRGB24 = videoData.m_dataRGB24;
-
-    videoData.m_dataY = nullptr;
-    videoData.m_dataU = nullptr;
-    videoData.m_dataV = nullptr;
-
-    videoData.m_dataRGB24 = nullptr;
+    videoData.m_fmtType    = CSJVIDEO_FMT_NONE;
+    videoData.m_pData      = nullptr;
+    videoData.m_iWidth     = 0;
+    videoData.m_iHeight    = 0;
+    videoData.m_dPts       = 0.0;
+    videoData.m_dTimeStamp = 0.0;
+    videoData.m_dDuration  = 0.0;
 }
 
 CSJVideoData& CSJVideoData::operator=(CSJVideoData && videoData) {
     CSJVideoData tmp(std::move(*this));
 
-    m_fmtType = videoData.m_fmtType;
-    m_data = videoData.m_data;
-    m_width = videoData.m_width;
-    m_height = videoData.m_height;
+    m_fmtType    = videoData.m_fmtType;
+    m_pData      = videoData.m_pData;
+    m_iWidth     = videoData.m_iWidth;
+    m_iHeight    = videoData.m_iHeight;
+    m_dPts       = videoData.m_dPts;
+    m_dTimeStamp = videoData.m_dTimeStamp;
+    m_dDuration  = videoData.m_dDuration;
 
-    videoData.m_fmtType = CSJVIDEO_FMT_NONE;
-    videoData.m_data = nullptr;
-    videoData.m_width = 0;
-    videoData.m_height = 0;
-
-    m_dataY = videoData.m_dataY;
-    m_dataU = videoData.m_dataU;
-    m_dataV = videoData.m_dataV;
-    m_dataRGB24 = videoData.m_dataRGB24;
-
-    videoData.m_dataY = nullptr;
-    videoData.m_dataU = nullptr;
-    videoData.m_dataV = nullptr;
-
-    videoData.m_dataRGB24 = nullptr;
+    videoData.m_fmtType    = CSJVIDEO_FMT_NONE;
+    videoData.m_pData      = nullptr;
+    videoData.m_iWidth     = 0;
+    videoData.m_iHeight    = 0;
+    videoData.m_dPts       = 0.0;
+    videoData.m_dTimeStamp = 0.0;
+    videoData.m_dDuration  = 0.0;
 
     return *this;
 }
@@ -142,109 +125,104 @@ CSJVideoFormatType CSJVideoData::getFmtType() const {
 }
 
 uint8_t* CSJVideoData::getData() const {
-    return m_data;
+    return m_pData;
 }
 
 uint8_t * CSJVideoData::getyuvY() const {
-    return m_dataY;
+    // TODO: Calculate Y address with the video format, width and height.
+    return nullptr;
 }
 
 uint8_t * CSJVideoData::getyuvU() const {
-    return m_dataU;
+    // TODO: Calculate U address with the video format, width and height.
+    return nullptr;
 }
 
 uint8_t * CSJVideoData::getyuvV() const {
-    return m_dataV;
-}
-
-uint8_t * CSJVideoData::getRGB24() const {
-    return m_dataRGB24;
+    // TODO: Calculate V address with the video format, width and height.
+    return nullptr;
 }
 
 int CSJVideoData::getWidth() const {
-    return m_width;
+    return m_iWidth;
 }
 
 int CSJVideoData::getHeight() const {
-    return m_height;
+    return m_iHeight;
 }
 
-void CSJVideoData::initWithYUV420() {
-    int yLength = m_width * m_height;
-    m_dataY = new uint8_t[yLength];
-    m_dataU = new uint8_t[yLength / 4];
-    m_dataV = new uint8_t[yLength / 4];
-
-    memcpy(m_dataY, m_data, yLength);
-
-    uint8_t* uvStart = m_data + yLength;
-    for (size_t i = 0; i < yLength / 4; i++) {
-        memcpy(m_dataU + i, uvStart + 2 * i, 1);
-        memcpy(m_dataV + i, uvStart + 2 * i + 1, 1);
-    }
+double CSJVideoData::getDuration() const {
+    return m_dDuration;
 }
 
-void CSJVideoData::initWithRGB24() {
-    if (!m_data) {
-        return;
-    }
-
-    int length = m_width * m_height * 3;
-    m_dataRGB24 = new uint8_t[length];
-    memcpy(m_dataRGB24, m_dataRGB24, length);
+double CSJVideoData::getPts() const {
+    return m_dPts;
 }
 
-CSJAudioData::CSJAudioData()
-    : m_fmtType(CSJAUDIO_FMT_NONE)
-    , m_data(nullptr)
-    , m_sampleRate(0)
-    , m_channels(0)
-    , m_bitsPerSample(0) {
+double CSJVideoData::getTimeStamp() const {
+    return m_dTimeStamp;
+}
+
+void CSJVideoData::initWithYUV420(uint8_t* data) {
+    int yuvBytesLen = m_iWidth * m_iHeight * 3 / 2;
+
+    m_pData = new uint8_t[yuvBytesLen];
+    memcpy(m_pData, data, yuvBytesLen);
+}
+
+void CSJVideoData::initWithRGB24(uint8_t* data) {
+    int length = m_iWidth * m_iHeight * 3;
+    m_pData = new uint8_t[length];
+    memcpy(m_pData, data, length);
+}
+
+CSJAudioData::CSJAudioData() {
+
 }
 
 CSJAudioData::CSJAudioData(CSJAudioFormatType fmtType, uint8_t* pdata,
                            int sampleRate, int channels, int bitsPerSample)
     : m_fmtType(fmtType)
-    , m_data(pdata)
-    , m_sampleRate(sampleRate)
-    , m_channels(channels)
-    , m_bitsPerSample(bitsPerSample) {
+    , m_pData(pdata)
+    , m_iSampleRate(sampleRate)
+    , m_iChannels(channels)
+    , m_iBitsPerSample(bitsPerSample) {
 
 }
 
 CSJAudioData::~CSJAudioData() {
-    if (m_data) {
-        delete m_data;
-        m_data = nullptr;
+    if (m_pData) {
+        delete m_pData;
+        m_pData = nullptr;
     }
 }
 
 CSJAudioData::CSJAudioData(CSJAudioData && audioData)
     : m_fmtType(audioData.m_fmtType)
-    , m_data(audioData.m_data)
-    , m_sampleRate(audioData.m_sampleRate)
-    , m_channels(audioData.m_channels)
-    , m_bitsPerSample(audioData.m_bitsPerSample) {
+    , m_pData(audioData.m_pData)
+    , m_iSampleRate(audioData.m_iSampleRate)
+    , m_iChannels(audioData.m_iChannels)
+    , m_iBitsPerSample(audioData.m_iBitsPerSample) {
 
     audioData.m_fmtType = CSJAUDIO_FMT_NONE;
-    audioData.m_data = nullptr;
-    audioData.m_sampleRate = 0;
-    audioData.m_channels = 0;
-    audioData.m_bitsPerSample = 0;
+    audioData.m_pData = nullptr;
+    audioData.m_iSampleRate = 0;
+    audioData.m_iChannels = 0;
+    audioData.m_iBitsPerSample = 0;
 }
 
 CSJAudioData& CSJAudioData::operator=(CSJAudioData && audioData) {
-    m_fmtType = audioData.m_fmtType;
-    m_data = audioData.m_data;
-    m_sampleRate = audioData.m_sampleRate;
-    m_channels = audioData.m_channels;
-    m_bitsPerSample = audioData.m_bitsPerSample;
+    m_fmtType        = audioData.m_fmtType;
+    m_pData          = audioData.m_pData;
+    m_iSampleRate    = audioData.m_iSampleRate;
+    m_iChannels      = audioData.m_iChannels;
+    m_iBitsPerSample = audioData.m_iBitsPerSample;
 
-    audioData.m_fmtType = CSJAUDIO_FMT_NONE;
-    audioData.m_data = nullptr;
-    audioData.m_sampleRate = 0;
-    audioData.m_channels = 0;
-    audioData.m_bitsPerSample = 0;
+    audioData.m_fmtType        = CSJAUDIO_FMT_NONE;
+    audioData.m_pData          = nullptr;
+    audioData.m_iSampleRate    = 0;
+    audioData.m_iChannels      = 0;
+    audioData.m_iBitsPerSample = 0;
 
     return *this;
 }
