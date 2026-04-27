@@ -172,6 +172,10 @@ elseif(CMAKE_HOST_APPLE)
         DESTINATION ${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.app/Contents/Resources
     )
 
+    install(DIRECTORY ${RESOURCE_DIR}/videos
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.app/Contents/Resources
+    )
+
     install(FILES "${PROJ_ROOT_DIR}/src/CSJRenderEngine/Mac/Shaders/default.metallib"
         DESTINATION ${CMAKE_INSTALL_PREFIX}/${TARGET_NAME}.app/Contents/Resources/MetalShaders
     )

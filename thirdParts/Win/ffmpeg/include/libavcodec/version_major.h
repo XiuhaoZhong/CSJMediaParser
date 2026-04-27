@@ -25,7 +25,11 @@
  * Libavcodec version macros.
  */
 
+<<<<<<< HEAD
 #define LIBAVCODEC_VERSION_MAJOR  62
+=======
+#define LIBAVCODEC_VERSION_MAJOR  61
+>>>>>>> 8801a84 ([improve] Add project files)
 
 /**
  * FF_API_* defines may be placed below to indicate public API that will be
@@ -37,6 +41,7 @@
  * at once through the bump. This improves the git bisect-ability of the change.
  */
 
+<<<<<<< HEAD
 #define FF_API_INIT_PACKET         (LIBAVCODEC_VERSION_MAJOR < 63)
 
 #define FF_API_V408_CODECID        (LIBAVCODEC_VERSION_MAJOR < 63)
@@ -49,5 +54,19 @@
 #define FF_CODEC_SONIC_ENC         (LIBAVCODEC_VERSION_MAJOR < 63)
 // reminder to remove Sonic decoder on next-next major bump
 #define FF_CODEC_SONIC_DEC         (LIBAVCODEC_VERSION_MAJOR < 63)
+=======
+#define FF_API_INIT_PACKET         (LIBAVCODEC_VERSION_MAJOR < 62)
+#define FF_API_SUBFRAMES           (LIBAVCODEC_VERSION_MAJOR < 62)
+#define FF_API_TICKS_PER_FRAME     (LIBAVCODEC_VERSION_MAJOR < 62)
+#define FF_API_DROPCHANGED         (LIBAVCODEC_VERSION_MAJOR < 62)
+
+#define FF_API_AVFFT               (LIBAVCODEC_VERSION_MAJOR < 62)
+#define FF_API_FF_PROFILE_LEVEL    (LIBAVCODEC_VERSION_MAJOR < 62)
+#define FF_API_AVCODEC_CLOSE       (LIBAVCODEC_VERSION_MAJOR < 62)
+#define FF_API_BUFFER_MIN_SIZE     (LIBAVCODEC_VERSION_MAJOR < 62)
+#define FF_API_VDPAU_ALLOC_GET_SET (LIBAVCODEC_VERSION_MAJOR < 62)
+#define FF_API_QUALITY_FACTOR      (LIBAVCODEC_VERSION_MAJOR < 62)
+#define FF_API_V408_CODECID        (LIBAVCODEC_VERSION_MAJOR < 62)
+>>>>>>> 8801a84 ([improve] Add project files)
 
 #endif /* AVCODEC_VERSION_MAJOR_H */
