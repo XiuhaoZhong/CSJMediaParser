@@ -10,9 +10,49 @@
 
 namespace csjmediaengine {
 
+/**
+ * Play mode
+ */
+enum class CSJPlayMode : uint8_t {
+    CSJPlayMode_NONE  = 0,
+    CSJPlayMode_Audio = 1 << 0,   /* Play audio only. */
+    CSJPlayMode_Video = 1 << 1,   /* Play video onlu. */
+    CSJPlayMode_AV    = 1 << 2,      /* Play audio and video. */
+};
+
+inline CSJPlayMode operator|(CSJPlayMode a, CSJPlayMode b) {
+    return static_cast<CSJPlayMode>(static_cast<uint8_t>(a) | static_cast<uint8_t>(b));
+}
+
+inline CSJPlayMode operator&(CSJPlayMode a, CSJPlayMode b) {
+    return static_cast<CSJPlayMode>(static_cast<uint8_t>(a) & static_cast<uint8_t>(b));
+}
+
+inline CSJPlayMode operator|=(CSJPlayMode a, CSJPlayMode b) {
+    return a = a | b;
+}
+
+inline CSJPlayMode operator&=(CSJPlayMode a, CSJPlayMode b) {
+    return a = a & b;
+}
+
+inline bool containVideoMode(CSJPlayMode a) {
+    return (a & CSJPlayMode::CSJPlayMode_Video) == CSJPlayMode::CSJPlayMode_Video;
+}
+
+inline bool containAudioMode(CSJPlayMode a) {
+    return (a & CSJPlayMode::CSJPlayMode_Audio) == CSJPlayMode::CSJPlayMode_Audio;
+}
+
 typedef enum {
     CSJPlAYERTYPE_DEFAULT = 0,
 } CSJPlayerType;
+
+typedef enum {
+    CSJPLAYERSTATUS_STOP = 0,
+    CSJPLAYERSTATUS_PLAYING,
+    CSJPLAYERSTATUS_PAUSE
+} CSJPlayerStatus;
 
 class CSJMEDIAENGINE_API CSJMediaPlayerBase {
 public:
@@ -48,12 +88,7 @@ public:
     virtual bool isPause() = 0;
     virtual bool isStop() = 0;
 
-    void setVideoPresentDelegate(std::shared_ptr<CSJVideoPresentDelegate> delegate) {
-        m_pVideoPresentDelegate = delegate;
-    }
-
-protected:
-    std::weak_ptr<CSJVideoPresentDelegate> m_pVideoPresentDelegate;
+    virtual void setVideoPresentDelegate(std::shared_ptr<CSJVideoPresentDelegate> delegate) = 0;
 };
 
 } // namespace csjmediaengine
