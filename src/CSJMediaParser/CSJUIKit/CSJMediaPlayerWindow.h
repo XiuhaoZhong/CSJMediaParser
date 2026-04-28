@@ -9,6 +9,7 @@ class CSJWidget;
 class QPushButton;
 class CSJVideoRendererWidget;
 class CSJPlayerControllerWidget;
+class CSJPlayerController;
 
 typedef enum {
     PLAYSTATUS_STOP = 0,
@@ -36,7 +37,7 @@ public slots:
 
 private:
     CSJVideoRendererWidget    *m_pVideoRenderWidget = nullptr;
-    CSJUniqPlayerController    m_playController;              /* Player function controller. */
+    CSJPlayerControllerPtr    m_playController;              /* Player function controller. */
     CSJPlayerControllerWidget *m_playerCtrlWidget = nullptr;  /* Player controller UI. */
     PlayStatus                 m_playStatus;
 };

@@ -1,17 +1,22 @@
 #include "CSJPlayerController.h"
 
-#include <qdebug.h>
+#include <QString>
+
+#include "CSJUtils/CSJLogger.h"
 
 #include "CSJMediaEngine/CSJMediaPlayerBase.h"
 
 using namespace csjmediaengine;
+using namespace csjutils;
 
 class CSJPlayerControllerImpl : public CSJPlayerController {
 public:
     CSJPlayerControllerImpl();
     ~CSJPlayerControllerImpl();
 
-    bool initPlayerKernel(QString& playFile) override;
+    bool initPlayerKernel() override;
+
+    bool setPlayFile(QString& playFile) override;
 
     void start() override;
     void pause() override;
@@ -23,18 +28,21 @@ public:
     bool isStopping() override;
 
 private:
-    std::unique_ptr<CSJMediaPlayerBase> m_pPlayerKernel;
+    CSJMediaPlayerPtr m_pPlayerKernel;
+    CSJLogger        *m_pLogger = nullptr;
 };
 
 CSJPlayerControllerImpl::CSJPlayerControllerImpl() {
-    m_pPlayerKernel = std::move(CSJMediaPlayerBase::getPlayerKernel());
+    m_pPlayerKernel = CSJMediaPlayerPtr(createPlayerCore());
+
+    m_pLogger = CSJLogger::getLoggerInst();
 }
 
 CSJPlayerControllerImpl::~CSJPlayerControllerImpl() {
-
+    m_pLogger->log_info("Player controller instance deconstruct");
 }
 
-bool CSJPlayerControllerImpl::initPlayerKernel(QString& filePath) {
+bool CSJPlayerControllerImpl::initPlayerKernel() {
     if (!m_pPlayerKernel) {
         return false;
     }
@@ -43,16 +51,31 @@ bool CSJPlayerControllerImpl::initPlayerKernel(QString& filePath) {
         return false;
     }
 
-    qDebug() << "[" <<__FILE__  << ": " << __FUNCTION__ << "]" << " Player kernel has been created!";
+    m_pLogger->log_info("Player kernel has been created!");
 
-    std::string play_file_path = filePath.toStdString();
+    return true;
+}
+
+bool CSJPlayerControllerImpl::setPlayFile(QString & playFile) {
+    if (!m_pPlayerKernel) {
+        m_pLogger->log_warn("Player kernel hasn't been initialized!");
+        return false;
+    }
+
+    if (playFile.size() == 0) {
+        m_pLogger->log_warn("Play file is null");
+        return false;
+    }
+
+    std::string play_file_path = playFile.toStdString();
     m_pPlayerKernel->setPlayFile(play_file_path);
+
     return true;
 }
 
 void CSJPlayerControllerImpl::start() {
     if (!m_pPlayerKernel) {
-        qDebug() << "[" <<__FILE__ << ": " << __FUNCTION__ << "]" << " Player kernel hasn't been created!";
+        m_pLogger->log_warn("Player kernel hasn't been created!");
         return ;
     }
 
@@ -61,7 +84,7 @@ void CSJPlayerControllerImpl::start() {
 
 void CSJPlayerControllerImpl::pause() {
     if (!m_pPlayerKernel) {
-        qDebug() << "[" <<__FILE__ << ": " << __FUNCTION__ << "]" << " Player kernel hasn't been created!";
+        m_pLogger->log_warn("Player kernel hasn't been created!");
         return ;
     }
 
@@ -70,7 +93,7 @@ void CSJPlayerControllerImpl::pause() {
 
 void CSJPlayerControllerImpl::resume() {
     if (!m_pPlayerKernel) {
-        qDebug() << "[" <<__FILE__ << ": " << __FUNCTION__ << "]" << " Player kernel hasn't been created!";
+        m_pLogger->log_warn("Player kernel hasn't been created!");
         return ;
     }
 
@@ -83,7 +106,7 @@ void CSJPlayerControllerImpl::stop() {
 
 bool CSJPlayerControllerImpl::isPlaying() {
     if (!m_pPlayerKernel) {
-        qDebug() << "[" <<__FILE__ << ": " << __FUNCTION__ << "]" << " Player kernel hasn't been created!";
+        m_pLogger->log_warn("Player kernel hasn't been created!");
         return false;
     }
 
@@ -92,7 +115,7 @@ bool CSJPlayerControllerImpl::isPlaying() {
 
 bool CSJPlayerControllerImpl::isPausing() {
     if (!m_pPlayerKernel) {
-        qDebug() << "[" <<__FILE__ << ": " << __FUNCTION__ << "]" << " Player kernel hasn't been created!";
+        m_pLogger->log_warn("Player kernel hasn't been created!");
         return false;
     }
 
@@ -101,14 +124,14 @@ bool CSJPlayerControllerImpl::isPausing() {
 
 bool CSJPlayerControllerImpl::isStopping() {
     if (!m_pPlayerKernel) {
-        qDebug() << "[" <<__FILE__ << ": " << __FUNCTION__ << "]" << " Player kernel hasn't been created!";
+        m_pLogger->log_warn("Player kernel hasn't been created!");
         return false;
     }
 
     return m_pPlayerKernel->isStop();
 }
 
-CSJUniqPlayerController CSJPlayerController::createPlayerController() {
+CSJPlayerControllerPtr CSJPlayerController::createPlayerController() {
     return std::make_unique<CSJPlayerControllerImpl>();
 }
 

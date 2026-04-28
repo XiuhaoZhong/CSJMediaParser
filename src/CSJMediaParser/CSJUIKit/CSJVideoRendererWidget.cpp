@@ -79,6 +79,10 @@ void CSJVideoRendererWidget::setImagePath(QString &image_path) {
     m_imagePath = image_path;
 }
 
+void CSJVideoRendererWidget::setMediaFile(QString & media_file_path) {
+    
+}
+
 void CSJVideoRendererWidget::showDefaultImage() {
     if (!m_spVideoRenderer)  {
         return ;
