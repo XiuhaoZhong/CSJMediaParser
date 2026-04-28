@@ -20,12 +20,17 @@ public:
     static std::unique_ptr<CSJPlayerController> createPlayerController();
 
     CSJPlayerController() = default;
-    virtual ~CSJPlayerController() {};
+    virtual ~CSJPlayerController() = default;
 
     /**
-     * @brief Initialize the player kernel with a specific file.
+     * @brief Initialize the player kernel.
      */
-    virtual bool initPlayerKernel(QString& playFile) = 0;
+    virtual bool initPlayerKernel() = 0;
+
+    /**
+     * @brief Set the media file which will be played.
+     */
+    virtual bool setPlayFile(QString& playFile) = 0;
 
     /**********************************************
      * Player Operations.
@@ -43,6 +48,6 @@ public:
     virtual bool isStopping() = 0;
 };
 
-using CSJUniqPlayerController = std::unique_ptr<CSJPlayerController>;
+using CSJPlayerControllerPtr = std::unique_ptr<CSJPlayerController>;
 
 #endif // __CSJPLAYERCONTROLLER_H__

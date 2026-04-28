@@ -55,6 +55,8 @@ public:
      */
     void setImagePath(QString& image_path);
 
+    void setMediaFile(QString& media_file_path);
+
 signals:
     void updateFrame();
 

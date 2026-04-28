@@ -26,7 +26,7 @@ void CSJMediaPlayer::setPlayFile(std::string &file) {
 }
 
 bool CSJMediaPlayer::initPlayer() {
-    return false;
+    return true;
 }
 
 int CSJMediaPlayer::getDuration() {

@@ -57,11 +57,7 @@ typedef enum {
 class CSJMEDIAENGINE_API CSJMediaPlayerBase {
 public:
     CSJMediaPlayerBase();
-    virtual ~CSJMediaPlayerBase();
-
-    static CSJMediaPlayerBase* getPlayerInstance();
-
-    static std::unique_ptr<CSJMediaPlayerBase> getPlayerKernel(CSJPlayerType playerType = CSJPlAYERTYPE_DEFAULT);
+    virtual ~CSJMediaPlayerBase() = default;
 
     virtual void setPlayFile(std::string &file) = 0;
     virtual bool initPlayer() = 0;
@@ -90,6 +86,18 @@ public:
 
     virtual void setVideoPresentDelegate(std::shared_ptr<CSJVideoPresentDelegate> delegate) = 0;
 };
+
+struct CSJMediaPlayerDeleter {
+    void operator()(CSJMediaPlayerBase *p) const {
+        if (p) {
+            delete p;
+        }
+    }
+};
+
+using CSJMediaPlayerPtr = std::unique_ptr<CSJMediaPlayerBase, CSJMediaPlayerDeleter>;
+
+CSJMEDIAENGINE_API CSJMediaPlayerBase* createPlayerCore();
 
 } // namespace csjmediaengine
 

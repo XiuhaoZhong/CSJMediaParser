@@ -34,6 +34,7 @@ CSJMediaPlayerWindow::CSJMediaPlayerWindow(QWidget *parent)
                         curRect.width(),
                         curRect.height()));
 
+    m_playController = CSJPlayerController::createPlayerController();
 }
 
 CSJMediaPlayerWindow::~CSJMediaPlayerWindow() {
