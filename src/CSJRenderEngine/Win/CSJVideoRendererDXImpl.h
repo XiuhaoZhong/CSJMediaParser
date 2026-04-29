@@ -19,6 +19,8 @@ class CSJLogger;
 }
 using csjutils::CSJLogger;
 
+namespace csjrenderengine {
+
 class CSJVideoRendererDXImpl : public CSJVideoRenderer {
 public:
     struct VertexPosColor {
@@ -194,5 +196,7 @@ private:
     // sampler state
     ComPtr<ID3D11SamplerState>     m_pSamplerState;
 };
+
+} //namespace csjrenderengine
 
 #endif // __CSJVIDEORENDERERDXIMPL_H__
