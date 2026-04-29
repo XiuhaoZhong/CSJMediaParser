@@ -97,6 +97,7 @@ struct CSJMediaPlayerDeleter {
 
 using CSJMediaPlayerPtr = std::unique_ptr<CSJMediaPlayerBase, CSJMediaPlayerDeleter>;
 
+// extern "C", if this function leads crash, insert the extern "C" at the head.
 CSJMEDIAENGINE_API CSJMediaPlayerBase* createPlayerCore();
 
 } // namespace csjmediaengine

@@ -9,6 +9,7 @@
 #include "CSJUtils/CSJPathTool.h"
 
 using namespace csjutils;
+using namespace csjrenderengine;
 
 CSJVideoRendererWidget::CSJVideoRendererWidget(QWidget *parent)
     : QWidget(parent)
@@ -55,11 +56,11 @@ void CSJVideoRendererWidget::setRenderType(RenderMode renderType) {
 }
 
 void CSJVideoRendererWidget::initializeVideoInfo(CSJVideoFormatType fmtType, int width, int height) {
-    if (!m_spVideoRenderer) {
+    if (!m_pVideoRenderer) {
         return ;
     }
 
-    m_spVideoRenderer->initialRenderComponents(fmtType, width, height);
+    m_pVideoRenderer->initialRenderComponents(fmtType, width, height);
 }
 
 void CSJVideoRendererWidget::updateVideoFrame(CSJVideoData *videoData) {
@@ -67,12 +68,12 @@ void CSJVideoRendererWidget::updateVideoFrame(CSJVideoData *videoData) {
         return ;
     }
 
-    if (!m_spVideoRenderer) {
+    if (!m_pVideoRenderer) {
         return ;
     }
 
-    m_spVideoRenderer->updateVideoFrame(videoData);
-    m_spVideoRenderer->drawScene();
+    m_pVideoRenderer->updateVideoFrame(videoData);
+    m_pVideoRenderer->drawScene();
 }
 
 void CSJVideoRendererWidget::setImagePath(QString &image_path) {
@@ -84,7 +85,7 @@ void CSJVideoRendererWidget::setMediaFile(QString & media_file_path) {
 }
 
 void CSJVideoRendererWidget::showDefaultImage() {
-    if (!m_spVideoRenderer)  {
+    if (!m_pVideoRenderer)  {
         return ;
     }
 
@@ -93,9 +94,9 @@ void CSJVideoRendererWidget::showDefaultImage() {
     qDebug() << "Image Path: " << imagePath;
 
 #if defined(__APPLE__)
-    m_spVideoRenderer->setImage(imagePath);
+    m_pVideoRenderer->setImage(imagePath);
 #else
-    m_spVideoRenderer->setImage("resources/Images/cross_street.jpeg");
+    m_pVideoRenderer->setImage("resources/Images/cross_street.jpeg");
 #endif
 }
 
@@ -115,20 +116,20 @@ void CSJVideoRendererWidget::resizeEvent(QResizeEvent *event) {
     }
 
 #ifdef __APPLE__
-    m_spVideoRenderer->updateDrawableSize(width(), height(), devicePixelRatio());
+    m_pVideoRenderer->updateDrawableSize(width(), height(), devicePixelRatio());
 #elif _WIN32
-    m_spVideoRenderer->resize(width(), height());
+    m_pVideoRenderer->resize(width(), height());
 #else
 
 #endif
 }
 
 void CSJVideoRendererWidget::paintEvent(QPaintEvent *event) {
-    // if (!m_spVideoRenderer || m_renderType != RENDER_WITH_EVENT) {
+    // if (!m_pVideoRenderer || m_renderType != RENDER_WITH_EVENT) {
     //     return ;
     // }
 
-    // m_spVideoRenderer->drawSence();
+    // m_pVideoRenderer->drawSence();
 }
 
 void CSJVideoRendererWidget::keyPressEvent(QKeyEvent *event) {
@@ -158,9 +159,9 @@ void CSJVideoRendererWidget::wheelEvent(QWheelEvent *event) {
 bool CSJVideoRendererWidget::initRenderer() {
     // TODO: initialze the renderer by offscreen rendering.
 
-    if (!m_spVideoRenderer) {
-        if (!m_spVideoRenderer) {
-            m_spVideoRenderer = CSJVideoRenderer::getRendererInstance();
+    if (!m_pVideoRenderer) {
+        if (!m_pVideoRenderer) {
+            m_pVideoRenderer = CSJVideoRendererPtr(createCSJRenderer());//CSJVideoRenderer::getRendererInstance();
             /**
              * Currently, there will be a problem if use offscreen rendering when use 
              * customized CSJWidget, the problem is that if I extend a QWidget to customize
@@ -169,11 +170,11 @@ bool CSJVideoRendererWidget::initRenderer() {
              * customized CSJWidget, and use the default UI style to compelte the functionalities
              * first.
              */
-            //m_spVideoRenderer->initForOffScreen(width(), height());
+            //m_pVideoRenderer->initForOffScreen(width(), height());
 #if __APPLE__
-            m_spVideoRenderer->init(reinterpret_cast<void*>(winId()), width(), height(), devicePixelRatio());
+            m_pVideoRenderer->init(reinterpret_cast<void*>(winId()), width(), height(), devicePixelRatio());
 #elif _WIN32
-            m_spVideoRenderer->init(reinterpret_cast<void*>(winId()), width(), height());
+            m_pVideoRenderer->init(reinterpret_cast<void*>(winId()), width(), height());
 #endif
         }
     }
@@ -191,7 +192,7 @@ void CSJVideoRendererWidget::internalRender() {
             break;
         }
 
-        m_spVideoRenderer->drawScene();
+        m_pVideoRenderer->drawScene();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(33));
     }

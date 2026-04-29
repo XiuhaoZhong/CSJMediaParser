@@ -12,6 +12,8 @@
 using csjmediaengine::CSJVideoFormatType;
 using csjmediaengine::CSJVideoData;
 
+namespace csjrenderengine {
+
 typedef void* CSJWindowID;
 
 /**
@@ -43,10 +45,6 @@ class CSJRENDERENGINE_API CSJVideoRenderer {
 public:
     CSJVideoRenderer() {};
     virtual ~CSJVideoRenderer() {};
-
-    static std::shared_ptr<CSJVideoRenderer> getRendererInstance();
-
-    static std::shared_ptr<CSJVideoRenderer> getOffScreenRendererInstance();
 
     /**
      * @brief Initializes renderer. This function is for onscreen rendering, need 
@@ -158,5 +156,19 @@ public:
 };
 
 using CSJSpVideoRenderer = std::shared_ptr<CSJVideoRenderer>;
+
+struct CSJMediaRendererDeleter {
+    void operator()(CSJVideoRenderer *p) const {
+        if (p) {
+            delete p;
+        }
+    }
+};
+
+CSJRENDERENGINE_API CSJVideoRenderer* createCSJRenderer();
+
+using CSJVideoRendererPtr = std::unique_ptr<CSJVideoRenderer>;
+
+} // namespace csjrenderengine
 
 #endif // __CSJVIDEORENDERER_H__

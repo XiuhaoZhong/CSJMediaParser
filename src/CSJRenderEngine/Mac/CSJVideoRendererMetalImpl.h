@@ -5,6 +5,8 @@
 
 #import "CSJMetalRenderer.h"
 
+namespace csjrenderengine {
+
 class CSJVideoRendererMetalImpl: public CSJVideoRenderer {
 public:
     CSJVideoRendererMetalImpl();
@@ -26,5 +28,7 @@ public:
 private:
     CSJMetalRenderer *m_pRenderer;
 };
+
+} // csjrenderengine
 
 #endif // __CSJVIDEORENDERERMETAL_H__

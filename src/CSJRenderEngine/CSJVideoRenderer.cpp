@@ -6,13 +6,7 @@
 #include "Mac/CSJVideoRendererMetalImpl.h"
 #endif
 
-CSJSpVideoRenderer CSJVideoRenderer::getRendererInstance() {
-#ifdef _WIN32
-    return std::make_shared<CSJVideoRendererDXImpl>();
-#elif __APPLE__
-    return std::make_shared<CSJVideoRendererMetalImpl>();
-#endif
-}
+namespace csjrenderengine {
 
 bool CSJVideoRenderer::initForOffScreen(int width, int height) {
     return false;
@@ -76,3 +70,13 @@ void CSJVideoRenderer::resize(int width, int height) {
 void CSJVideoRenderer::updateDrawableSize(int width, int height, float pixelRatio) {
 
 }
+
+CSJVideoRenderer* createCSJRenderer() {
+#ifdef _WIN32
+    return new CSJVideoRendererDXImpl();
+#elif __APPLE__
+    return new CSJVideoRendererMetalImpl();
+#endif
+}
+
+} // csjrenderengine
