@@ -5,6 +5,8 @@
 
 #import "CSJMetalRenderer.h"
 
+namespace csjrenderengine {
+
 CSJVideoRendererMetalImpl::CSJVideoRendererMetalImpl() {
 
 #if __has_feature(objc_arc)
@@ -105,3 +107,5 @@ void CSJVideoRendererMetalImpl::setImage(const std::string &imagePath) {
     NSString * image_path = [NSString stringWithUTF8String:imagePath.c_str()];
     [m_pRenderer setImageWithPath:image_path];
 }
+
+} // namespace csjrenderengine

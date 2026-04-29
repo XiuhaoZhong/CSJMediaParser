@@ -10,6 +10,7 @@
 #include "CSJMediaEngine/CSJVideoPresentDelegate.h"
 
 using csjmediaengine::CSJVideoPresentDelegate;
+using csjrenderengine::CSJVideoRendererPtr;
 
 /** 
  * The render mode of CSJVideoRendererWidget. 
@@ -80,7 +81,7 @@ protected:
     void internalRender();
 
 private:
-    CSJSpVideoRenderer m_spVideoRenderer = nullptr;
+    CSJVideoRendererPtr m_pVideoRenderer = nullptr;
 
     RenderMode      m_renderType;
     bool            m_exitRenderThread = false;
