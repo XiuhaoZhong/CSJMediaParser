@@ -40,6 +40,7 @@ private:
     CSJPlayerControllerPtr    m_playController;              /* Player function controller. */
     CSJPlayerControllerWidget *m_playerCtrlWidget = nullptr;  /* Player controller UI. */
     PlayStatus                 m_playStatus;
+
 };
 
 #endif

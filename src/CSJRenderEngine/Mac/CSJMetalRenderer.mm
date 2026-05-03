@@ -133,7 +133,7 @@ static uint16_t indices[] = { 0, 1, 2, 2, 1, 3};
     }
 
     std::string shader_file_name("default.metallib");
-    std::string shaderPath = CSJPathTool::getInstance()->getShaderFileWithName(shader_file_name);
+    std::string shaderPath = CSJPathTool::getShaderFileWithName(shader_file_name);
     if (shaderPath.size() > 0) {
 
     }

@@ -14,32 +14,42 @@ namespace csjutils {
 
 class CSJUTILS_API CSJPathTool {
 public:
-    static CSJPathTool* getInstance();
+    /**
+     * @brief This function can create directories recursively.
+     */
+    static bool createPath(std::string& path);
 
-    void setWorkDirectory(fs::path work_directory);
+    static void setWorkDirectory(fs::path work_directory);
     static bool fileExists(std::string &file_path);
     static bool fileExists(std::wstring &file_path);
 
-    fs::path getExecuteDir();
-    fs::path getResourceDir();
-    fs::path getModelDir();
-    fs::path getTextureDir();
-    fs::path getImageDir();
-    fs::path getShaderDir();
-    fs::path getStyleSheetDir();
+    static fs::path getExecuteDir();
+    static fs::path getResourceDir();
+    static fs::path getModelDir();
+    static fs::path getTextureDir();
+    static fs::path getImageDir();
+    static fs::path getShaderDir();
+    static fs::path getStyleSheetDir();
 
-    std::string getModelFileWithName(std::string& modelFileName);
-    std::string getImageWithName(std::string& imageName);
-    std::string getShaderFileWithName(std::string& shaderFileName);
-    std::string getTextureWithName(std::string& textureFileName);
-    std::string getStyleSheetWithName(std::string& styleSheetsName);
+    static std::string getModelFileWithName(std::string& modelFileName);
+    static std::string getImageWithName(std::string& imageName);
+    static std::string getShaderFileWithName(std::string& shaderFileName);
+    static std::string getTextureWithName(std::string& textureFileName);
+    static std::string getStyleSheetWithName(std::string& styleSheetsName);
+
+    static std::string getSuffix(const std::string& path);
+    static std::string getFileName(const std::string& path);
+    static std::string getDirName(const std::string& path);
+    static std::string join(const std::string& dir, const std::string& name);
+    static bool isFileExists(const std::string& path);
+    static bool isDirExists(const std::string& path);
 
 protected:
     CSJPathTool() = default;
     ~CSJPathTool() = default;
 
 private:
-    fs::path m_workPath;
+    static fs::path m_workPath;
 };
 
 } // namespace csjutils

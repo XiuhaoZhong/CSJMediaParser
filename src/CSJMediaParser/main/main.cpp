@@ -11,16 +11,17 @@
 using namespace csjutils;
 using csjmediaengine::CSJMediaEngineInfo;
 
+void init_log();
+void uninit_log();
 void customeMainWindowTheme(QMainWindow &mainWindow);
 
 int main(int argc, char *argv[]) {
     /* Record the work directory. */
-    CSJPathTool *pathTool = CSJPathTool::getInstance();
     std::string current_path(argv[0]);
-    pathTool->setWorkDirectory(fs::canonical(fs::path(current_path).remove_filename()));
+    CSJPathTool::setWorkDirectory(fs::canonical(fs::path(current_path).remove_filename()));
 
-    CSJLogger* logger = CSJLogger::getLoggerInst();
-    logger->log(CSJLogger::LogLevel::INFO_LOG, "CSJMediaParser started!\0");
+    init_log();
+    LOG_Info("CSJMediaParser started!");
 
     CSJMediaEngineInfo engineInfo;
     engineInfo.printEngineInfo();
@@ -31,9 +32,31 @@ int main(int argc, char *argv[]) {
     w.show();
 
     int exit_code = a.exec();
-    logger->log(CSJLogger::LogLevel::INFO_LOG, "CSJMediaParser quit!\0");
+    LOG_Info("CSJMediaParser quit!");
 
+    uninit_log();
     return exit_code;
+}
+
+void init_log() {
+#ifdef _WIN32
+    std::string log_path("Logs\\media_parser.log");
+#else
+    std::string log_path("/tmp/Logs/CSJMediaParser/media_parser.log");
+#endif
+
+    size_t pos = log_path.find_last_of("/\\");
+    if (pos == std::string::npos)
+        return;
+
+    std::string dir = log_path.substr(0, pos);
+    if (CSJPathTool::createPath(dir)) {
+        CSJLog_Init(log_path.c_str());
+    }
+}
+
+void uninit_log() {
+    CSJLog_Uninit();
 }
 
 void customeMainWindowTheme(QMainWindow &mainWindow) {

@@ -82,7 +82,7 @@ void CSJPlayerControllerWidget::onPlayBtnClicked() {
         m_pPlayBtn->setText("Resume");
         m_pStopBtn->setEnabled(true);
         std::string imageName("cross_street.jpg");
-        std::string imagePath = CSJPathTool::getInstance()->getImageWithName(imageName);
+        std::string imagePath = CSJPathTool::getImageWithName(imageName);
         emit play();
     } else if (m_pPlayBtn->text() == "Pause") {
         m_pPlayBtn->setText("Play");

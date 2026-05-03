@@ -8,7 +8,18 @@
 
 #endif
 
+#ifdef _WIN32
+
+#else
+#include <sys/stat.h>
+#include <errno.h>
+#endif
+
 namespace csjutils {
+
+void makePath(const char* path) {
+    
+}
 
 #if defined(__APPLE__)
 
@@ -35,9 +46,22 @@ static std::string getAppResourcePath() {
 
 #endif 
 
-CSJPathTool* CSJPathTool::getInstance() {
-    static  CSJPathTool instance;
-    return &instance;
+fs::path CSJPathTool::m_workPath = fs::path();
+
+bool CSJPathTool::createPath(std::string& path) {
+    if (path.empty()) {
+        return false;
+    }
+
+    if (fileExists(path)) {
+        return true;
+    }
+
+    try {
+        return fs::create_directories(path);
+    } catch (...) {
+        return false;
+    }
 }
 
 void CSJPathTool::setWorkDirectory(fs::path work_directory) {
@@ -116,6 +140,30 @@ std::string CSJPathTool::getTextureWithName(std::string &texture_file_name) {
 
 std::string CSJPathTool::getStyleSheetWithName(std::string &styleSheetsName) {
     return getStyleSheetDir().append(styleSheetsName).string();
+}
+
+std::string CSJPathTool::getSuffix(const std::string & path) {
+    return std::string();
+}
+
+std::string CSJPathTool::getFileName(const std::string & path) {
+    return std::string();
+}
+
+std::string CSJPathTool::getDirName(const std::string & path) {
+    return std::string();
+}
+
+bool CSJPathTool::isFileExists(const std::string & path) {
+    return false;
+}
+
+bool CSJPathTool::isDirExists(const std::string & path) {
+    return false;
+}
+
+std::string CSJPathTool::join(const std::string & dir, const std::string & name) {
+    return std::string();
 }
 
 } // namespace csjutils 

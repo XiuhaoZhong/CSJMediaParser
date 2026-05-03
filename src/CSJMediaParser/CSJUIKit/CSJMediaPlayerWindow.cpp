@@ -1,7 +1,5 @@
 #include "CSJMediaPlayerWindow.h"
 
-#include <QDebug>
-
 #include <QApplication>
 #include <QScreen>
 
@@ -13,6 +11,7 @@
 
 #include "CSJVideoRendererWidget.h"
 #include "CSJPlayerControllerWidget.h"
+#include "CSJUtils/CSJLogger.h"
 
 static int player_window_width = 1280;
 static int player_window_height = 760;
