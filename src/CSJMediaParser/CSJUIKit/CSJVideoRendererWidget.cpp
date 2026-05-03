@@ -90,7 +90,7 @@ void CSJVideoRendererWidget::showDefaultImage() {
     }
 
     std::string imageName("cross_street.jpeg");
-    std::string imagePath = CSJPathTool::getInstance()->getImageWithName(imageName);
+    std::string imagePath = CSJPathTool::getImageWithName(imageName);
     qDebug() << "Image Path: " << imagePath;
 
 #if defined(__APPLE__)

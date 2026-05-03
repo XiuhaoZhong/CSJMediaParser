@@ -3,89 +3,25 @@
 
 #include "CSJUtils_Export.h"
 
-#include <cstdint>
-#include <stdexcept>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#include <spdlog/spdlog.h>
+CSJUTILS_API void CSJLog_Init(const char* logFile);
+CSJUTILS_API void CSJLog_Uninit();
+CSJUTILS_API void CSJLog_Debug(const char* file, int line, const char* format, ...);
+CSJUTILS_API void CSJLog_Info(const char* file, int line, const char* format, ...);
+CSJUTILS_API void CSJLog_Warn(const char* file, int line, const char* format, ...);
+CSJUTILS_API void CSJLog_Error(const char* file, int line, const char* format, ...);
 
-namespace csjutils {
-
-class CSJUTILS_API CSJLogger final {
-public:
-    static CSJLogger* getLoggerInst();
-    ~CSJLogger();
-
-    enum class LogLevel : uint8_t {
-        DEBUG_LOG,
-        INFO_LOG,
-        WARN_LOG,
-        ERROR_LOG,
-        FATAL_LOG
-    };
+#define LOG_Debug(...) CSJLog_Debug(__FILE__, __LINE__, __VA_ARGS__)
+#define LOG_Info(...) CSJLog_Debug(__FILE__, __LINE__, __VA_ARGS__)
+#define LOG_Warn(...) CSJLog_Debug(__FILE__, __LINE__, __VA_ARGS__)
+#define LOG_Error(...) CSJLog_Debug(__FILE__, __LINE__, __VA_ARGS__)
 
 
-    template<typename... TARGS>
-    void log_debug(TARGS&&... args) {
-        log(LogLevel::DEBUG_LOG, std::forward<TARGS>(args)...);
-    }
-
-    template<typename... TARGS>
-    void log_info(TARGS&&... args) {
-        log(LogLevel::INFO_LOG, args...);
-    }
-
-    template<typename... TARGS>
-    void log_warn(TARGS&&... args) {
-        log(LogLevel::WARN_LOG, args...);
-    }
-
-    template<typename... TARGS>
-    void log_error(TARGS&&... args) {
-        log(LogLevel::ERROR_LOG, args...);
-    }
-
-    template<typename... TARGS>
-    void log_fatal(TARGS&&... args) {
-        log(LogLevel::FATAL_LOG, args...);
-    }
-
-    template<typename... TARGS>
-    void log(LogLevel level, TARGS&&... args) {
-        switch (level) {
-        case LogLevel::DEBUG_LOG:
-            m_pLogger->debug(std::forward<TARGS>(args)...);
-            break;
-        case LogLevel::INFO_LOG:
-            m_pLogger->info(std::forward<TARGS>(args)...);
-            break;
-        case LogLevel::WARN_LOG:
-            m_pLogger->warn(std::forward<TARGS>(args)...);
-            break;
-        case LogLevel::ERROR_LOG:
-            m_pLogger->error(std::forward<TARGS>(args)...);
-            break;
-        case LogLevel::FATAL_LOG:
-            m_pLogger->critical(std::forward<TARGS>(args)...);
-            // TODO: Add a callback to deal with fatal error!
-        default:
-            break;
-        }
-    }
-
-    template<typename... TARGS>
-    void fatalback(TARGS&&... args) {
-        const std::string format_str = fmt::format(std::forward<TARGS>(args)...);
-        throw std::runtime_error(format_str);
-    }
-
-protected:
-    CSJLogger();
-
-private:
-    std::shared_ptr<spdlog::logger> m_pLogger;
-
-};
-
-} // namespace csjutils
+#ifdef __cplusplus
+}
+#endif
 
 #endif // __CSJLOGGER_H__

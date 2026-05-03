@@ -7,7 +7,6 @@
 #include "CSJMediaEngine/CSJMediaPlayerBase.h"
 
 using namespace csjmediaengine;
-using namespace csjutils;
 
 class CSJPlayerControllerImpl : public CSJPlayerController {
 public:
@@ -29,17 +28,15 @@ public:
 
 private:
     CSJMediaPlayerPtr m_pPlayerKernel;
-    CSJLogger        *m_pLogger = nullptr;
 };
 
 CSJPlayerControllerImpl::CSJPlayerControllerImpl() {
     m_pPlayerKernel = CSJMediaPlayerPtr(createPlayerCore());
-
-    m_pLogger = CSJLogger::getLoggerInst();
+     LOG_Info("Player controller instance construct");
 }
 
 CSJPlayerControllerImpl::~CSJPlayerControllerImpl() {
-    m_pLogger->log_info("Player controller instance deconstruct");
+    LOG_Info("Player controller instance deconstruct");
 }
 
 bool CSJPlayerControllerImpl::initPlayerKernel() {
@@ -51,19 +48,19 @@ bool CSJPlayerControllerImpl::initPlayerKernel() {
         return false;
     }
 
-    m_pLogger->log_info("Player kernel has been created!");
+    LOG_Info("Player kernel has been created!");
 
     return true;
 }
 
 bool CSJPlayerControllerImpl::setPlayFile(QString & playFile) {
     if (!m_pPlayerKernel) {
-        m_pLogger->log_warn("Player kernel hasn't been initialized!");
+        LOG_Warn("Player kernel hasn't been initialized!");
         return false;
     }
 
     if (playFile.size() == 0) {
-        m_pLogger->log_warn("Play file is null");
+        LOG_Warn("Play file is null");
         return false;
     }
 
@@ -75,7 +72,7 @@ bool CSJPlayerControllerImpl::setPlayFile(QString & playFile) {
 
 void CSJPlayerControllerImpl::start() {
     if (!m_pPlayerKernel) {
-        m_pLogger->log_warn("Player kernel hasn't been created!");
+        LOG_Warn("Player kernel hasn't been created!");
         return ;
     }
 
@@ -84,7 +81,7 @@ void CSJPlayerControllerImpl::start() {
 
 void CSJPlayerControllerImpl::pause() {
     if (!m_pPlayerKernel) {
-        m_pLogger->log_warn("Player kernel hasn't been created!");
+        LOG_Warn("Player kernel hasn't been created!");
         return ;
     }
 
@@ -93,7 +90,7 @@ void CSJPlayerControllerImpl::pause() {
 
 void CSJPlayerControllerImpl::resume() {
     if (!m_pPlayerKernel) {
-        m_pLogger->log_warn("Player kernel hasn't been created!");
+        LOG_Warn("Player kernel hasn't been created!");
         return ;
     }
 
@@ -101,12 +98,17 @@ void CSJPlayerControllerImpl::resume() {
 }
 
 void CSJPlayerControllerImpl::stop() {
+    if (!m_pPlayerKernel) {
+        LOG_Warn("Player kernel hasn't been created!");
+        return ;
+    }
+
     m_pPlayerKernel->stop();
 }
 
 bool CSJPlayerControllerImpl::isPlaying() {
     if (!m_pPlayerKernel) {
-        m_pLogger->log_warn("Player kernel hasn't been created!");
+        LOG_Warn("Player kernel hasn't been created!");
         return false;
     }
 
@@ -115,7 +117,7 @@ bool CSJPlayerControllerImpl::isPlaying() {
 
 bool CSJPlayerControllerImpl::isPausing() {
     if (!m_pPlayerKernel) {
-        m_pLogger->log_warn("Player kernel hasn't been created!");
+        LOG_Warn("Player kernel hasn't been created!");
         return false;
     }
 
@@ -124,7 +126,7 @@ bool CSJPlayerControllerImpl::isPausing() {
 
 bool CSJPlayerControllerImpl::isStopping() {
     if (!m_pPlayerKernel) {
-        m_pLogger->log_warn("Player kernel hasn't been created!");
+        LOG_Warn("Player kernel hasn't been created!");
         return false;
     }
 

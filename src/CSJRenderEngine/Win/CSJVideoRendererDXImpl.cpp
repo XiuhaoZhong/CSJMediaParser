@@ -23,8 +23,7 @@ const D3D11_INPUT_ELEMENT_DESC CSJVideoRendererDXImpl::VertexPosColor::inputLayo
     {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0}
 };
 
-CSJVideoRendererDXImpl::CSJVideoRendererDXImpl()
-    : m_pLogger(CSJLogger::getLoggerInst()) {
+CSJVideoRendererDXImpl::CSJVideoRendererDXImpl() {
     m_pixelFmt = CSJVIDEO_FMT_NONE;
     m_bContentNeedUpdate = false;
 }
@@ -407,21 +406,20 @@ bool CSJVideoRendererDXImpl::initD3D(int width, int height) {
 }
 
 bool CSJVideoRendererDXImpl::createShaders() {
-    CSJPathTool *pathTool = CSJPathTool::getInstance();
-    std::string vertshaderFile = pathTool->getShaderDir().append("DXVertexShader.hlsl").string();
-    std::string vertCso = pathTool->getShaderDir().append("DXVertexShader.cso").string();
+    std::string vertshaderFile = CSJPathTool::getShaderDir().append("DXVertexShader.hlsl").string();
+    std::string vertCso = CSJPathTool::getShaderDir().append("DXVertexShader.cso").string();
 
     // Create pixel shader with video pixel type, and default is rgba.
-    std::string pixelShaderFile = pathTool->getShaderDir().append("DXRGBAShader.hlsl").string();
-    std::string pixelCso = pathTool->getShaderDir().append("DXRGBAShader.cso").string();
+    std::string pixelShaderFile = CSJPathTool::getShaderDir().append("DXRGBAShader.hlsl").string();
+    std::string pixelCso = CSJPathTool::getShaderDir().append("DXRGBAShader.cso").string();
 
     if (m_pixelFmt == CSJVIDEO_FMT_YUV420P) {
-        pixelShaderFile = pathTool->getShaderDir().append("DXYUVShader.hlsl").string();
-        pixelCso = pathTool->getShaderDir().append("DXYUVShader.cso").string();
+        pixelShaderFile = CSJPathTool::getShaderDir().append("DXYUVShader.hlsl").string();
+        pixelCso = CSJPathTool::getShaderDir().append("DXYUVShader.cso").string();
     }
     
     if (!initShaders(vertshaderFile, vertCso, pixelShaderFile, pixelCso)) {
-        m_pLogger->log_error("Shader initialize failed!");
+        LOG_Error("Shader initialize failed!");
         return false;
     }
 
@@ -906,7 +904,7 @@ void CSJVideoRendererDXImpl::updateFrameData() {
         updateYUV420Frame(m_curVideoData);
         break;
     default:
-        m_pLogger->log_error("Update a unsupported pixel format!");
+        LOG_Error("Update a unsupported pixel format!");
         break;
     }
 }
@@ -921,7 +919,7 @@ void CSJVideoRendererDXImpl::updateRGBAFrame(CSJVideoData *videoData) {
                                              videoData->getWidth() * videoData->getHeight(), 
                                              videoData->getData());
     if (!updateState) {
-        m_pLogger->log_error("Update rgba data failed!");
+        LOG_Error("Update rgba data failed!");
     }
 }
 
@@ -931,28 +929,28 @@ void CSJVideoRendererDXImpl::updateYUV420Frame(CSJVideoData * videoData) {
         return ;
     }
 
-    m_pLogger->log_info("Update yuv data");
+    LOG_Info("Update yuv data");
 
     rsize_t len = m_videoWidth * m_videoHeight;
     bool updateState = updateDynamicResource(m_texYUV[0], len, videoData->getyuvY());
     if (!updateState) {
-        m_pLogger->log_error("Update Y plane data failed!");
+        LOG_Error("Update Y plane data failed!");
         return ;
     }
 
     updateState = updateDynamicResource(m_texYUV[1], len / 4, videoData->getyuvU());
     if (!updateState) {
-        m_pLogger->log_error("Update U plane data failed!");
+        LOG_Error("Update U plane data failed!");
         return ;
     }
 
     updateState = updateDynamicResource(m_texYUV[2], len / 4, videoData->getyuvV());
     if (!updateState) {
-        m_pLogger->log_error("Update V plane data failed!");
+        LOG_Error("Update V plane data failed!");
         return ;
     }
 
-    m_pLogger->log_info("Update yuv data successfully!");
+    LOG_Info("Update yuv data successfully!");
 }
 
 bool CSJVideoRendererDXImpl::updateDynamicResource(ComPtr<ID3D11Resource> resource, 
@@ -961,12 +959,12 @@ bool CSJVideoRendererDXImpl::updateDynamicResource(ComPtr<ID3D11Resource> resour
     
     ComPtr<ID3D11DeviceContext> curContext = getCurrentContext();
     if (!curContext) {
-        m_pLogger->log_error("Current context is null!");
+        LOG_Error("Current context is null!");
         return false;
     }
 
     if (!resource || !data) {
-        m_pLogger->log_error("Resource or data is null!");
+        LOG_Error("Resource or data is null!");
         return false;
     }
 

@@ -14,11 +14,6 @@
 template <typename T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;
 
-namespace csjutils {
-class CSJLogger;
-}
-using csjutils::CSJLogger;
-
 namespace csjrenderengine {
 
 class CSJVideoRendererDXImpl : public CSJVideoRenderer {
@@ -139,7 +134,6 @@ private:
     bool       m_initSuccess = false;   // whether Direct3D is initialized or not.
     HANDLE     m_pInitEvent = NULL;     // 初始化成功之后的通知
     std::mutex m_renderMtx;
-    CSJLogger *m_pLogger;  
 
     /* Direct3D 11 */
     ComPtr<ID3D11Device>          m_pd3dDevice;            // D3D11设备
