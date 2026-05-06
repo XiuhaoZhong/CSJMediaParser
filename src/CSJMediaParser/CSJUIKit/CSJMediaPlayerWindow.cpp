@@ -37,10 +37,19 @@ CSJMediaPlayerWindow::CSJMediaPlayerWindow(QWidget *parent)
 }
 
 CSJMediaPlayerWindow::~CSJMediaPlayerWindow() {
-    qDebug() << "CSJMediaPlayerWindow destoryed!";
+    LOG_Info("CSJMediaPlayerWindow destoryed!");
 }
 
-void CSJMediaPlayerWindow::initUI() {
+void CSJMediaPlayerWindow::closeEvent(QCloseEvent *event) {
+    LOG_Info("Player window is going to be closed");
+
+    onWidgetClose();
+
+    QWidget::closeEvent(event);
+}
+
+void CSJMediaPlayerWindow::initUI()
+{
     resize(QSize(player_window_width, player_window_height));
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
@@ -60,6 +69,10 @@ void CSJMediaPlayerWindow::initUI() {
     setStyleSheet("QWidget {background-color: #1A202C;}");
 
     connect(ctrlWidget, &CSJPlayerControllerWidget::showImage, this, &CSJMediaPlayerWindow::onSetImage);
+    connect(ctrlWidget, &CSJPlayerControllerWidget::play, this, &CSJMediaPlayerWindow::onPlayBtnClicked);
+    connect(ctrlWidget, &CSJPlayerControllerWidget::pause, this, &CSJMediaPlayerWindow::onPauseBtnClicked);
+    connect(ctrlWidget, &CSJPlayerControllerWidget::resume, this, &CSJMediaPlayerWindow::onResumeBtnClicked);
+    connect(ctrlWidget, &CSJPlayerControllerWidget::stop, this, &CSJMediaPlayerWindow::onStopBtnClicked);
     m_playerCtrlWidget = ctrlWidget;
 }
 
@@ -69,30 +82,46 @@ void CSJMediaPlayerWindow::show(bool bShow) {
 }
 
 void CSJMediaPlayerWindow::onPlayBtnClicked() {
+    LOG_Info("Start playing...");
     if (!m_playController) {
-        qDebug() << "Error! Play controller hasn't been created!";
+        LOG_Warn("Error! Play controller hasn't been created!");
         return ;
     }
 
+    std::string file_path("E:\\technology\\player_resources\\what_song.mp4");
+    m_playController->setPlayFile(file_path);
+
     if (m_playStatus == PLAYSTATUS_STOP) {
-        qDebug() << "[LOG] Start playing... ";
+        LOG_Info(" Start playing... ");
         m_playController->start();
     } else if (m_playStatus == PLAYSTATUS_PAUSE) {
-        qDebug() << "[LOG] Resume playing... ";
+        LOG_Info(" Resume playing... ");
         m_playController->resume();
     } else if (m_playStatus == PLAYSTATUS_PLAY) {
-        qDebug() << "[LOG] Pause playing... ";
+        LOG_Info(" Pause playing... ");
         m_playController->pause();
     }
 }
 
+void CSJMediaPlayerWindow::onPauseBtnClicked() {
+    LOG_Info("Pause playing ...");
+    if (m_playStatus == PLAYSTATUS_PAUSE) {
+
+    }
+}
+
+void CSJMediaPlayerWindow::onResumeBtnClicked() {
+    LOG_Info("Resume playing ...");
+}
+
 void CSJMediaPlayerWindow::onStopBtnClicked() {
+    LOG_Info("Stop playing...");
     if (!m_playController) {
-        qDebug() << "Error! Play controller hasn't been created!";
+        LOG_Warn("Error! Play controller hasn't been created!");
         return ;
     }
 
-    qDebug() << "[LOG] Stop playing... ";
+    LOG_Info("Stop playing... ");
 
     m_playController->stop();
     m_playStatus = PLAYSTATUS_STOP;
@@ -100,20 +129,20 @@ void CSJMediaPlayerWindow::onStopBtnClicked() {
 
 void CSJMediaPlayerWindow::onFastForwardBtnClicked() {
     if (!m_playController) {
-        qDebug() << "Error! Play controller hasn't been created!";
+        LOG_Warn("Error! Play controller hasn't been created!");
         return ;
     }
 
-    qDebug() << "[LOG] Fast forward... ";
+    LOG_Info("Fast forward... ");
 }
 
 void CSJMediaPlayerWindow::onFastBackBtnClicked() {
     if (!m_playController) {
-        qDebug() << "Error! Play controller hasn't been created!";
+        LOG_Warn("Error! Play controller hasn't been created!");
         return ;
     }
 
-    qDebug() << "[LOG] Fast backward... ";
+    LOG_Info("Fast backward... ");
 }
 
 void CSJMediaPlayerWindow::onSetImage() {
@@ -122,4 +151,10 @@ void CSJMediaPlayerWindow::onSetImage() {
     }
 
     m_pVideoRenderWidget->showDefaultImage();
+}
+
+void CSJMediaPlayerWindow::onWidgetClose() {
+    if (m_playController) {
+        m_playController->stop();
+    }
 }

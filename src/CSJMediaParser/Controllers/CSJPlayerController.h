@@ -2,8 +2,7 @@
 #define __CSJPLAYERCONTROLLER_H__
 
 #include <memory>
-
-#include <QString>
+#include <string>
 
 /**
  * @brief This class is a logical player controller, and it separates player kernel
@@ -25,12 +24,12 @@ public:
     /**
      * @brief Initialize the player kernel.
      */
-    virtual bool initPlayerKernel() = 0;
+    virtual bool init() = 0;
 
     /**
      * @brief Set the media file which will be played.
      */
-    virtual bool setPlayFile(QString& playFile) = 0;
+    virtual bool setPlayFile(std::string& playFile) = 0;
 
     /**********************************************
      * Player Operations.

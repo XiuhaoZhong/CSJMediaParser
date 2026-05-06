@@ -13,9 +13,9 @@ public:
     CSJPlayerControllerImpl();
     ~CSJPlayerControllerImpl();
 
-    bool initPlayerKernel() override;
+    bool init() override;
 
-    bool setPlayFile(QString& playFile) override;
+    bool setPlayFile(std::string& playFile) override;
 
     void start() override;
     void pause() override;
@@ -32,14 +32,14 @@ private:
 
 CSJPlayerControllerImpl::CSJPlayerControllerImpl() {
     m_pPlayerKernel = CSJMediaPlayerPtr(createPlayerCore());
-     LOG_Info("Player controller instance construct");
+    LOG_Info("Player controller instance construct");
 }
 
 CSJPlayerControllerImpl::~CSJPlayerControllerImpl() {
     LOG_Info("Player controller instance deconstruct");
 }
 
-bool CSJPlayerControllerImpl::initPlayerKernel() {
+bool CSJPlayerControllerImpl::init() {
     if (!m_pPlayerKernel) {
         return false;
     }
@@ -48,12 +48,12 @@ bool CSJPlayerControllerImpl::initPlayerKernel() {
         return false;
     }
 
-    LOG_Info("Player kernel has been created!");
+    LOG_Info("Player kernel initialize successfully!");
 
     return true;
 }
 
-bool CSJPlayerControllerImpl::setPlayFile(QString & playFile) {
+bool CSJPlayerControllerImpl::setPlayFile(std::string & playFile) {
     if (!m_pPlayerKernel) {
         LOG_Warn("Player kernel hasn't been initialized!");
         return false;
@@ -64,8 +64,7 @@ bool CSJPlayerControllerImpl::setPlayFile(QString & playFile) {
         return false;
     }
 
-    std::string play_file_path = playFile.toStdString();
-    m_pPlayerKernel->setPlayFile(play_file_path);
+    m_pPlayerKernel->setPlayFile(playFile);
 
     return true;
 }

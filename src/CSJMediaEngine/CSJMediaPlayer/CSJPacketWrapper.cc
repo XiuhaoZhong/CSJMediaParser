@@ -12,8 +12,9 @@ CSJPacketWrapper::CSJPacketWrapper()
     : m_pPkt(nullptr) {
 }
 
-CSJPacketWrapper::CSJPacketWrapper(AVPacket * pkt) 
-    : m_pPkt(pkt) {
+CSJPacketWrapper::CSJPacketWrapper(AVPacket * pkt) {
+    m_pPkt = av_packet_alloc();
+    av_packet_move_ref(m_pPkt, pkt);
 }
 
 CSJPacketWrapper::~CSJPacketWrapper() {
