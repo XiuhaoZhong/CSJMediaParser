@@ -2,6 +2,7 @@
 
 #include <string>
 #include <thread>
+#include <memory>
 
 #include "CSJMediaPlayerBase.h"
 #include "CSJUtils/CSJRingQueue.h"
@@ -14,6 +15,9 @@ struct AVCodecContext;
 namespace csjmediaengine {
 class CSJPacketWrapper;
 class CSJFrameWrapper;
+
+using CSJPacketWrapperPtr = std::shared_ptr<CSJPacketWrapper>;
+using CSJFrameWrapperPtr = std::shared_ptr<CSJFrameWrapper>;
 
 class CSJMediaPlayer : public CSJMediaPlayerBase {
 public:
@@ -58,6 +62,14 @@ protected:
     void videoDecodeFunc();
     void audioDecodeFunc();
 
+    void clear();
+
+    void clearMediaPackets();
+    void clearMediaFrames();
+
+    void clearPacketsQueue(CSJRingQueue<CSJPacketWrapperPtr> &queue);
+    void clearFrameQueue(CSJRingQueue<CSJFrameWrapperPtr> &queue);
+
 private:
     bool                     m_bPlayerInit = false;
 
@@ -84,10 +96,10 @@ private:
     std::unique_ptr<std::thread> m_audioDecodeThread = nullptr;
 
     /* Media data. */
-    CSJRingQueue<CSJPacketWrapper *>       m_pAudioPacketsQueue;
-    CSJRingQueue<CSJPacketWrapper *>       m_pVideoPacketsQueue;
-    CSJRingQueue<CSJFrameWrapper *>        m_pAudioFramesQueue;
-    CSJRingQueue<CSJFrameWrapper *>        m_pVideoFramesQueue;
+    CSJRingQueue<CSJPacketWrapperPtr>       m_pAudioPacketsQueue;
+    CSJRingQueue<CSJPacketWrapperPtr>       m_pVideoPacketsQueue;
+    CSJRingQueue<CSJFrameWrapperPtr>        m_pAudioFramesQueue;
+    CSJRingQueue<CSJFrameWrapperPtr>        m_pVideoFramesQueue;
     std::weak_ptr<CSJVideoPresentDelegate> m_pVideoPresentDelegate;
 
     // TODO:

@@ -23,21 +23,29 @@ public:
     CSJMediaPlayerWindow(QWidget *parent = nullptr);
     ~CSJMediaPlayerWindow();
 
+    // before the widget closed.
+    void closeEvent(QCloseEvent *event) override;
+
     void initUI();
 
     void show(bool bShow);
 
 public slots:
     void onPlayBtnClicked();
+    void onPauseBtnClicked();
+    void onResumeBtnClicked();
     void onStopBtnClicked();
     void onFastForwardBtnClicked();
     void onFastBackBtnClicked();
 
     void onSetImage();
 
+protected:
+    void onWidgetClose();
+
 private:
     CSJVideoRendererWidget    *m_pVideoRenderWidget = nullptr;
-    CSJPlayerControllerPtr    m_playController;              /* Player function controller. */
+    CSJPlayerControllerPtr     m_playController;              /* Player function controller. */
     CSJPlayerControllerWidget *m_playerCtrlWidget = nullptr;  /* Player controller UI. */
     PlayStatus                 m_playStatus;
 

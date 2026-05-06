@@ -4,8 +4,10 @@
 #include "CSJPacketWrapper.hpp"
 #include "CSJFrameWrapper.hpp"
 
-static size_t g_video_queue_len = 5;
-static size_t g_audio_queue_len = 5; 
+#include "CSJUtils/CSJLogger.h"
+
+static size_t g_video_queue_len = 20;
+static size_t g_audio_queue_len = 20; 
 
 namespace csjmediaengine {
 
@@ -18,7 +20,8 @@ CSJMediaPlayer::CSJMediaPlayer()
 }
 
 CSJMediaPlayer::~CSJMediaPlayer() {
-
+    clearMediaPackets();
+    clearMediaFrames();
 }
 
 void CSJMediaPlayer::setPlayFile(std::string &file) {
@@ -41,20 +44,23 @@ void CSJMediaPlayer::play() {
     bool isReady = readyForPlay();
     if (!isReady) {
         // TODO: There are some issues and current player can't play.
+        LOG_Error("Current media file can't be ready to play!");
         return ;
     }
+
+    LOG_Info("Current media file is ready to play!");
 
     // Start a thread to read packets from media file.
     m_readThread.reset(new std::thread(&CSJMediaPlayer::readPacketsFunc, this));
 
     // Starting decoder thread according to the play mode.
-    if (containVideoMode(m_playMode)) {
-        m_videoDecodeThread.reset(new std::thread(&CSJMediaPlayer::videoDecodeFunc, this));
-    }
+    // if (containVideoMode(m_playMode)) {
+    //     m_videoDecodeThread.reset(new std::thread(&CSJMediaPlayer::videoDecodeFunc, this));
+    // }
 
-    if (containAudioMode(m_playMode)) {
-        m_audioDecodeThread.reset(new std::thread(&CSJMediaPlayer::audioDecodeFunc, this));
-    }
+    // if (containAudioMode(m_playMode)) {
+    //     m_audioDecodeThread.reset(new std::thread(&CSJMediaPlayer::audioDecodeFunc, this));
+    // }
 }
 
 void CSJMediaPlayer::pause() {
@@ -70,10 +76,35 @@ void CSJMediaPlayer::stop() {
     m_status = CSJPLAYERSTATUS_STOP;
     /* In case current status is pause. */
     m_pauseCond.notify_all();
+
+    clear();
 }
 
 void CSJMediaPlayer::seek(double timeStamp) {
 
+}
+
+void CSJMediaPlayer::clear() {
+    // TODO: the stop logic: must join all threads, then clear queues.
+    /**
+     * 1. Stop render thread, including video and audio
+     * 2. Stop the reading thread
+     * 3. Stop decoder thread
+     * 4. Clear video and audio packets queue.
+     * 5. Clear video and audio frames queue.
+     */
+
+    m_pVideoPacketsQueue.wakeUpToExit();
+    // m_pAudioPacketsQueue.wakeUpToExit();
+
+    if (m_readThread->joinable()) {
+        m_readThread->join();
+        m_readThread.reset();
+    }
+
+    clearMediaPackets();
+
+    // TODO: join decoder threads if needed.
 }
 
 bool CSJMediaPlayer::isPlaying() {
@@ -85,7 +116,7 @@ bool CSJMediaPlayer::isPause() {
 }
 
 bool CSJMediaPlayer::isStop() {
-    return m_status = CSJPLAYERSTATUS_STOP;
+    return m_status == CSJPLAYERSTATUS_STOP;
 }
 
 void CSJMediaPlayer::setVideoPresentDelegate(std::shared_ptr<CSJVideoPresentDelegate> delegate) {
@@ -150,17 +181,20 @@ bool CSJMediaPlayer::readyForPlay() {
 }
 
 void CSJMediaPlayer::readPacketsFunc() {
+    AVPacket *pkt = av_packet_alloc();
+    LOG_Info("Start reading packets from media file %s", m_file.c_str());
     while (1) {
         if (isStop()) {
+            LOG_Info("Stop reading packets from media file %s", m_file.c_str());
             break;
         }
 
         if (isPause()) {
+            LOG_Info("Pause reading packets from media file %s", m_file.c_str());
             std::unique_lock<std::mutex> lock(m_pauseMtx);
             m_pauseCond.wait(lock);
         }
 
-        AVPacket *pkt = av_packet_alloc();
         int ret = av_read_frame(m_pFormatCtx, pkt);
         if (ret < 0) {
             if (ret == AVERROR_EOF) {
@@ -170,16 +204,23 @@ void CSJMediaPlayer::readPacketsFunc() {
         }
 
         if (pkt->stream_index == m_iVideoStreamIndex) {
-
-            CSJPacketWrapper *pktWrapper = new CSJPacketWrapper(pkt);
+            LOG_Info("Before put a video packet into ring buffer!");
+            CSJPacketWrapperPtr pktWrapper = std::make_shared<CSJPacketWrapper>(pkt);
             m_pVideoPacketsQueue.enBuffer(pktWrapper);
+            LOG_Info("Reading a video packet, put it into ring buffer.");
         } else if (pkt->stream_index == m_iAudioStreamIndex) {
-
-            CSJPacketWrapper *pktWrapper = new CSJPacketWrapper(pkt);
+            CSJPacketWrapperPtr pktWrapper = std::make_shared<CSJPacketWrapper>(pkt);
             m_pAudioPacketsQueue.enBuffer(pktWrapper);
+            LOG_Info("Reading an audio packet, put it into ring buffer.");
         }
 
     }
+
+    if (pkt) {
+        av_packet_free(&pkt);
+    }
+
+    LOG_Info("Quit reading from media file %s", m_file.c_str());
 }
 
 void CSJMediaPlayer::videoDecodeFunc() {
@@ -188,6 +229,25 @@ void CSJMediaPlayer::videoDecodeFunc() {
 
 void CSJMediaPlayer::audioDecodeFunc() {
 
+}
+
+void CSJMediaPlayer::clearMediaPackets() {
+    m_pVideoPacketsQueue.reset();
+    m_pAudioPacketsQueue.reset();
+}
+
+void CSJMediaPlayer::clearMediaFrames() {
+   
+}
+
+void CSJMediaPlayer::clearPacketsQueue(CSJRingQueue<CSJPacketWrapperPtr> &queue) {
+    
+}
+
+void CSJMediaPlayer::clearFrameQueue(CSJRingQueue<CSJFrameWrapperPtr> &queue) {
+    while (!queue.is_empty()) {
+        auto item = queue.deBuffer();
+    }
 }
 
 } // namespace csjmediaengine;

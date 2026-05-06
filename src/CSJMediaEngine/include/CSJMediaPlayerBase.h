@@ -28,11 +28,11 @@ inline CSJPlayMode operator&(CSJPlayMode a, CSJPlayMode b) {
     return static_cast<CSJPlayMode>(static_cast<uint8_t>(a) & static_cast<uint8_t>(b));
 }
 
-inline CSJPlayMode operator|=(CSJPlayMode a, CSJPlayMode b) {
+inline CSJPlayMode operator|=(CSJPlayMode& a, CSJPlayMode b) {
     return a = a | b;
 }
 
-inline CSJPlayMode operator&=(CSJPlayMode a, CSJPlayMode b) {
+inline CSJPlayMode operator&=(CSJPlayMode& a, CSJPlayMode b) {
     return a = a & b;
 }
 
