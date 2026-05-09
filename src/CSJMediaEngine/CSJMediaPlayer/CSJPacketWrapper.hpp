@@ -20,8 +20,18 @@ public:
     void reset();
     void swap(CSJPacketWrapper& other);
 
+    void setSeqNumber(int seqNumber) {
+        m_seqNumber = seqNumber;
+    }
+
+    int getSeqNumber() const {
+        return m_seqNumber;
+    }
+
     AVPacket* release();
 private:
     AVPacket *m_pPkt;
+    // seqNumber used to track.
+    int       m_seqNumber;
 };
 } // namespace csjmediaengine

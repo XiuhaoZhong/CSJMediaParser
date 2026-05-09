@@ -62,6 +62,8 @@ protected:
     void videoDecodeFunc();
     void audioDecodeFunc();
 
+    CSJFrameWrapperPtr commonDecode(AVCodecContext *codec_ctx, CSJPacketWrapperPtr wrapperPkt);
+
     void clear();
 
     void clearMediaPackets();
@@ -82,6 +84,11 @@ private:
     bool                     m_bReadFinish = false;
     bool                     m_bAudioDecodeFinish = false;
     bool                     m_bVideoDecodeFinish = false;
+
+    int                      m_iVideoPktSeqNum = 0;
+    int                      m_iAudioPktSeqNum = 0;
+    int                      m_iVideoFrmSeqNum = 0;
+    int                      m_iAudioFrmSeqNum = 0;
 
     /* Stream and decoder */
     int                      m_iAudioStreamIndex = -1;
