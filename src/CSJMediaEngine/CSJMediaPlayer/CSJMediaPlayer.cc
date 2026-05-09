@@ -54,13 +54,13 @@ void CSJMediaPlayer::play() {
     m_readThread.reset(new std::thread(&CSJMediaPlayer::readPacketsFunc, this));
 
     // Starting decoder thread according to the play mode.
-    // if (containVideoMode(m_playMode)) {
-    //     m_videoDecodeThread.reset(new std::thread(&CSJMediaPlayer::videoDecodeFunc, this));
-    // }
+    if (containVideoMode(m_playMode)) {
+        m_videoDecodeThread.reset(new std::thread(&CSJMediaPlayer::videoDecodeFunc, this));
+    }
 
-    // if (containAudioMode(m_playMode)) {
-    //     m_audioDecodeThread.reset(new std::thread(&CSJMediaPlayer::audioDecodeFunc, this));
-    // }
+    if (containAudioMode(m_playMode)) {
+        m_audioDecodeThread.reset(new std::thread(&CSJMediaPlayer::audioDecodeFunc, this));
+    }
 }
 
 void CSJMediaPlayer::pause() {
@@ -100,6 +100,14 @@ void CSJMediaPlayer::clear() {
     if (m_readThread->joinable()) {
         m_readThread->join();
         m_readThread.reset();
+    }
+
+    if (m_videoDecodeThread->joinable()) {
+        m_videoDecodeThread->join();
+    }
+
+    if (m_audioDecodeThread->joinable()) {
+        m_audioDecodeThread->join();
     }
 
     clearMediaPackets();
@@ -204,16 +212,17 @@ void CSJMediaPlayer::readPacketsFunc() {
         }
 
         if (pkt->stream_index == m_iVideoStreamIndex) {
-            LOG_Info("Before put a video packet into ring buffer!");
+            //LOG_Info("Before put a video packet into ring buffer!");
             CSJPacketWrapperPtr pktWrapper = std::make_shared<CSJPacketWrapper>(pkt);
+            pktWrapper->setSeqNumber(m_iVideoPktSeqNum++);
             m_pVideoPacketsQueue.enBuffer(pktWrapper);
-            LOG_Info("Reading a video packet, put it into ring buffer.");
+            LOG_Info("Reading the %dth video packet, put it into ring buffer.", pktWrapper->getSeqNumber());
         } else if (pkt->stream_index == m_iAudioStreamIndex) {
             CSJPacketWrapperPtr pktWrapper = std::make_shared<CSJPacketWrapper>(pkt);
+            pktWrapper->setSeqNumber(m_iAudioPktSeqNum++);
             m_pAudioPacketsQueue.enBuffer(pktWrapper);
-            LOG_Info("Reading an audio packet, put it into ring buffer.");
+            LOG_Info("Reading the %dth audio packet, put it into ring buffer.", pktWrapper->getSeqNumber());
         }
-
     }
 
     if (pkt) {
@@ -224,11 +233,136 @@ void CSJMediaPlayer::readPacketsFunc() {
 }
 
 void CSJMediaPlayer::videoDecodeFunc() {
+    LOG_Info("Start decoding video packets...");
 
+    if (!avcodec_is_open(m_pVideoCodecCtx)) {
+        int ret = avcodec_open2(m_pVideoCodecCtx, m_pVideoCodecCtx->codec, NULL);
+        if (ret < 0) {
+            LOG_Info("Video codec open failed! Exit video decode function!");
+            return ;
+        }
+        
+        LOG_Info("Video codec open successfully!");
+    }
+
+    while (true) {
+        if (isStop()) {
+            LOG_Info("Player stop, exit video decoding.");
+            break;
+        }
+
+        if (isPause()) {
+            LOG_Info("Pause video decoding.");
+            std::unique_lock<std::mutex> lock(m_pauseMtx);
+            m_pauseCond.wait(lock);
+        }
+
+        auto opt = m_pVideoPacketsQueue.deBuffer();
+        if (!opt) {
+            LOG_Info("The video packet queue is empty, exit decoding!");
+            break;
+        }
+
+        CSJPacketWrapperPtr packetWrapper = opt.value();
+        int seqNum = packetWrapper->getSeqNumber();
+        CSJFrameWrapperPtr frameWrapper = commonDecode(m_pVideoCodecCtx, packetWrapper);
+
+        if (!frameWrapper) {
+            LOG_Warn("The %dth video packet decoded an empty frame", seqNum);
+        } else {
+            frameWrapper->setSeqNumber(seqNum);
+            LOG_Info("The %dth video frame has been decoded.", frameWrapper->getSeqNumber());
+        }
+
+        //m_pVideoFramesQueue.enBuffer(frameWrapper);
+    }
 }
 
 void CSJMediaPlayer::audioDecodeFunc() {
+    LOG_Info("Start decoding audio packets...");
 
+    if (!avcodec_is_open(m_pAudioCodecCtx)) {
+        int ret = avcodec_open2(m_pAudioCodecCtx, m_pAudioCodecCtx->codec, NULL);
+        if (ret < 0) {
+            LOG_Info("Audio codec open failed! Exit video decode function!");
+            return ;
+        }
+        
+        LOG_Info("Audio codec open successfully!");
+    }
+
+    while (true) {
+        if (isStop()) {
+            LOG_Info("Player stop, exit audio decoding.");
+            break;
+        }
+
+        if (isPause()) {
+            LOG_Info("Pause video decoding.");
+            std::unique_lock<std::mutex> lock(m_pauseMtx);
+            m_pauseCond.wait(lock);
+        }
+
+        auto opt = m_pAudioPacketsQueue.deBuffer();
+        if (!opt) {
+            LOG_Info("The video packet queue is empty, exit decoding!");
+            break;
+        }
+
+        CSJPacketWrapperPtr packetWrapper = opt.value();
+        int seqNum = packetWrapper->getSeqNumber();
+        CSJFrameWrapperPtr frameWrapper = commonDecode(m_pAudioCodecCtx, packetWrapper);
+
+        if (!frameWrapper) {
+            LOG_Warn("The %dth audio packet decoded an empty frame", seqNum);
+        } else {
+            frameWrapper->setSeqNumber(seqNum);
+            LOG_Info("The %dth audio frame has been decoded.", frameWrapper->getSeqNumber());
+        }
+
+        //m_pAudioFramesQueue.enBuffer(frameWrapper);
+    }
+}
+
+CSJFrameWrapperPtr CSJMediaPlayer::commonDecode(AVCodecContext *codec_ctx, CSJPacketWrapperPtr wrapperPkt) {
+    if (!codec_ctx || !wrapperPkt) {
+        return nullptr;
+    }
+
+    AVPacket *pkt = wrapperPkt->release();
+    int ret = avcodec_send_packet(codec_ctx, pkt);
+    if (ret < 0) {
+        av_packet_free(&pkt);
+        return nullptr;
+    }
+
+    CSJFrameWrapperPtr FrameWrapper = nullptr;
+
+    while (true) {
+        AVFrame* frame = av_frame_alloc();
+
+        ret = avcodec_receive_frame(codec_ctx, frame);
+        if (ret == AVERROR(EAGAIN)) {
+            av_frame_free(&frame);
+             LOG_Info("The %dth packet needs more packet to decode!", wrapperPkt->getSeqNumber());
+            break;
+        } else if (ret == AVERROR_EOF) {
+             LOG_Info("The decode failed because eof!");
+            av_frame_free(&frame);
+            break;
+        } else if (ret < 0) {
+             LOG_Info("The %dth packet decode failed because an error!", wrapperPkt->getSeqNumber());
+            av_frame_free(&frame);
+            break;
+        }
+
+        LOG_Info("The %dth packet decoded successfully!!", wrapperPkt->getSeqNumber());
+        FrameWrapper = std::make_shared<CSJFrameWrapper>(frame);
+        av_frame_free(&frame);
+    }
+
+    av_packet_free(&pkt);
+    return FrameWrapper;
 }
 
 void CSJMediaPlayer::clearMediaPackets() {

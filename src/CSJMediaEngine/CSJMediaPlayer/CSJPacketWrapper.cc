@@ -6,6 +6,8 @@ extern "C" {
 #include <libavcodec/packet.h>
 }
 
+#include "CSJUtils/CSJLogger.h";
+
 namespace csjmediaengine {
 
 CSJPacketWrapper::CSJPacketWrapper()
@@ -18,6 +20,7 @@ CSJPacketWrapper::CSJPacketWrapper(AVPacket * pkt) {
 }
 
 CSJPacketWrapper::~CSJPacketWrapper() {
+    LOG_Info("The %dth packet released");
     reset();
 }
 

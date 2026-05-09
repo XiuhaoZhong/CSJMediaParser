@@ -52,10 +52,8 @@ namespace csjutils {
                 return std::nullopt;
             }
 
-            LOG_Debug("Before pop an item, current frnot: %d.", m_iFront);
             T val = std::move(m_pBuffer[m_iFront]);
             m_iFront = (m_iFront + 1) % m_pBuffer.size();
-            LOG_Debug("After pop an item, current frnot: %d.", m_iFront);
             m_cvFull.notify_one();
 
             return val;

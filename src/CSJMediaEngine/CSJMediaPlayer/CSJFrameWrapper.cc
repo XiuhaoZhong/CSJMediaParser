@@ -6,6 +6,8 @@ extern "C" {
 #include <libavutil/frame.h>
 }
 
+#include "CSJUtils/CSJLogger.h"
+
 namespace csjmediaengine {
 
 CSJFrameWrapper::CSJFrameWrapper()
@@ -14,9 +16,12 @@ CSJFrameWrapper::CSJFrameWrapper()
 
 CSJFrameWrapper::CSJFrameWrapper(AVFrame * Frame) 
     : m_pFrame(Frame) {
+    m_pFrame = av_frame_alloc();
+    av_frame_move_ref(m_pFrame, Frame);
 }
 
 CSJFrameWrapper::~CSJFrameWrapper() {
+    LOG_Info("The %dth frame released");
     reset();
 }
 
