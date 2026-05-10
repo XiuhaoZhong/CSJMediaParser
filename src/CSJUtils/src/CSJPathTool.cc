@@ -40,8 +40,8 @@ static fs::path getAppResourcePath() {
         return fs::path(path);
     }
 
-    //CFRelease(resourcesURL);
-    return fs::path("");
+    CFRelease(resourcesURL);
+    return "";
 }
 
 #endif 
@@ -142,7 +142,7 @@ std::string CSJPathTool::getStyleSheetWithName(std::string &styleSheetsName) {
     return getStyleSheetDir().append(styleSheetsName).string();
 }
 
-std::string CSJPathTool::getResVideoFileWithName(std::string & fileName) {
+std::string CSJPathTool::getResVideoFileWithName(const std::string & fileName) {
     if (fileName.size() == 0) {
         return std::string();
     }
