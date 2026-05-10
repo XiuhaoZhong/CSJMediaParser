@@ -102,6 +102,10 @@ void CSJPlayerControllerImpl::stop() {
         return ;
     }
 
+    if (m_pPlayerKernel->isStop()) {
+        return ;
+    }
+
     m_pPlayerKernel->stop();
 }
 
