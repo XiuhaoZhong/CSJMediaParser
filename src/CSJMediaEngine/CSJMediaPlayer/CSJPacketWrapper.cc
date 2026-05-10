@@ -20,7 +20,7 @@ CSJPacketWrapper::CSJPacketWrapper(AVPacket * pkt) {
 }
 
 CSJPacketWrapper::~CSJPacketWrapper() {
-    LOG_Info("The %dth packet released");
+    LOG_Info("The %dth packet released", m_seqNumber);
     reset();
 }
 
@@ -45,6 +45,7 @@ CSJPacketWrapper & CSJPacketWrapper::operator=(const CSJPacketWrapper & other) {
     reset();
     if (other.m_pPkt) {
         m_pPkt = av_packet_clone(other.m_pPkt);
+        m_seqNumber = other.m_seqNumber;
     }
 
     return *this;
@@ -58,7 +59,9 @@ CSJPacketWrapper & CSJPacketWrapper::operator=(CSJPacketWrapper && other) {
     reset();
 
     m_pPkt = other.m_pPkt;
+    m_seqNumber = other.m_seqNumber;
     other.m_pPkt = nullptr;
+    other.m_seqNumber = 0;
 
     return *this;
 }
@@ -80,10 +83,13 @@ void CSJPacketWrapper::reset() {
         av_packet_free(&m_pPkt);
         m_pPkt = nullptr;
     }
+
+    m_seqNumber = 0;
 }
 
 void CSJPacketWrapper::swap(CSJPacketWrapper & other) {
     std::swap(m_pPkt, other.m_pPkt);
+    std::swap(m_seqNumber, other.m_seqNumber);
 }
 
 AVPacket * CSJPacketWrapper::release() {

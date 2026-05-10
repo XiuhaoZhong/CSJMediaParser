@@ -61,6 +61,8 @@ void CSJMediaPlayer::play() {
     if (containAudioMode(m_playMode)) {
         m_audioDecodeThread.reset(new std::thread(&CSJMediaPlayer::audioDecodeFunc, this));
     }
+
+    m_status = CSJPLAYERSTATUS_PLAYING;
 }
 
 void CSJMediaPlayer::pause() {

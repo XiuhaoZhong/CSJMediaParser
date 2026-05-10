@@ -21,7 +21,7 @@ CSJFrameWrapper::CSJFrameWrapper(AVFrame * Frame)
 }
 
 CSJFrameWrapper::~CSJFrameWrapper() {
-    LOG_Info("The %dth frame released");
+    LOG_Info("The %dth frame released.", m_seqNumber);
     reset();
 }
 
@@ -35,7 +35,10 @@ CSJFrameWrapper::CSJFrameWrapper(const CSJFrameWrapper & other) {
 
 CSJFrameWrapper::CSJFrameWrapper(CSJFrameWrapper && other) {
     m_pFrame = other.m_pFrame;
+    m_seqNumber = other.m_seqNumber;
+
     other.m_pFrame = nullptr;
+    other.m_seqNumber = 0;
 }
 
 CSJFrameWrapper & CSJFrameWrapper::operator=(const CSJFrameWrapper & other) {
@@ -59,7 +62,10 @@ CSJFrameWrapper & CSJFrameWrapper::operator=(CSJFrameWrapper && other) {
     reset();
 
     m_pFrame = other.m_pFrame;
+    m_seqNumber = other.m_seqNumber;
+
     other.m_pFrame = nullptr;
+    other.m_seqNumber = 0;
 
     return *this;
 }
@@ -81,10 +87,13 @@ void CSJFrameWrapper::reset() {
         //av_packet_free(m_pFrame);
         m_pFrame = nullptr;
     }
+
+    m_seqNumber = 0;
 }
 
 void CSJFrameWrapper::swap(CSJFrameWrapper & other) {
     std::swap(m_pFrame, other.m_pFrame);
+    std::swap(m_seqNumber, other.m_seqNumber);
 }
 
 AVFrame * CSJFrameWrapper::release() {

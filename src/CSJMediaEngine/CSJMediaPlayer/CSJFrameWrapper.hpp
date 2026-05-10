@@ -32,6 +32,6 @@ public:
 private:
     AVFrame *m_pFrame;
     // seqNumber used to track.
-    int      m_seqNumber;
+    int      m_seqNumber = 0;
 };
 } // namespace csjmediaengine
