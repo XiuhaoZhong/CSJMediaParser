@@ -12,6 +12,8 @@
 #include "CSJUtils/CSJLogger.h"
 #include "CSJUtils/CSJPathTool.h"
 
+#include "Global/global_constant.h"
+
 #include "CSJVideoRendererWidget.h"
 #include "CSJPlayerControllerWidget.h"
 
@@ -92,8 +94,7 @@ void CSJMediaPlayerWindow::onPlayBtnClicked() {
         return ;
     }
 
-    std::string file_name("what_song.mp4");
-    std::string file_path = CSJPathTool::getResVideoFileWithName(file_name);
+    std::string file_path = CSJPathTool::getResVideoFileWithName(g_test_mp4_file);
     m_playController->setPlayFile(file_path);
 
     if (m_playStatus == PLAYSTATUS_STOP) {

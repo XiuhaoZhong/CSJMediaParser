@@ -1,6 +1,9 @@
 #include "mainwindow.h"
 
 #include <QApplication>
+
+#include "Global/global_constant.h"
+
 #include "CSJMainWindow.h"
 
 #include "CSJUtils/CSJPathTool.h"
@@ -39,12 +42,7 @@ int main(int argc, char *argv[]) {
 }
 
 void init_log() {
-#ifdef _WIN32
-    std::string log_path("Logs\\media_parser.log");
-#else
-    std::string log_path("/tmp/Logs/CSJMediaParser/media_parser.log");
-#endif
-
+    std::string log_path = g_log_path;
     size_t pos = log_path.find_last_of("/\\");
     if (pos == std::string::npos)
         return;
