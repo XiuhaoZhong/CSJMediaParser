@@ -9,9 +9,13 @@
 #include <QLabel>
 #include <QPushButton>
 
+#include "CSJUtils/CSJLogger.h"
+#include "CSJUtils/CSJPathTool.h"
+
 #include "CSJVideoRendererWidget.h"
 #include "CSJPlayerControllerWidget.h"
-#include "CSJUtils/CSJLogger.h"
+
+using namespace csjutils;
 
 static int player_window_width = 1280;
 static int player_window_height = 760;
@@ -88,7 +92,8 @@ void CSJMediaPlayerWindow::onPlayBtnClicked() {
         return ;
     }
 
-    std::string file_path("E:\\technology\\player_resources\\what_song.mp4");
+    std::string file_name("what_song.mp4");
+    std::string file_path = CSJPathTool::getResVideoFileWithName(file_name);
     m_playController->setPlayFile(file_path);
 
     if (m_playStatus == PLAYSTATUS_STOP) {
