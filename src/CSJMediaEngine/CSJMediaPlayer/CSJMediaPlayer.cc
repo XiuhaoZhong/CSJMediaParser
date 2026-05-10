@@ -138,11 +138,13 @@ bool CSJMediaPlayer::readyForPlay() {
 
     int res = avformat_open_input(&m_pFormatCtx, m_file.c_str(), NULL, NULL);
     if (res != 0) {
+        LOG_Error("Media file %s open failed!", m_file.c_str());
         return false;
     }
 
     res = avformat_find_stream_info(m_pFormatCtx, NULL);
     if (res < 0) {
+        LOG_Error("Can't find valid streams in media file!");
         return false;
     }
 

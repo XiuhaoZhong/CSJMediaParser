@@ -36,6 +36,7 @@ public:
     static std::string getShaderFileWithName(std::string& shaderFileName);
     static std::string getTextureWithName(std::string& textureFileName);
     static std::string getStyleSheetWithName(std::string& styleSheetsName);
+    static std::string getResVideoFileWithName(std::string& fileName);
 
     static std::string getSuffix(const std::string& path);
     static std::string getFileName(const std::string& path);

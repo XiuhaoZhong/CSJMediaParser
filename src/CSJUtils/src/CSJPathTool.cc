@@ -23,7 +23,7 @@ void makePath(const char* path) {
 
 #if defined(__APPLE__)
 
-static std::string getAppResourcePath() {
+static fs::path getAppResourcePath() {
     CFBundleRef mainBundle = CFBundleGetMainBundle();
     if (!mainBundle) {
         return "";
@@ -37,11 +37,11 @@ static std::string getAppResourcePath() {
     char path[PATH_MAX];
     if (CFURLGetFileSystemRepresentation(resourcesURL, TRUE, (UInt8 *)path, PATH_MAX)) {
         CFRelease(resourcesURL);
-        return std::string(path);
+        return fs::path(path);
     }
 
     //CFRelease(resourcesURL);
-    return "";
+    return fs::path("");
 }
 
 #endif 
@@ -104,7 +104,7 @@ fs::path CSJPathTool::getTextureDir() {
 
 fs::path CSJPathTool::getImageDir() {
 #if defined(__APPLE__)
-    return getAppResourcePath().append("/Images");
+    return getAppResourcePath().append("Images");
 #else
     return getResourceDir().append("images");
 #endif
@@ -114,7 +114,7 @@ fs::path CSJPathTool::getShaderDir() {
 #ifdef _WIN32
     return getResourceDir().append("DXShaders");
 #else
-    return getAppResourcePath().append("/MetalShaders");
+    return getAppResourcePath().append("MetalShaders");
 #endif
 }
 
@@ -140,6 +140,18 @@ std::string CSJPathTool::getTextureWithName(std::string &texture_file_name) {
 
 std::string CSJPathTool::getStyleSheetWithName(std::string &styleSheetsName) {
     return getStyleSheetDir().append(styleSheetsName).string();
+}
+
+std::string CSJPathTool::getResVideoFileWithName(std::string & fileName) {
+    if (fileName.size() == 0) {
+        return std::string();
+    }
+
+#if defined(__APPLE__)
+    return getAppResourcePath().append("videos").append(fileName).string();
+#else
+    return getResourceDir().append("videos").append(fileName).string();
+#endif
 }
 
 std::string CSJPathTool::getSuffix(const std::string & path) {
