@@ -97,16 +97,16 @@ void CSJMediaPlayer::clear() {
     m_pVideoPacketsQueue.wakeUpToExit();
     // m_pAudioPacketsQueue.wakeUpToExit();
 
-    if (m_readThread->joinable()) {
+    if (m_readThread && m_readThread->joinable()) {
         m_readThread->join();
         m_readThread.reset();
     }
 
-    if (m_videoDecodeThread->joinable()) {
+    if (m_videoDecodeThread && m_videoDecodeThread->joinable()) {
         m_videoDecodeThread->join();
     }
 
-    if (m_audioDecodeThread->joinable()) {
+    if (m_audioDecodeThread && m_audioDecodeThread->joinable()) {
         m_audioDecodeThread->join();
     }
 
