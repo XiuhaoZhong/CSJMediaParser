@@ -1,5 +1,7 @@
 #include "CSJMediaPlayer.hpp"
 
+#include <chrono>
+
 #include "CSJMpegHeader.h"
 #include "CSJPacketWrapper.hpp"
 #include "CSJFrameWrapper.hpp"
@@ -52,14 +54,17 @@ void CSJMediaPlayer::play() {
 
     // Start a thread to read packets from media file.
     m_readThread.reset(new std::thread(&CSJMediaPlayer::readPacketsFunc, this));
+    LOG_Info("Read thread starts ...");
 
     // Starting decoder thread according to the play mode.
     if (containVideoMode(m_playMode)) {
         m_videoDecodeThread.reset(new std::thread(&CSJMediaPlayer::videoDecodeFunc, this));
+        LOG_Info("Video decoding thread starts ...");
     }
 
     if (containAudioMode(m_playMode)) {
         m_audioDecodeThread.reset(new std::thread(&CSJMediaPlayer::audioDecodeFunc, this));
+        LOG_Info("Audio decoding thread starts ...");
     }
 
     m_status = CSJPLAYERSTATUS_PLAYING;
@@ -79,14 +84,24 @@ void CSJMediaPlayer::stop() {
     /* In case current status is pause. */
     m_pauseCond.notify_all();
 
-    clear();
+    clearComponents();
 }
 
 void CSJMediaPlayer::seek(double timeStamp) {
 
 }
 
-void CSJMediaPlayer::clear() {
+void CSJMediaPlayer::releaseCodecCtx(AVCodecContext **codecCtx) {
+    if (!(*codecCtx)) {
+        return ;
+    }
+
+    avcodec_send_packet(*codecCtx, nullptr);
+    avcodec_free_context(codecCtx);
+    *codecCtx = nullptr;
+}
+
+void CSJMediaPlayer::clearComponents() {
     // TODO: the stop logic: must join all threads, then clear queues.
     /**
      * 1. Stop render thread, including video and audio
@@ -97,7 +112,10 @@ void CSJMediaPlayer::clear() {
      */
 
     m_pVideoPacketsQueue.wakeUpToExit();
-    // m_pAudioPacketsQueue.wakeUpToExit();
+    m_pAudioPacketsQueue.wakeUpToExit();
+
+    m_pVideoFramesQueue.wakeUpToExit();
+    m_pAudioFramesQueue.wakeUpToExit();
 
     if (m_readThread && m_readThread->joinable()) {
         m_readThread->join();
@@ -112,9 +130,21 @@ void CSJMediaPlayer::clear() {
         m_audioDecodeThread->join();
     }
 
-    clearMediaPackets();
+    releaseCodecCtx(&m_pVideoCodecCtx);
+    releaseCodecCtx(&m_pAudioCodecCtx);
 
-    // TODO: join decoder threads if needed.
+    if (m_pFormatCtx) {
+        avformat_close_input(&m_pFormatCtx);
+        m_pFormatCtx = nullptr;
+    }
+
+    clearMediaPackets();
+    clearMediaFrames();
+
+    m_iVideoPktSeqNum = 0;
+    m_iAudioPktSeqNum = 0;
+
+    LOG_Info("play components clear over!");
 }
 
 bool CSJMediaPlayer::isPlaying() {
@@ -216,7 +246,6 @@ void CSJMediaPlayer::readPacketsFunc() {
         }
 
         if (pkt->stream_index == m_iVideoStreamIndex) {
-            //LOG_Info("Before put a video packet into ring buffer!");
             CSJPacketWrapperPtr pktWrapper = std::make_shared<CSJPacketWrapper>(pkt);
             pktWrapper->setSeqNumber(m_iVideoPktSeqNum++);
             m_pVideoPacketsQueue.enBuffer(pktWrapper);
@@ -278,6 +307,8 @@ void CSJMediaPlayer::videoDecodeFunc() {
             LOG_Info("The %dth video frame has been decoded.", frameWrapper->getSeqNumber());
         }
 
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
         //m_pVideoFramesQueue.enBuffer(frameWrapper);
     }
 }
@@ -323,6 +354,8 @@ void CSJMediaPlayer::audioDecodeFunc() {
             frameWrapper->setSeqNumber(seqNum);
             LOG_Info("The %dth audio frame has been decoded.", frameWrapper->getSeqNumber());
         }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
         //m_pAudioFramesQueue.enBuffer(frameWrapper);
     }
@@ -375,7 +408,8 @@ void CSJMediaPlayer::clearMediaPackets() {
 }
 
 void CSJMediaPlayer::clearMediaFrames() {
-   
+   m_pVideoFramesQueue.reset();
+   m_pAudioFramesQueue.reset();
 }
 
 void CSJMediaPlayer::clearPacketsQueue(CSJRingQueue<CSJPacketWrapperPtr> &queue) {

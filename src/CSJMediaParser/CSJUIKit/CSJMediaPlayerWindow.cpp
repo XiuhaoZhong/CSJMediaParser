@@ -111,13 +111,28 @@ void CSJMediaPlayerWindow::onPlayBtnClicked() {
 
 void CSJMediaPlayerWindow::onPauseBtnClicked() {
     LOG_Info("Pause playing ...");
-    if (m_playStatus == PLAYSTATUS_PAUSE) {
+    if (!m_playController) {
+        LOG_Warn("Error! Play controller hasn't been created!");
+        return ;
+    }
 
+    if (m_playController->isPlaying()) {
+        LOG_Info("player pause!");
+        m_playController->pause();
     }
 }
 
 void CSJMediaPlayerWindow::onResumeBtnClicked() {
     LOG_Info("Resume playing ...");
+    if (!m_playController) {
+        LOG_Warn("Error! Play controller hasn't been created!");
+        return ;
+    }
+
+    if (m_playController->isPausing()) {
+        LOG_Info("player resume!");
+        m_playController->resume();
+    }
 }
 
 void CSJMediaPlayerWindow::onStopBtnClicked() {
@@ -127,10 +142,12 @@ void CSJMediaPlayerWindow::onStopBtnClicked() {
         return ;
     }
 
-    LOG_Info("Stop playing... ");
+    if (!m_playController->isStopping()) {
+        LOG_Info("player stop!");
 
-    m_playController->stop();
-    m_playStatus = PLAYSTATUS_STOP;
+        m_playController->stop();
+        m_playStatus = PLAYSTATUS_STOP;
+    }
 }
 
 void CSJMediaPlayerWindow::onFastForwardBtnClicked() {
