@@ -79,14 +79,17 @@ CSJPlayerControllerWidget::CSJPlayerControllerWidget(QWidget *parent)
 
 void CSJPlayerControllerWidget::onPlayBtnClicked() {
     if (m_pPlayBtn->text() == "Play") {
-        m_pPlayBtn->setText("Resume");
+        m_pPlayBtn->setText("Pause");
         m_pStopBtn->setEnabled(true);
         std::string imageName("cross_street.jpg");
         std::string imagePath = CSJPathTool::getImageWithName(imageName);
         emit play();
     } else if (m_pPlayBtn->text() == "Pause") {
-        m_pPlayBtn->setText("Play");
+        m_pPlayBtn->setText("Resume");
         emit pause();
+    } else if (m_pPlayBtn->text() == "Resume") {
+        m_pPlayBtn->setText("Pause");
+        emit resume();
     } else {
 
     }

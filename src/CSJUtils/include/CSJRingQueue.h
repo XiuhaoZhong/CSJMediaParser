@@ -82,9 +82,10 @@ namespace csjutils {
          *        queue exits.
          */
         void reset() {
-            m_pBuffer.clear();
+            //m_pBuffer.clear();
             m_iFront = 0;
             m_iRear = 0;
+            m_bWakeupForExit = false;
         }
 
 

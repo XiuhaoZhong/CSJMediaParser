@@ -6,7 +6,7 @@ extern "C" {
 #include <libavcodec/packet.h>
 }
 
-#include "CSJUtils/CSJLogger.h";
+#include "CSJUtils/CSJLogger.h"
 
 namespace csjmediaengine {
 

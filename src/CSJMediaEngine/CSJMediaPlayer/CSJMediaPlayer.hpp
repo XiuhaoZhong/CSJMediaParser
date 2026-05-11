@@ -64,7 +64,8 @@ protected:
 
     CSJFrameWrapperPtr commonDecode(AVCodecContext *codec_ctx, CSJPacketWrapperPtr wrapperPkt);
 
-    void clear();
+    void releaseCodecCtx(AVCodecContext **codecCtx);
+    void clearComponents();
 
     void clearMediaPackets();
     void clearMediaFrames();
