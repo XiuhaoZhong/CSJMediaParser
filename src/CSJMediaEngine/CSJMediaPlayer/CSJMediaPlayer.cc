@@ -52,6 +52,8 @@ void CSJMediaPlayer::play() {
 
     LOG_Info("Current media file is ready to play!");
 
+    m_status = CSJPLAYERSTATUS_PLAYING;
+
     // Start a thread to read packets from media file.
     m_readThread.reset(new std::thread(&CSJMediaPlayer::readPacketsFunc, this));
     LOG_Info("Read thread starts ...");
@@ -66,8 +68,6 @@ void CSJMediaPlayer::play() {
         m_audioDecodeThread.reset(new std::thread(&CSJMediaPlayer::audioDecodeFunc, this));
         LOG_Info("Audio decoding thread starts ...");
     }
-
-    m_status = CSJPLAYERSTATUS_PLAYING;
 }
 
 void CSJMediaPlayer::pause() {
