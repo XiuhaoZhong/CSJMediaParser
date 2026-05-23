@@ -7,6 +7,7 @@
 #include <thread>
 
 #include "CSJUtils/CSJPathTool.h"
+#include "CSJUtils/CSJLogger.h"
 
 using namespace csjutils;
 using namespace csjrenderengine;
@@ -21,38 +22,14 @@ CSJVideoRendererWidget::CSJVideoRendererWidget(QWidget *parent)
     setAttribute(Qt::WA_NoSystemBackground);
 
     setAutoFillBackground(false);
-
-    //connect(this, &CSJVideoRendererWidget::updateFrame, this, &CSJVideoRendererWidget::onUpdateFrame);
 }
 
 CSJVideoRendererWidget::~CSJVideoRendererWidget() {
     qDebug() << "CSJVideoRendererWidget destoryed!";
 
-    m_exitRenderThread = true;
-    if (m_pRenderThread && m_pRenderThread->joinable()) {
-        m_pRenderThread->join();
+    if (m_pVideoRenderer) {
+        m_pVideoRenderer->stopRender();
     }
-}
-
-void CSJVideoRendererWidget::setRenderType(RenderMode renderType) {
-    if (m_renderType == renderType) {
-        return ;
-    }
-
-    if (m_renderType == ACTIVE_RENDERING) {
-        m_exitRenderThread = true;
-        if (m_pRenderThread->joinable()) {
-            m_pRenderThread->join();
-        }
-    }
-
-    switch (renderType) {
-    case ACTIVE_RENDERING:
-        m_pRenderThread.reset(new std::thread(&CSJVideoRendererWidget::internalRender, this));
-        break;
-    }
-
-    m_renderType = renderType;
 }
 
 void CSJVideoRendererWidget::initializeVideoInfo(CSJVideoFormatType fmtType, int width, int height) {
@@ -101,11 +78,25 @@ void CSJVideoRendererWidget::showDefaultImage() {
 }
 
 void CSJVideoRendererWidget::onUpdateFrame() {
-    update();
+    
 }
 
 void CSJVideoRendererWidget::showEvent(QShowEvent *event) {
     QWidget::showEvent(event);
+
+    if (!initRenderer()) {
+        return ;
+    }
+
+    LOG_Info("Starts rendering ... ");
+    m_pVideoRenderer->startRender();
+    LOG_Info("Rendering started ... ");
+}
+
+void CSJVideoRendererWidget::closeEvent(QCloseEvent * event) {
+    if (!m_pVideoRenderer) {
+        m_pVideoRenderer->stopRender();
+    }
 }
 
 void CSJVideoRendererWidget::resizeEvent(QResizeEvent *event) {
@@ -125,11 +116,7 @@ void CSJVideoRendererWidget::resizeEvent(QResizeEvent *event) {
 }
 
 void CSJVideoRendererWidget::paintEvent(QPaintEvent *event) {
-    // if (!m_pVideoRenderer || m_renderType != RENDER_WITH_EVENT) {
-    //     return ;
-    // }
 
-    // m_pVideoRenderer->drawSence();
 }
 
 void CSJVideoRendererWidget::keyPressEvent(QKeyEvent *event) {

@@ -78,7 +78,7 @@ private:
 
     std::string              m_file;
     CSJPlayMode              m_playMode = CSJPlayMode::CSJPlayMode_NONE;
-    CSJPlayerStatus          m_status;
+    CSJPlayerStatus          m_status = CSJPLAYERSTATUS_STOP;
     std::mutex               m_pauseMtx;
     cond_va                  m_pauseCond;
 

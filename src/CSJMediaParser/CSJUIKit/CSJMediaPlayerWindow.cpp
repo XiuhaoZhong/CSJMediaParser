@@ -54,8 +54,7 @@ void CSJMediaPlayerWindow::closeEvent(QCloseEvent *event) {
     QWidget::closeEvent(event);
 }
 
-void CSJMediaPlayerWindow::initUI()
-{
+void CSJMediaPlayerWindow::initUI() {
     resize(QSize(player_window_width, player_window_height));
 
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
@@ -84,7 +83,6 @@ void CSJMediaPlayerWindow::initUI()
 
 void CSJMediaPlayerWindow::show(bool bShow) {
     setVisible(true);
-    m_pVideoRenderWidget->setRenderType(ACTIVE_RENDERING);
 }
 
 void CSJMediaPlayerWindow::onPlayBtnClicked() {
