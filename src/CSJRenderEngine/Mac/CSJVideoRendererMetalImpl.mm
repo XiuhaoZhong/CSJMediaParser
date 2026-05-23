@@ -1,5 +1,7 @@
 #include "CSJVideoRendererMetalImpl.h"
 
+#include "CSJUtils/CSJLogger.h"
+
 #import <Cocoa/Cocoa.h>
 #import <dispatch/dispatch.h>
 
@@ -50,6 +52,25 @@ bool CSJVideoRendererMetalImpl::init(CSJWindowID widgetID, int width, int height
     }
 
     m_pRenderer = renderer;
+    m_pWinID = widgetID;
+
+    m_pVSyncHandler = CSJVsyncHandler::createVsync();
+}
+
+void CSJVideoRendererMetalImpl::startRender() {
+    if (!m_pVSyncHandler) {
+        return ;
+    }
+
+    LOG_Info("Start VSync ...");
+    m_pVSyncHandler->start(m_pWinID, [this](double ts) {
+        LOG_Info("Render callback");
+        draw(ts);
+    });
+}
+
+void CSJVideoRendererMetalImpl::stopRender() {
+    m_pVSyncHandler->stop();
 }
 
 bool CSJVideoRendererMetalImpl::updateScene(double timeStamp) {
@@ -106,6 +127,19 @@ void CSJVideoRendererMetalImpl::setImage(const std::string &imagePath) {
 
     NSString * image_path = [NSString stringWithUTF8String:imagePath.c_str()];
     [m_pRenderer setImageWithPath:image_path];
+}
+
+void CSJVideoRendererMetalImpl::draw(double timeStamp) {
+    if (!m_pRenderer) {
+        return ;
+    }
+
+    bool need_update = updateScene(timeStamp);
+    if (need_update) {
+        // TODO: draw
+    }
+
+    [m_pRenderer drawContent:need_update];
 }
 
 } // namespace csjrenderengine

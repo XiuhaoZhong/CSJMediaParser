@@ -41,8 +41,6 @@ public:
         return NULL;
     }
 
-    void setRenderType(RenderMode renderType);
-
     /**********************************************************************
      * Override interfaces from CSJVideoPresentDelegate.
      ***********************************************************************/
@@ -67,6 +65,7 @@ public slots:
 
 protected:
     void showEvent(QShowEvent *event) override;
+    void closeEvent(QCloseEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
     void paintEvent(QPaintEvent *event) override;
 
@@ -82,10 +81,9 @@ protected:
 
 private:
     CSJVideoRendererPtr m_pVideoRenderer = nullptr;
-
-    RenderMode      m_renderType;
-    bool            m_exitRenderThread = false;
-    QString         m_imagePath;
+    RenderMode          m_renderType;
+    bool                m_exitRenderThread = false;
+    QString             m_imagePath;
 
     std::unique_ptr<std::thread> m_pRenderThread;
 };

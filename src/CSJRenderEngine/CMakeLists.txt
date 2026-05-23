@@ -14,7 +14,9 @@ endif()
 set(CMAKE_INSTALL_BINDIR ${APP_OUTPUT_DIR})
 set(CMAKE_INSTALL_LIBDIR ${GENERATE_LIB_DIR})
 
-file(GLOB ENGINE_SOURCE_FILES "${CSJRENDERENGINE_DIR}/CSJVideoRenderer.*")
+file(GLOB ENGINE_SOURCE_FILES 
+    "${CSJRENDERENGINE_DIR}/CSJVideoRenderer.*"
+    "${CSJRENDERENGINE_DIR}/CSJVSyncHandler.*")
 
 # copy headers to build dir, so as to be used by others.
 add_custom_target(COPY_RENDERENGINE_HEADERS
@@ -46,9 +48,8 @@ elseif (CMAKE_HOST_APPLE)# settings on MacOS
 endif()
 
 link_directories(${GENERATE_LIB_DIR})
-include_directories(${GENERATE_HEADERS_DIR})
 
-include_directories(${CSJMEDIAENGINE_DIR}/include ${GENERATE_HEADERS_DIR})
+include_directories(${CSJMEDIAENGINE_DIR}/include ${GENERATE_HEADERS_DIR} ${CSJRENDERENGINE_DIR})
 
 add_library(${TARGET_NAME} SHARED ${ENGINE_SOURCE_FILES} ${RENDERER_IMPL_FILES})
 add_dependencies(${TARGET_NAME} COPY_RENDERENGINE_HEADERS)
@@ -78,6 +79,10 @@ if(CMAKE_HOST_WIN32)
         ${NativeRenderLib}
     )
 elseif(CMAKE_HOST_APPLE)
+    set_target_properties(${TARGET_NAME} PROPERTIES
+        XCODE_ATTRIBUTE_CLANG_ENABLE_OBJC_ARC YES
+    )
+
     target_link_libraries(${TARGET_NAME} PRIVATE 
         ${lib-foundation} ${lib-metal} ${lib-metalKit} 
         ${lib-quartzcore} ${lib-coreGraphic} ${lib-appKit}

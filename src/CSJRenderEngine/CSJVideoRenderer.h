@@ -85,6 +85,17 @@ public:
     virtual bool initForOffScreen(int width, int height);
 
     /**
+     * @brief Start rendering, this function will start the render cycle which is according 
+     *        to the vsync signal from system.
+     */
+    virtual void startRender() = 0;
+
+    /**
+     * @brief Stop rendering, this function will stop the render cycle.
+     */
+    virtual void stopRender() = 0;
+
+    /**
      * @brief Fill TextData, output the offscreen texture data to caller.
      *        the @param width and @param height are used to check the size
      *        of the current render area to avoid the error as the render 

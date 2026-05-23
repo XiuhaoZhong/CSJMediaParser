@@ -2,6 +2,7 @@
 #define __CSJVIDEORENDERERMETAL_H__
 
 #include "CSJRenderEngine/CSJVideoRenderer.h"
+#include "CSJVSyncHandler.h"
 
 #import "CSJMetalRenderer.h"
 
@@ -14,6 +15,10 @@ public:
 
     bool init(CSJWindowID widgetID, int width, int height) override;
     bool init(CSJWindowID widgetID, int width, int height, float pixelRatio) override;
+
+    void startRender() override;
+    void stopRender() override;
+
     bool updateScene(double timeStamp) override;
     void drawScene() override;
     void updateDrawableSize(int width, int height, float pixelRatio) override;
@@ -25,8 +30,13 @@ public:
 
     virtual void setImage(const std::string& imagePath) override;
 
+protected:
+    void draw(double timeStamp);
+
 private:
+    CSJWindowID       m_pWinID;
     CSJMetalRenderer *m_pRenderer;
+    CSJVSyncPtr       m_pVSyncHandler;
 };
 
 } // csjrenderengine
