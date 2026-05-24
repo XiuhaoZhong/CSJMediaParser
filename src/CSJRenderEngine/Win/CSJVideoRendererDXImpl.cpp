@@ -28,17 +28,236 @@ CSJVideoRendererDXImpl::CSJVideoRendererDXImpl() {
     m_bContentNeedUpdate = false;
 }
 
-CSJVideoRendererDXImpl::~CSJVideoRendererDXImpl() {
+CSJVideoRendererDXImpl::CSJVideoRendererDXImpl(CSJWindowID widgetID, 
+                                               int width, 
+                                               int height, 
+                                               float pixelRatio)
+    : m_hMainWnd((HWND)widgetID)
+    , m_ClientWidth(width)
+    , m_ClientHeight(height)
+    , m_PixelRatio(pixelRatio) {
 
+    m_pixelFmt = CSJVIDEO_FMT_NONE;
+    m_bContentNeedUpdate = false;
 }
 
-bool CSJVideoRendererDXImpl::init(CSJWindowID widgetID, int width, int height) {
-    m_hMainWnd = (HWND)widgetID;
+CSJVideoRendererDXImpl::~CSJVideoRendererDXImpl() {
+    stopRender();
+}
+
+bool CSJVideoRendererDXImpl::initForOffScreen(int width, int height) {
+    if (!initD3D(width, height)) {
+        return false;
+    }
+
+    m_bOnScreenRender = false;
+    if (!createRenderTargetView(width, height, m_pRenderTargetView, m_bOnScreenRender)) {
+        return false;
+    }
+
+    getCurrentContext()->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(), nullptr);
+
+    if (!createShaders()) {
+        return false;
+    }
+
+    if (!initRenderData()) {
+        return false;
+    }
+
+    setViewPort(m_ClientWidth, m_ClientHeight);
+
+    m_bInitSuccess = true;
+
+    return true;
+}
+
+void CSJVideoRendererDXImpl::startRender() {
+    // if (!m_bInitSuccess) {
+    //     LOG_Error("Renderer hasn't been initialized.");
+    //     return;
+    // }
+
+    m_pRenderThread.reset(new std::thread(&CSJVideoRendererDXImpl::renderFunc, this));
+    LOG_Info("Renderer thread started.");
+}
+
+void CSJVideoRendererDXImpl::stopRender() {
+    m_bIsQuitRender.store(true);
+
+    if (m_pRenderThread && m_pRenderThread->joinable()) {
+        m_pRenderThread->join();
+        m_pRenderThread.reset();
+    }
+
+    m_bIsQuitRender.store(false);
+    LOG_Info("Renderer thread exits.");
+}
+
+bool CSJVideoRendererDXImpl::updateScene(double timeStamp) {
+    // If load the render content successfully or not.
+    bool loadRenderContent = false;
+
+    auto curContext = getCurrentContext();
+    if (!curContext) {
+        return loadRenderContent;
+    }
+
+    std::lock_guard<std::mutex> lock_guard(m_videoMtx);
+
+    // Check if the rendering content needed to update.
+    if (!m_bContentNeedUpdate) {
+        return loadRenderContent;
+    }
+
+    // when pixel format changed or show a image, need to recreate all the resources.
+    if (m_curVideoData->getFmtType() != m_pixelFmt || m_bShowImage) {
+        // Compare pixel format
+        //     a) The pixel format changes
+        //     1. Set the accordance shader
+        //     2. Release the previous texture resources, and create new texture resources
+        //     3. Compute the coordinates, and bind to shader
+        //     4. Record the new pixel format and picture size into class members. 
+        // the pixel format changed, should reallocate all textures, and record the new size and pixel format 
+        loadRenderContent = createTextureByFmtType(m_curVideoData->getFmtType(), 
+                                                   m_curVideoData->getWidth(), 
+                                                   m_curVideoData->getHeight());
+        m_pixelFmt = m_curVideoData->getFmtType();
+        if (loadRenderContent) {
+            bindRenderComponents();
+            bindTextureResources();
+        }
+    } else if (m_curVideoData->getWidth() != m_videoWidth || m_curVideoData->getHeight() != m_videoHeight) {
+        // rendering pixel format is not changed, but the size of rendering content changed, so recreate texture(s).
+        // Don't need to re bind shaders.
+        loadRenderContent = createTextureByFmtType(m_curVideoData->getFmtType(), 
+                                                   m_curVideoData->getWidth(), 
+                                                   m_curVideoData->getHeight());
+
+        if (loadRenderContent) {
+            bindTextureResources();
+        } 
+    } else {
+        // the new videoData's pixel format, width, height are all same with current value, only needs to update the 
+        // texture content.
+        // update texture content with pixel format.
+        updateFrameData();
+    }
+
+    // If load render content failed, set the render pixel format to CSJVIDEO_FMT_NONE, and thus won't render anything.
+    m_pixelFmt = loadRenderContent ? m_pixelFmt : CSJVIDEO_FMT_NONE;
+    m_bContentNeedUpdate = false;
+
+    return loadRenderContent;
+}
+
+bool CSJVideoRendererDXImpl::fillTextureData(uint8_t *buf, int width, int height) {
+    return false;
+}
+
+void CSJVideoRendererDXImpl::drawScene() {
+    if (!m_bInitSuccess) {
+        return ;
+    }
+
+    std::lock_guard<std::mutex> guard(m_renderMtx);
+
+    auto curContext = getCurrentContext();
+    auto curSwapChain = getCurrentSwapChain();
+
+    assert(curContext);
+    assert(curSwapChain);
+
+    static float color[4] = { 0.0f, 0.0f, 1.0f, 1.0f }; // RGBA
+    curContext->ClearRenderTargetView(m_pRenderTargetView.Get(), color);
+    curContext->ClearDepthStencilView(m_pDepthStencilView.Get(),
+                                      D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
+                                      1.0f,
+                                      0.0f);
+
+    // check shader.  
+    bool need_render = updateScene(0.0);
+    if (m_pixelFmt != CSJVIDEO_FMT_NONE) {
+        curContext->DrawIndexed(6, 0, 0);
+    }
+
+    HR(curSwapChain->Present(0, 0));
+}
+
+void CSJVideoRendererDXImpl::resize(int width, int height, float pixelRatio) {
+
+    if (width < 1 || height < 1) {
+        return ;
+    }
+
+    std::lock_guard<std::mutex> guard(m_renderMtx);
+
+    // Must cancel the binding of render resources, in case crashes when resize
+    // the window during the rendering.
+    getCurrentContext()->OMSetRenderTargets(NULL, NULL, NULL);
+
+    m_ClientWidth = width;
+    m_ClientHeight = height;
+
+    ComPtr<ID3D11DeviceContext> curContext = getCurrentContext();
+    ComPtr<ID3D11Device> curDevice         = getCurrentDevice();
+    
+    assert(curContext);
+    assert(curDevice);
+
+    /* Release relative resource the renderer pipeline using. */
+    m_pRenderTargetView.Reset();
+    m_pDepthStencilView.Reset();
+    m_pDepthStencilBuffer.Reset();
+
+    if (!createRenderTargetView(width, height, m_pRenderTargetView, m_bOnScreenRender)) {
+        // TODO: create render target view failed.
+        return ;
+    }
+
+    if (!createDepthStencilView(m_ClientWidth, m_ClientHeight, m_pDepthStencilView)) {
+        // TODO: create depth stencil view failed;
+        return ;
+    }
+
+    /* Combine renderer target view and depth/tamplate buffer into pipeline. */
+    curContext->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(),
+                                   m_pDepthStencilView.Get());
+
+    setViewPort(m_ClientWidth, m_ClientHeight);
+}
+
+void CSJVideoRendererDXImpl::initialRenderComponents(CSJVideoFormatType fmtType, 
+                                                     int width, int height) {
+}
+
+void CSJVideoRendererDXImpl::updateVideoFrame(CSJVideoData *videoData) {
+    std::lock_guard lock(m_videoMtx);
+    m_curVideoData = std::move(videoData);
+    m_bContentNeedUpdate = true;
+}
+
+void CSJVideoRendererDXImpl::setImage(const std::string & imagePath) {
+    std::lock_guard lock(m_videoMtx);
+    m_curImagePath = std::string(imagePath);
+
+    CSJVideoData *fakeVideoData = new CSJVideoData(CSJVIDEO_FMT_RGB24, nullptr, 0, 0);
+    m_curVideoData = std::move(fakeVideoData);
+
+    m_bShowImage = true;
+    m_bContentNeedUpdate = true;
+}
+
+bool CSJVideoRendererDXImpl::initRenderer() {
+    if (m_bInitSuccess.load()) {
+        return true;
+    }
+
     if (!m_hMainWnd) {
         return false;
     }
 
-    if (!initD3D(width, height)) {
+    if (!initD3D(m_ClientWidth, m_ClientHeight)) {
         return false;
     }
 
@@ -137,202 +356,28 @@ bool CSJVideoRendererDXImpl::init(CSJWindowID widgetID, int width, int height) {
         return false;
     }
 
-    if (!createShaders()) {
-        return false;
-    }
-
-    if (!initRenderData()) {
-        return false;
-    }
-
-    setViewPort(m_ClientWidth, m_ClientHeight);
-
-    m_initSuccess = true;
-    return true;
-}
-
-bool CSJVideoRendererDXImpl::initForOffScreen(int width, int height) {
-    if (!initD3D(width, height)) {
-        return false;
-    }
-
-    m_bOnScreenRender = false;
-    if (!createRenderTargetView(width, height, m_pRenderTargetView, m_bOnScreenRender)) {
-        return false;
-    }
-
-    getCurrentContext()->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(), nullptr);
-
-    if (!createShaders()) {
-        return false;
-    }
-
-    if (!initRenderData()) {
-        return false;
-    }
-
-    setViewPort(m_ClientWidth, m_ClientHeight);
-
-    m_initSuccess = true;
-
-    return true;
-}
-
-bool CSJVideoRendererDXImpl::updateScene(double timeStamp) {
-    // If load the render content successfully or not.
-    bool loadRenderContent = false;
-
     auto curContext = getCurrentContext();
-    if (!curContext) {
-        return loadRenderContent;
-    }
-
-    std::lock_guard<std::mutex> lock_guard(m_videoMtx);
-
-    // Check if the rendering content needed to update.
-    if (!m_bContentNeedUpdate) {
-        return loadRenderContent;
-    }
-
-    // when pixel format changed or show a image, need to recreate all the resources.
-    if (m_curVideoData->getFmtType() != m_pixelFmt || m_bShowImage) {
-        // Compare pixel format
-        //     a) The pixel format changes
-        //     1. Set the accordance shader
-        //     2. Release the previous texture resources, and create new texture resources
-        //     3. Compute the coordinates, and bind to shader
-        //     4. Record the new pixel format and picture size into class members. 
-        // the pixel format changed, should reallocate all textures, and record the new size and pixel format 
-        loadRenderContent = createTextureByFmtType(m_curVideoData->getFmtType(), 
-                                                   m_curVideoData->getWidth(), 
-                                                   m_curVideoData->getHeight());
-        m_pixelFmt = m_curVideoData->getFmtType();
-        if (loadRenderContent) {
-            bindRenderComponents();
-            bindTextureResources();
-        }
-    } else if (m_curVideoData->getWidth() != m_videoWidth || m_curVideoData->getHeight() != m_videoHeight) {
-        // rendering pixel format is not changed, but the size of rendering content changed, so recreate texture(s).
-        // Don't need to re bind shaders.
-        loadRenderContent = createTextureByFmtType(m_curVideoData->getFmtType(), 
-                                                   m_curVideoData->getWidth(), 
-                                                   m_curVideoData->getHeight());
-
-        if (loadRenderContent) {
-            bindTextureResources();
-        } 
-    } else {
-        // the new videoData's pixel format, width, height are all same with current value, only needs to update the 
-        // texture content.
-        // update texture content with pixel format.
-        updateFrameData();
-    }
-
-    // If load render content failed, set the render pixel format to CSJVIDEO_FMT_NONE, and thus won't render anything.
-    m_pixelFmt = loadRenderContent ? m_pixelFmt : CSJVIDEO_FMT_NONE;
-    m_bContentNeedUpdate = false;
-
-    return loadRenderContent;
-}
-
-bool CSJVideoRendererDXImpl::fillTextureData(uint8_t *buf, int width, int height) {
-    return false;
-}
-
-void CSJVideoRendererDXImpl::drawScene() {
-    if (!m_initSuccess) {
-        return ;
-    }
-
-    std::lock_guard<std::mutex> guard(m_renderMtx);
-
-    auto curContext = getCurrentContext();
-    auto curSwapChain = getCurrentSwapChain();
-
-    assert(curContext);
-    assert(curSwapChain);
-
-    static float color[4] = { 0.0f, 0.0f, 1.0f, 1.0f }; // RGBA
-    curContext->ClearRenderTargetView(m_pRenderTargetView.Get(), color);
-    curContext->ClearDepthStencilView(m_pDepthStencilView.Get(),
-                                      D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
-                                      1.0f,
-                                      0.0f);
-
-    // check shader.  
-    bool need_render = updateScene(0.0);
-    if (m_pixelFmt != CSJVIDEO_FMT_NONE) {
-        curContext->DrawIndexed(6, 0, 0);
-    }
-
-    HR(curSwapChain->Present(0, 0));
-}
-
-void CSJVideoRendererDXImpl::resize(int width, int height) {
-
-    if (width < 1 || height < 1) {
-        return ;
-    }
-
-    std::lock_guard<std::mutex> guard(m_renderMtx);
-
-    // Must cancel the binding of render resources, in case crashes when resize
-    // the window during the rendering.
-    getCurrentContext()->OMSetRenderTargets(NULL, NULL, NULL);
-
-    m_ClientWidth = width;
-    m_ClientHeight = height;
-
-    ComPtr<ID3D11DeviceContext> curContext = getCurrentContext();
-    ComPtr<ID3D11Device> curDevice         = getCurrentDevice();
-    
-    assert(curContext);
-    assert(curDevice);
-
-    /* Release relative resource the renderer pipeline using. */
-    m_pRenderTargetView.Reset();
-    m_pDepthStencilView.Reset();
-    m_pDepthStencilBuffer.Reset();
-
-    if (!createRenderTargetView(width, height, m_pRenderTargetView, m_bOnScreenRender)) {
-        // TODO: create render target view failed.
-        return ;
-    }
-
-    if (!createDepthStencilView(m_ClientWidth, m_ClientHeight, m_pDepthStencilView)) {
-        // TODO: create depth stencil view failed;
-        return ;
-    }
-
-    /* Combine renderer target view and depth/tamplate buffer into pipeline. */
     curContext->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(),
                                    m_pDepthStencilView.Get());
 
+    if (!createShaders()) {
+        return false;
+    }
+
+    if (!initRenderData()) {
+        return false;
+    }
+
     setViewPort(m_ClientWidth, m_ClientHeight);
+
+    QueryPerformanceFrequency(&m_timeFreq);
+
+    m_bInitSuccess = true;
+    return true;
 }
 
-void CSJVideoRendererDXImpl::initialRenderComponents(CSJVideoFormatType fmtType, 
-                                                     int width, int height) {
-}
-
-void CSJVideoRendererDXImpl::updateVideoFrame(CSJVideoData *videoData) {
-    std::lock_guard lock(m_videoMtx);
-    m_curVideoData = std::move(videoData);
-    m_bContentNeedUpdate = true;
-}
-
-void CSJVideoRendererDXImpl::setImage(const std::string & imagePath) {
-    std::lock_guard lock(m_videoMtx);
-    m_curImagePath = std::string(imagePath);
-
-    CSJVideoData *fakeVideoData = new CSJVideoData(CSJVIDEO_FMT_RGB24, nullptr, 0, 0);
-    m_curVideoData = std::move(fakeVideoData);
-
-    m_bShowImage = true;
-    m_bContentNeedUpdate = true;
-}
-
-bool CSJVideoRendererDXImpl::initD3D(int width, int height) {
+bool CSJVideoRendererDXImpl::initD3D(int width, int height)
+{
     if (width == 0 || height == 0) {
         return false;
     }
@@ -527,6 +572,67 @@ bool CSJVideoRendererDXImpl::initRenderData() {
     createTextureSampler();
 
     return true;
+}
+
+void CSJVideoRendererDXImpl::renderFunc() {
+    if (!initRenderer()) {
+        LOG_Error("Failed to initialize render.");
+        return ;
+    }
+    
+    auto swapChain = getCurrentSwapChain();
+    if (!swapChain) {
+        LOG_Error("There is no valid swap chain.");
+        return ;
+    }
+
+    ComPtr<IDXGIOutput> output = nullptr;
+    HRESULT hr = swapChain->GetContainingOutput(&output);
+    if (FAILED(hr) || !output) {
+        LOG_Error("Failed to get containing output.");
+        return ;
+    }
+
+    while (!m_bIsQuitRender.load()) {
+        output->WaitForVBlank();
+
+        if (m_bIsQuitRender.load()) {
+            break;
+        }
+
+        LARGE_INTEGER counter;
+        QueryPerformanceCounter(&counter);
+        double timeStamp = counter.QuadPart / (double)m_timeFreq.QuadPart;
+
+        // TODO: get a new video frame.
+
+        drawScene(timeStamp);
+    }
+}
+
+void CSJVideoRendererDXImpl::drawScene(double timeStamp) {
+    std::lock_guard<std::mutex> guard(m_renderMtx);
+
+    auto curContext = getCurrentContext();
+    auto curSwapChain = getCurrentSwapChain();
+
+    assert(curContext);
+    assert(curSwapChain);
+
+    static float color[4] = { 0.0f, 0.0f, 1.0f, 1.0f }; // RGBA
+    curContext->ClearRenderTargetView(m_pRenderTargetView.Get(), color);
+    curContext->ClearDepthStencilView(m_pDepthStencilView.Get(),
+                                      D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
+                                      1.0f,
+                                      0.0f);
+
+    // check shader.  
+    bool need_render = updateScene(timeStamp);
+    if (m_pixelFmt != CSJVIDEO_FMT_NONE) {
+        curContext->DrawIndexed(6, 0, 0);
+    }
+
+    HR(curSwapChain->Present(0, 0));
 }
 
 bool CSJVideoRendererDXImpl::createDepthStencilView(int width, int height, 
@@ -812,8 +918,6 @@ bool CSJVideoRendererDXImpl::createTextureForRGBA(int width, int height) {
 
     if (m_bShowImage) {
         std::wstring image = CSJStringUtil::string2wstring(m_curImagePath);
-        ComPtr<ID3D11Device> curDevice = getCurrentDevice();
-        assert(curDevice);
         HRESULT hr = DirectX::CreateWICTextureFromFile(curDevice.Get(), 
                                                        image.c_str(), 
                                                        (ID3D11Resource **)m_singleTex.ReleaseAndGetAddressOf(), 
@@ -827,8 +931,8 @@ bool CSJVideoRendererDXImpl::createTextureForRGBA(int width, int height) {
         D3D11_TEXTURE2D_DESC texDesc;
         m_singleTex->GetDesc(&texDesc);
         std::wcout << L"[Log] load image: " << image 
-                   << L"with: " << texDesc.Width 
-                   << L" , height: " << texDesc.Height << std::endl;
+                   << L", with: " << texDesc.Width 
+                   << L", height: " << texDesc.Height << std::endl;
         m_bShowImage = false;
         res = true;
     } else {

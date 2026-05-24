@@ -46,19 +46,6 @@ public:
     CSJVideoRenderer() {};
     virtual ~CSJVideoRenderer() {};
 
-    /**
-     * @brief Initializes renderer. This function is for onscreen rendering, need 
-     *        the @param widgetID, which indecates the hwnd of the native window, 
-     *        including windows and MacOS.
-     *
-     * @param widgetID  the widget ID, for windows, it's the handle of a window.
-     * @param width     width of widget.
-     * @param height    height of widget.
-     *
-     * @return return true when success, of return false.
-     */
-    virtual bool init(CSJWindowID widgetID, int width, int height) = 0;
-
 #if __APPLE__
     /**
      * @brief Initializes renderer. This function is for onscreen rendering, need 
@@ -125,7 +112,7 @@ public:
      * @param width  new width of the widget.
      * @param height new height of the widget.
      */
-    virtual void resize(int width, int height);
+    virtual void resize(int width, int height, float pixelRatio) = 0;
 
     /**
      * @brief Update drawable size for CAMetalLayer, this function is for 
@@ -176,7 +163,7 @@ struct CSJMediaRendererDeleter {
     }
 };
 
-CSJRENDERENGINE_API CSJVideoRenderer* createCSJRenderer();
+CSJRENDERENGINE_API CSJVideoRenderer* createCSJRenderer(CSJWindowID widgetID, int width, int height, float pixelRatio);
 
 using CSJVideoRendererPtr = std::unique_ptr<CSJVideoRenderer>;
 
