@@ -8,10 +8,6 @@
 
 namespace csjrenderengine {
 
-bool CSJVideoRenderer::initForOffScreen(int width, int height) {
-    return false;
-}
-
 bool CSJVideoRenderer::fillTextureData(uint8_t *buf, int width, int height) {
     return false;
 }
@@ -63,15 +59,11 @@ std::array<float, 2> CSJVideoRenderer::computeVideoArea(int widgetW, int widgetH
     return {resX, resY};
 }
 
-void CSJVideoRenderer::updateDrawableSize(int width, int height, float pixelRatio) {
-
-}
-
 CSJVideoRenderer* createCSJRenderer(CSJWindowID widgetID, int width, int height, float pixelRatio) {
 #ifdef _WIN32
     return new CSJVideoRendererDXImpl(widgetID, width, height, pixelRatio);
 #elif __APPLE__
-    return new CSJVideoRendererMetalImpl();
+    return new CSJVideoRendererMetalImpl(widgetID, width, height, pixelRatio);
 #else
     return nullptr;
 #endif

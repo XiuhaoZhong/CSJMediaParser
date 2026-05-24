@@ -45,39 +45,7 @@ CSJVideoRendererDXImpl::~CSJVideoRendererDXImpl() {
     stopRender();
 }
 
-bool CSJVideoRendererDXImpl::initForOffScreen(int width, int height) {
-    if (!initD3D(width, height)) {
-        return false;
-    }
-
-    m_bOnScreenRender = false;
-    if (!createRenderTargetView(width, height, m_pRenderTargetView, m_bOnScreenRender)) {
-        return false;
-    }
-
-    getCurrentContext()->OMSetRenderTargets(1, m_pRenderTargetView.GetAddressOf(), nullptr);
-
-    if (!createShaders()) {
-        return false;
-    }
-
-    if (!initRenderData()) {
-        return false;
-    }
-
-    setViewPort(m_ClientWidth, m_ClientHeight);
-
-    m_bInitSuccess = true;
-
-    return true;
-}
-
 void CSJVideoRendererDXImpl::startRender() {
-    // if (!m_bInitSuccess) {
-    //     LOG_Error("Renderer hasn't been initialized.");
-    //     return;
-    // }
-
     m_pRenderThread.reset(new std::thread(&CSJVideoRendererDXImpl::renderFunc, this));
     LOG_Info("Renderer thread started.");
 }
@@ -153,35 +121,6 @@ bool CSJVideoRendererDXImpl::updateScene(double timeStamp) {
 
 bool CSJVideoRendererDXImpl::fillTextureData(uint8_t *buf, int width, int height) {
     return false;
-}
-
-void CSJVideoRendererDXImpl::drawScene() {
-    if (!m_bInitSuccess) {
-        return ;
-    }
-
-    std::lock_guard<std::mutex> guard(m_renderMtx);
-
-    auto curContext = getCurrentContext();
-    auto curSwapChain = getCurrentSwapChain();
-
-    assert(curContext);
-    assert(curSwapChain);
-
-    static float color[4] = { 0.0f, 0.0f, 1.0f, 1.0f }; // RGBA
-    curContext->ClearRenderTargetView(m_pRenderTargetView.Get(), color);
-    curContext->ClearDepthStencilView(m_pDepthStencilView.Get(),
-                                      D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL,
-                                      1.0f,
-                                      0.0f);
-
-    // check shader.  
-    bool need_render = updateScene(0.0);
-    if (m_pixelFmt != CSJVIDEO_FMT_NONE) {
-        curContext->DrawIndexed(6, 0, 0);
-    }
-
-    HR(curSwapChain->Present(0, 0));
 }
 
 void CSJVideoRendererDXImpl::resize(int width, int height, float pixelRatio) {

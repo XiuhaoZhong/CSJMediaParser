@@ -19,6 +19,17 @@ CSJVideoRendererMetalImpl::CSJVideoRendererMetalImpl() {
 
 }
 
+CSJVideoRendererMetalImpl::CSJVideoRendererMetalImpl(CSJWindowID widgetID, 
+                                                     int width, 
+                                                     int height, 
+                                                     float pixelRatio)
+    : m_pWinID(widgetID)
+    , m_iWidth(width)
+    , m_iHeight(height)
+    , m_fPixelRatio(pixelRatio) {
+
+}
+
 CSJVideoRendererMetalImpl::~CSJVideoRendererMetalImpl() {
     NSLog(@"CSJVideoRendererMetalImpl destoryed!");
 
@@ -32,34 +43,43 @@ CSJVideoRendererMetalImpl::~CSJVideoRendererMetalImpl() {
 
 }
 
-bool CSJVideoRendererMetalImpl::init(CSJWindowID widgetID, int width, int height) {
-    /* This interface is for Windows, not macOS, so return false in MacOS. */
-    return false;
-}
+bool CSJVideoRendererMetalImpl::init() {
+    if (m_bInitSuccess.load()) {
+        return true;
+    }
 
-bool CSJVideoRendererMetalImpl::init(CSJWindowID widgetID, int width, int height, float pixelRatio) {
-    NSView *view = (__bridge NSView *)(widgetID);
-    if (!view) {
+    if (!m_pWinID) {
+        LOG_Error("Render view is null, initialize failed!");
         return false;
     }
 
-    CGRect rect = {{0, 0}, {(CGFloat)width, (CGFloat)height}};
+    NSView *view = (__bridge NSView *)(m_pWinID);
+    if (!view) {
+        LOG_Error("Render view is invalid, initialize failed!");
+        return false;
+    }
+
+    CGRect rect = {{0, 0}, {(CGFloat)m_iWidth, (CGFloat)m_iHeight}};
     CSJMetalRenderer *renderer = [[CSJMetalRenderer alloc] initWithFrameWithView:view 
                                                                            frame:rect 
-                                                                       pixelRatio:pixelRatio];
+                                                                      pixelRatio:m_fPixelRatio];
     if (!renderer) {
         return false;
     }
 
     m_pRenderer = renderer;
-    m_pWinID = widgetID;
 
     m_pVSyncHandler = CSJVsyncHandler::createVsync();
+    m_bInitSuccess.store(true);
+
+    return true;
 }
 
 void CSJVideoRendererMetalImpl::startRender() {
-    if (!m_pVSyncHandler) {
-        return ;
+    if (!m_bInitSuccess.load()) {
+        if (!init()) {
+            return ;
+        }
     }
 
     LOG_Info("Start VSync ...");
@@ -81,21 +101,7 @@ bool CSJVideoRendererMetalImpl::updateScene(double timeStamp) {
     return [m_pRenderer updateSceneWithTimeStamp:0.0];
 }
 
-void CSJVideoRendererMetalImpl::drawScene() {
-    if (!m_pRenderer) {
-        return ;
-    }
-
-    bool need_update = updateScene(0.0);
-    if (need_update) {
-        // TODO: draw
-    }
-
-    [m_pRenderer drawContent:need_update];
-}
-
-void CSJVideoRendererMetalImpl::updateDrawableSize(int width, int height, 
-                                                   float pixelRatio) {
+void CSJVideoRendererMetalImpl::resize(int width, int height, float pixelRatio) {
     if (!m_pRenderer) {
         return ;
     }

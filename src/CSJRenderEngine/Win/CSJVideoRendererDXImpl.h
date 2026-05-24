@@ -35,12 +35,9 @@ public:
     CSJVideoRendererDXImpl(CSJWindowID widgetID, int width, int height, float pixelRatio);
     ~CSJVideoRendererDXImpl();
     
-    bool initForOffScreen(int width, int height) override;
     void startRender() override;
     void stopRender() override;
-    bool updateScene(double timeStamp) override;
-    bool fillTextureData(uint8_t *buf, int width, int height);
-    void drawScene() override;
+    bool fillTextureData(uint8_t *buf, int width, int height) override;
     void resize(int width, int height, float pixelRatio) override;
     void initialRenderComponents(CSJVideoFormatType fmtType, 
                                  int width, int height) override;
@@ -65,6 +62,7 @@ protected:
     void renderFunc();
 
     void drawScene(double timeStamp);
+    bool updateScene(double timeStamp);
 
     bool createDepthStencilView(int width, int height, 
                                 ComPtr<ID3D11DepthStencilView> &depthStencilView);

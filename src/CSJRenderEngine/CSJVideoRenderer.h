@@ -46,31 +46,6 @@ public:
     CSJVideoRenderer() {};
     virtual ~CSJVideoRenderer() {};
 
-#if __APPLE__
-    /**
-     * @brief Initializes renderer. This function is for onscreen rendering, need 
-     *        the @param widgetID, which indecates the hwnd of the native window, 
-     *        including windows and MacOS.
-     *
-     * @param widgetID   the widget ID, for windows, it's the handle of a window.
-     * @param width      width of widget.
-     * @param height     height of widget.
-     * @param pixelRatio the pixel ratio on the screen.
-     *
-     * @return return true when success, of return false.
-     */
-    virtual bool init(CSJWindowID widgetID, int width, int height, float pixelRatio) = 0;
-#endif
-
-    /**
-     * @brief Initiliaze off screen render. This function is for offscreen rendering.
-     * 
-     * @param width     width of render area.
-     * @param height    height of render area.
-     * 
-     */
-    virtual bool initForOffScreen(int width, int height);
-
     /**
      * @brief Start rendering, this function will start the render cycle which is according 
      *        to the vsync signal from system.
@@ -95,26 +70,6 @@ public:
     virtual bool fillTextureData(uint8_t *buf, int width, int height);
 
     /**
-     * @brief Update the contents before draw it.
-     *
-     * @param timeStamp the time stamp of drawing.
-     */
-    virtual bool updateScene(double timeStamp) = 0;
-
-    /**
-     * @brief Draw the widget's content.
-     */
-    virtual void drawScene() = 0;
-
-    /**
-     * @brief Resize renderer context when the size of widget changes.
-     * 
-     * @param width  new width of the widget.
-     * @param height new height of the widget.
-     */
-    virtual void resize(int width, int height, float pixelRatio) = 0;
-
-    /**
      * @brief Update drawable size for CAMetalLayer, this function is for 
      *        macOS.
      * 
@@ -122,7 +77,7 @@ public:
      * @param height     new height of the widget.
      * @param pixelRatio the pixel ratio on the screen.
      */
-    virtual void updateDrawableSize(int width, int height, float pixelRatio);
+    virtual void resize(int width, int height, float pixelRatio) = 0;
 
     /**
      * @brief Load the video frame components for specific video pixel format,

@@ -77,7 +77,6 @@ protected:
     void wheelEvent(QWheelEvent *event) override;
 
     bool initRenderer();
-    void internalRender();
 
 private:
     CSJVideoRendererPtr m_pVideoRenderer = nullptr;
