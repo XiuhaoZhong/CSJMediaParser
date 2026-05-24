@@ -11,17 +11,13 @@ namespace csjrenderengine {
 class CSJVideoRendererMetalImpl: public CSJVideoRenderer {
 public:
     CSJVideoRendererMetalImpl();
+    CSJVideoRendererMetalImpl(CSJWindowID widgetID, int width, int height, float pixelRatio);
     ~CSJVideoRendererMetalImpl();
-
-    bool init(CSJWindowID widgetID, int width, int height) override;
-    bool init(CSJWindowID widgetID, int width, int height, float pixelRatio) override;
 
     void startRender() override;
     void stopRender() override;
 
-    bool updateScene(double timeStamp) override;
-    void drawScene() override;
-    void updateDrawableSize(int width, int height, float pixelRatio) override;
+    void resize(int width, int height, float pixelRatio) override;
 
     virtual void initialRenderComponents(CSJVideoFormatType fmtType,
                                          int width, int height) override;
@@ -31,9 +27,15 @@ public:
     virtual void setImage(const std::string& imagePath) override;
 
 protected:
+    bool init();
     void draw(double timeStamp);
+    bool updateScene(double timeStamp);
 
 private:
+    std::atomic<bool> m_bInitSuccess = false;
+    int               m_iWidth;
+    int               m_iHeight;
+    float             m_fPixelRatio;
     CSJWindowID       m_pWinID;
     CSJMetalRenderer *m_pRenderer;
     CSJVSyncPtr       m_pVSyncHandler;

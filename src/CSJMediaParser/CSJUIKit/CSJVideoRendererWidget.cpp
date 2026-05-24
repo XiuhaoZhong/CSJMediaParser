@@ -50,7 +50,6 @@ void CSJVideoRendererWidget::updateVideoFrame(CSJVideoData *videoData) {
     }
 
     m_pVideoRenderer->updateVideoFrame(videoData);
-    m_pVideoRenderer->drawScene();
 }
 
 void CSJVideoRendererWidget::setImagePath(QString &image_path) {
@@ -104,19 +103,8 @@ void CSJVideoRendererWidget::closeEvent(QCloseEvent * event) {
 void CSJVideoRendererWidget::resizeEvent(QResizeEvent *event) {
     QWidget::resizeEvent(event);
 
-    // if (!initRenderer()) {
-    //     return ;
-    // }
-
     if (m_pVideoRenderer) {
-
-#ifdef __APPLE__
-        m_pVideoRenderer->updateDrawableSize(width(), height(), devicePixelRatio());
-#elif _WIN32
         m_pVideoRenderer->resize(width(), height(), devicePixelRatio());
-#else
-
-#endif
     }
 }
 
@@ -149,45 +137,12 @@ void CSJVideoRendererWidget::wheelEvent(QWheelEvent *event) {
 }
 
 bool CSJVideoRendererWidget::initRenderer() {
-    // TODO: initialze the renderer by offscreen rendering.
-
     if (!m_pVideoRenderer) {
         m_pVideoRenderer = CSJVideoRendererPtr(createCSJRenderer(reinterpret_cast<void*>(winId()), 
                                                                     width(), 
                                                                     height(),
                                                                     devicePixelRatio()));
-        /**
-         * Currently, there will be a problem if use offscreen rendering when use 
-         * customized CSJWidget, the problem is that if I extend a QWidget to customize
-         * the UI style, there must set WA_TranslucentBackground attribte, and then 
-         * the DirectX/Metal rendering will conflict with qt, so now I won't use the 
-         * customized CSJWidget, and use the default UI style to compelte the functionalities
-         * first.
-         */
-        //m_pVideoRenderer->initForOffScreen(width(), height());
-// #if __APPLE__
-//             m_pVideoRenderer->init(reinterpret_cast<void*>(winId()), width(), height(), devicePixelRatio());
-// #elif _WIN32
-//             m_pVideoRenderer->init(reinterpret_cast<void*>(winId()), width(), height());
-// #endif
     }
     
-
     return true;
-}
-
-void CSJVideoRendererWidget::internalRender() {
-    if (!initRenderer()) {
-        return ;
-    }
-
-    while (true) {
-        if (m_exitRenderThread) {
-            break;
-        }
-
-        m_pVideoRenderer->drawScene();
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(33));
-    }
 }
