@@ -8,6 +8,7 @@
 
 #include <mutex>
 #include <array>
+#include <memory>
 
 #include "CSJRenderEngine/CSJVideoRenderer.h"
 
@@ -31,14 +32,16 @@ public:
     };
 
     CSJVideoRendererDXImpl();
+    CSJVideoRendererDXImpl(CSJWindowID widgetID, int width, int height, float pixelRatio);
     ~CSJVideoRendererDXImpl();
-
-    bool init(CSJWindowID widgetID, int width, int height) override;
+    
     bool initForOffScreen(int width, int height) override;
+    void startRender() override;
+    void stopRender() override;
     bool updateScene(double timeStamp) override;
     bool fillTextureData(uint8_t *buf, int width, int height);
     void drawScene() override;
-    void resize(int width, int height) override;
+    void resize(int width, int height, float pixelRatio) override;
     void initialRenderComponents(CSJVideoFormatType fmtType, 
                                  int width, int height) override;
     void updateVideoFrame(CSJVideoData *videoData) override;
@@ -46,6 +49,8 @@ public:
     void setImage(const std::string& imagePath) override;
 
 protected:
+    bool initRenderer();
+
     bool initD3D(int width, int height);
 
     bool createShaders();
@@ -56,6 +61,10 @@ protected:
                      std::string & pixelCso);
 
     bool initRenderData();
+
+    void renderFunc();
+
+    void drawScene(double timeStamp);
 
     bool createDepthStencilView(int width, int height, 
                                 ComPtr<ID3D11DepthStencilView> &depthStencilView);
@@ -115,6 +124,21 @@ protected:
     ComPtr<IDXGISwapChain>      getCurrentSwapChain();
 
 private:
+    std::atomic<bool>            m_bIsQuitRender = false;
+    std::atomic<bool>            m_bInitSuccess = false;   // whether Direct3D is initialized or not.
+    LARGE_INTEGER                m_timeFreq;
+    std::unique_ptr<std::thread> m_pRenderThread = nullptr;
+    bool                         m_bOnScreenRender = true;// OnScreen rendering or offscreen renderding, default is onscreen rendering.
+    HWND                         m_hMainWnd;              // 主窗口句柄
+    int                          m_renderFPS;             // 渲染帧率
+    int                          m_ClientWidth;           // 视口宽度
+    int                          m_ClientHeight;          // 视口高度
+    float                        m_PixelRatio;            // 像素比率
+    bool                         m_Enable4xMsaa;          // 是否开启4倍多重采样
+    UINT                         m_4xMsaaQuality;         // MSAA支持的质量等级             
+    HANDLE                       m_pInitEvent = NULL;     // 初始化成功之后的通知
+    std::mutex                   m_renderMtx;
+
     ComPtr<ID3D11VertexShader>  m_pVertexShader;
     ComPtr<ID3D11PixelShader>   m_pPixelShader;
     ComPtr<ID3D11PixelShader>   m_pYuvPixelShader;
@@ -123,17 +147,6 @@ private:
     ComPtr<ID3D11Buffer>        m_pVertexBuffer;
     ComPtr<ID3D11Buffer>        m_pIndexBuffer;
     ComPtr<ID3D11Buffer>        m_ConstantBuffer;
-
-    bool       m_bOnScreenRender = true;// OnScreen rendering or offscreen renderding, default is onscreen rendering.
-    HWND       m_hMainWnd;              // 主窗口句柄
-    int        m_renderFPS;             // 渲染帧率
-    int        m_ClientWidth;           // 视口宽度
-    int        m_ClientHeight;          // 视口高度
-    bool       m_Enable4xMsaa;          // 是否开启4倍多重采样
-    UINT       m_4xMsaaQuality;         // MSAA支持的质量等级             
-    bool       m_initSuccess = false;   // whether Direct3D is initialized or not.
-    HANDLE     m_pInitEvent = NULL;     // 初始化成功之后的通知
-    std::mutex m_renderMtx;
 
     /* Direct3D 11 */
     ComPtr<ID3D11Device>          m_pd3dDevice;            // D3D11设备

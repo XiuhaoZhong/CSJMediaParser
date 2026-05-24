@@ -63,19 +63,17 @@ std::array<float, 2> CSJVideoRenderer::computeVideoArea(int widgetW, int widgetH
     return {resX, resY};
 }
 
-void CSJVideoRenderer::resize(int width, int height) {
-
-}
-
 void CSJVideoRenderer::updateDrawableSize(int width, int height, float pixelRatio) {
 
 }
 
-CSJVideoRenderer* createCSJRenderer() {
+CSJVideoRenderer* createCSJRenderer(CSJWindowID widgetID, int width, int height, float pixelRatio) {
 #ifdef _WIN32
-    return new CSJVideoRendererDXImpl();
+    return new CSJVideoRendererDXImpl(widgetID, width, height, pixelRatio);
 #elif __APPLE__
     return new CSJVideoRendererMetalImpl();
+#else
+    return nullptr;
 #endif
 }
 

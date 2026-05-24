@@ -88,9 +88,11 @@ void CSJVideoRendererWidget::showEvent(QShowEvent *event) {
         return ;
     }
 
-    LOG_Info("Starts rendering ... ");
-    m_pVideoRenderer->startRender();
-    LOG_Info("Rendering started ... ");
+    if (m_pVideoRenderer) {
+        LOG_Info("Starts rendering ... ");
+        m_pVideoRenderer->startRender();
+        LOG_Info("Rendering started ... ");
+    }
 }
 
 void CSJVideoRendererWidget::closeEvent(QCloseEvent * event) {
@@ -102,17 +104,20 @@ void CSJVideoRendererWidget::closeEvent(QCloseEvent * event) {
 void CSJVideoRendererWidget::resizeEvent(QResizeEvent *event) {
     QWidget::resizeEvent(event);
 
-    if (!initRenderer()) {
-        return ;
-    }
+    // if (!initRenderer()) {
+    //     return ;
+    // }
+
+    if (m_pVideoRenderer) {
 
 #ifdef __APPLE__
-    m_pVideoRenderer->updateDrawableSize(width(), height(), devicePixelRatio());
+        m_pVideoRenderer->updateDrawableSize(width(), height(), devicePixelRatio());
 #elif _WIN32
-    m_pVideoRenderer->resize(width(), height());
+        m_pVideoRenderer->resize(width(), height(), devicePixelRatio());
 #else
 
 #endif
+    }
 }
 
 void CSJVideoRendererWidget::paintEvent(QPaintEvent *event) {
@@ -147,24 +152,26 @@ bool CSJVideoRendererWidget::initRenderer() {
     // TODO: initialze the renderer by offscreen rendering.
 
     if (!m_pVideoRenderer) {
-        if (!m_pVideoRenderer) {
-            m_pVideoRenderer = CSJVideoRendererPtr(createCSJRenderer());//CSJVideoRenderer::getRendererInstance();
-            /**
-             * Currently, there will be a problem if use offscreen rendering when use 
-             * customized CSJWidget, the problem is that if I extend a QWidget to customize
-             * the UI style, there must set WA_TranslucentBackground attribte, and then 
-             * the DirectX/Metal rendering will conflict with qt, so now I won't use the 
-             * customized CSJWidget, and use the default UI style to compelte the functionalities
-             * first.
-             */
-            //m_pVideoRenderer->initForOffScreen(width(), height());
-#if __APPLE__
-            m_pVideoRenderer->init(reinterpret_cast<void*>(winId()), width(), height(), devicePixelRatio());
-#elif _WIN32
-            m_pVideoRenderer->init(reinterpret_cast<void*>(winId()), width(), height());
-#endif
-        }
+        m_pVideoRenderer = CSJVideoRendererPtr(createCSJRenderer(reinterpret_cast<void*>(winId()), 
+                                                                    width(), 
+                                                                    height(),
+                                                                    devicePixelRatio()));
+        /**
+         * Currently, there will be a problem if use offscreen rendering when use 
+         * customized CSJWidget, the problem is that if I extend a QWidget to customize
+         * the UI style, there must set WA_TranslucentBackground attribte, and then 
+         * the DirectX/Metal rendering will conflict with qt, so now I won't use the 
+         * customized CSJWidget, and use the default UI style to compelte the functionalities
+         * first.
+         */
+        //m_pVideoRenderer->initForOffScreen(width(), height());
+// #if __APPLE__
+//             m_pVideoRenderer->init(reinterpret_cast<void*>(winId()), width(), height(), devicePixelRatio());
+// #elif _WIN32
+//             m_pVideoRenderer->init(reinterpret_cast<void*>(winId()), width(), height());
+// #endif
     }
+    
 
     return true;
 }
