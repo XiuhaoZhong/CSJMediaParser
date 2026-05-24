@@ -64,9 +64,6 @@ protected:
     void drawScene(double timeStamp);
     bool updateScene(double timeStamp);
 
-    bool createDepthStencilView(int width, int height, 
-                                ComPtr<ID3D11DepthStencilView> &depthStencilView);
-
     bool createRenderTargetView(int width, int height, 
                                 ComPtr<ID3D11RenderTargetView> &targetView, 
                                 bool ONScreen = true);
