@@ -13,6 +13,8 @@
 #include "CSJUtils/CSJLogger.h"
 #include "CSJUtils/CSJStringUtils.h"
 
+#include "CSJDirectXHelper.h"
+
 using namespace csjutils;
 using namespace csjmediaengine;
 
@@ -154,8 +156,13 @@ void CSJVideoRendererDXImpl::resize(int width, int height, float pixelRatio) {
         return ;
     }
 
-    if (!createDepthStencilView(m_ClientWidth, m_ClientHeight, m_pDepthStencilView)) {
-        // TODO: create depth stencil view failed;
+    if (!CSJDirectXHelper::createDepthStencilViewResources(curDevice, 
+                                                           m_pDepthStencilBuffer, 
+                                                           m_pDepthStencilView, 
+                                                           width, height, 
+                                                           m_Enable4xMsaa, 
+                                                           m_4xMsaaQuality, 
+                                                           DXGI_FORMAT_D24_UNORM_S8_UINT)) {
         return ;
     }
 
@@ -287,7 +294,14 @@ bool CSJVideoRendererDXImpl::initRenderer() {
                                          m_pSwapChain.GetAddressOf()));
     }
 
-    if (!createDepthStencilView(m_ClientWidth, m_ClientHeight, m_pDepthStencilView)) {
+    auto curDevice = getCurrentDevice();
+    if (!CSJDirectXHelper::createDepthStencilViewResources(curDevice, 
+                                                           m_pDepthStencilBuffer, 
+                                                           m_pDepthStencilView, 
+                                                           m_ClientWidth, m_ClientHeight, 
+                                                           m_Enable4xMsaa, 
+                                                           m_4xMsaaQuality, 
+                                                           DXGI_FORMAT_D24_UNORM_S8_UINT)) {
         return false;
     }
 
@@ -572,48 +586,6 @@ void CSJVideoRendererDXImpl::drawScene(double timeStamp) {
     }
 
     HR(curSwapChain->Present(0, 0));
-}
-
-bool CSJVideoRendererDXImpl::createDepthStencilView(int width, int height, 
-                                                    ComPtr<ID3D11DepthStencilView> &depthStencilView) {
-    ComPtr<ID3D11Device> curDevice = getCurrentDevice();
-    if (!curDevice) {
-        return false;
-    }
-    
-    D3D11_TEXTURE2D_DESC depthStencilDesc;
-    depthStencilDesc.Width     = m_ClientWidth;
-    depthStencilDesc.Height    = m_ClientHeight;
-    depthStencilDesc.MipLevels = 1;
-    depthStencilDesc.ArraySize = 1;
-
-    /** DXGI_FORMAT_D24_UNORM_S8_UINT: 32bit z-buffer, 24 bits to depth and 8 bits
-     *  for stencil.
-     */
-    depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-
-    /* Using 4x MSAA, need to set MASS params to swap chain. */
-    if (m_Enable4xMsaa) {
-        depthStencilDesc.SampleDesc.Count   = 4;
-        depthStencilDesc.SampleDesc.Quality = m_4xMsaaQuality - 1;
-    } else {
-        depthStencilDesc.SampleDesc.Count   = 1;
-        depthStencilDesc.SampleDesc.Quality = 0;
-    }
-
-    depthStencilDesc.Usage          = D3D11_USAGE_DEFAULT;
-    depthStencilDesc.BindFlags      = D3D11_BIND_DEPTH_STENCIL;
-    depthStencilDesc.CPUAccessFlags = 0;
-    depthStencilDesc.MiscFlags      = 0;
-
-    /* create depth buffer and depth tamplate view. */
-    HR(curDevice->CreateTexture2D(&depthStencilDesc, nullptr,
-                                  m_pDepthStencilBuffer.ReleaseAndGetAddressOf()));
-
-    HR(curDevice->CreateDepthStencilView(m_pDepthStencilBuffer.Get(), nullptr,
-                                         m_pDepthStencilView.ReleaseAndGetAddressOf()));
-    
-    return true;
 }
 
 bool CSJVideoRendererDXImpl::createRenderTargetView(int width, int height, 

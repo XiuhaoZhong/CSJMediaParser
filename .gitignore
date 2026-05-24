@@ -44,4 +44,6 @@ build
 # output directory
 output*
 
+Log*
+
 
