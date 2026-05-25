@@ -63,9 +63,38 @@ bool CSJDirectXHelper::createDepthStencilViewResources(ComPtr<ID3D11Device> &dev
     return true;
 }
 
-bool CSJDirectXHelper::createRenderTargetView(int width, int height, ComPtr<ID3D11RenderTargetView> &targetView, bool ONScreen)
-{
-    return false;
+bool CSJDirectXHelper::createRenderTargetView(ComPtr<ID3D11Device> &device, 
+                                              ComPtr<IDXGISwapChain> &swapChain, 
+                                              int width, int height, 
+                                              ComPtr<ID3D11RenderTargetView>& targetView) {
+    if (!device || !swapChain || width <= 0 || height <= 0) {
+        return false;
+    }
+
+    /* Reset swap chain and recreate renderering target view. */
+    ComPtr<ID3D11Texture2D> backBuffer;
+    HRESULT hr = swapChain->ResizeBuffers(1, width, height,
+                                          DXGI_FORMAT_R8G8B8A8_UNORM, 0);
+    if (FAILED(hr)) {
+        return false;
+    }
+
+    hr = swapChain->GetBuffer(0, 
+                              __uuidof(ID3D11Texture2D),
+                              reinterpret_cast<void**>(backBuffer.GetAddressOf()));
+    if (FAILED(hr)) {
+        return false;
+    }
+
+    hr = device->CreateRenderTargetView(backBuffer.Get(), nullptr,
+                                        targetView.ReleaseAndGetAddressOf());
+    if (FAILED(hr)) {
+        return false;
+    }
+
+    backBuffer.Reset();
+
+    return true;
 }
 
 HRESULT CSJDirectXHelper::CreateShaderFromFile(const WCHAR *csoFileNameOut, const WCHAR *hisFileName, LPCSTR entryPoint, LPCSTR shaderModel, ID3DBlob **ppBlocbOut)
@@ -78,14 +107,100 @@ HRESULT CSJDirectXHelper::CreateShaderFromFile(const WCHAR *csoFileNameOut, cons
 //     return false;
 // }
 
-bool CSJDirectXHelper::createD3DTexture(int width, int height, DXGI_FORMAT format, UINT miplevels, UINT arraySize, D3D11_USAGE usage, UINT bindFlags, UINT CPUAccessFlags, UINT MiscFlags, ComPtr<ID3D11Texture2D> &tex)
-{
-    return false;
+bool CSJDirectXHelper::createD3DTexture(ComPtr<ID3D11Device> &device,
+                                        bool enable4xMsaa, 
+                                        UINT msaaQuality,      
+                                        int width, int height, 
+                                        DXGI_FORMAT format, 
+                                        UINT miplevels, 
+                                        UINT arraySize, 
+                                        D3D11_USAGE usage, 
+                                        UINT bindFlags, 
+                                        UINT CPUAccessFlags, 
+                                        UINT MiscFlags, ComPtr<ID3D11Texture2D> &tex) {
+    if (!device || width <= 0 || height <= 0) {
+        return false;
+    }
+
+    D3D11_TEXTURE2D_DESC    texDesc{};
+    texDesc.Width           = width;
+    texDesc.Height          = height;
+    texDesc.MipLevels       = miplevels;
+    texDesc.ArraySize       = arraySize;
+    texDesc.Format          = format;
+    texDesc.Usage           = usage;
+    texDesc.BindFlags       = bindFlags;
+    texDesc.CPUAccessFlags  = CPUAccessFlags;
+    texDesc.MiscFlags       = MiscFlags;
+    if (enable4xMsaa) {
+        texDesc.SampleDesc.Count   = 4;
+        texDesc.SampleDesc.Quality = msaaQuality - 1;
+    } else {
+        texDesc.SampleDesc.Count   = 1;
+        texDesc.SampleDesc.Quality = 0;
+    }
+    
+    HRESULT hr = device->CreateTexture2D(&texDesc, 
+                                         nullptr, 
+                                         tex.ReleaseAndGetAddressOf());
+
+    if (FAILED(hr)) {
+        // texY create failed.
+        return false;
+    }
+    
+    return true;
 }
 
-bool CSJDirectXHelper::createD3DTextureWithResourceView(int width, int height, DXGI_FORMAT format, UINT miplevels, UINT arraySize, D3D11_USAGE usage, UINT bindFlags, UINT CPUAccessFlags, UINT MiscFlags, ComPtr<ID3D11Texture2D> &tex, ComPtr<ID3D11ShaderResourceView> &resourceView, D3D11_SRV_DIMENSION srvDemension)
-{
-    return false;
+bool CSJDirectXHelper::createD3DTextureWithResourceView(ComPtr<ID3D11Device> &device, 
+                                                        ComPtr<ID3D11Texture2D> &tex, 
+                                                        ComPtr<ID3D11ShaderResourceView> &resourceView, 
+                                                        bool enable4xMsaa, 
+                                                        UINT msaaQuality,
+                                                        int width, int height, 
+                                                        DXGI_FORMAT format, 
+                                                        UINT miplevels, 
+                                                        UINT arraySize, 
+                                                        D3D11_USAGE usage, 
+                                                        UINT bindFlags, 
+                                                        UINT CPUAccessFlags, 
+                                                        UINT MiscFlags, 
+                                                        D3D11_SRV_DIMENSION srvDemension) {
+    if (!device || width <= 0 || height <= 0) {
+        return false;
+    }
+
+    bool res = createD3DTexture(device, 
+                                enable4xMsaa, 
+                                msaaQuality, 
+                                width, height, 
+                                format, 
+                                miplevels, 
+                                arraySize, 
+                                usage, 
+                                bindFlags, 
+                                CPUAccessFlags, 
+                                MiscFlags, 
+                                tex);
+
+    if (!res) {
+        return false;
+    }
+    
+    D3D11_SHADER_RESOURCE_VIEW_DESC   srvDesc{};
+    srvDesc.Format                    = format;
+    srvDesc.ViewDimension             = srvDemension;
+    srvDesc.Texture2D.MipLevels       = miplevels;
+    srvDesc.Texture2D.MostDetailedMip = 0;
+
+    HRESULT hr = device->CreateShaderResourceView(tex.Get(),
+                                                  &srvDesc, 
+                                                  resourceView.ReleaseAndGetAddressOf());
+    if (FAILED(hr)) {
+        return false;
+    }
+
+    return true;
 }
 
 }

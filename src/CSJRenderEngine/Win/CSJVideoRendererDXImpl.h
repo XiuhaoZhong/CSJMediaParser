@@ -64,10 +64,6 @@ protected:
     void drawScene(double timeStamp);
     bool updateScene(double timeStamp);
 
-    bool createRenderTargetView(int width, int height, 
-                                ComPtr<ID3D11RenderTargetView> &targetView, 
-                                bool ONScreen = true);
-
     void setViewPort(int width, int height);
 
     HRESULT CreateShaderFromFile(const WCHAR * csoFileNameOut,
@@ -78,27 +74,6 @@ protected:
 
     bool createTextureByFmtType(CSJVideoFormatType fmtType, int width, int height);
 
-    bool createD3DTexture(int width, int height, 
-                          DXGI_FORMAT format, 
-                          UINT miplevels, 
-                          UINT arraySize,
-                          D3D11_USAGE usage,
-                          UINT bindFlags,
-                          UINT CPUAccessFlags,
-                          UINT MiscFlags,
-                          ComPtr<ID3D11Texture2D>& tex);
-
-    bool createD3DTextureWithResourceView(int width, int height, 
-                                          DXGI_FORMAT format, 
-                                          UINT miplevels, 
-                                          UINT arraySize,
-                                          D3D11_USAGE usage,
-                                          UINT bindFlags,
-                                          UINT CPUAccessFlags,
-                                          UINT MiscFlags,
-                                          ComPtr<ID3D11Texture2D>& tex,
-                                          ComPtr<ID3D11ShaderResourceView>& resourceView,
-                                          D3D11_SRV_DIMENSION srvDemension = D3D11_SRV_DIMENSION_TEXTURE2D);
     bool createTextureForRGBA(int width, int height);
     bool createTexturesForYUV420(int width, int height);
     void createTextureSampler();

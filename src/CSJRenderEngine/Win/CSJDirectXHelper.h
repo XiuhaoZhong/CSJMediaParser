@@ -24,9 +24,10 @@ public:
                                                 UINT mipLevel = 1,
                                                 UINT arraySize = 1);
 
-    static bool createRenderTargetView(int width, int height, 
-                                       ComPtr<ID3D11RenderTargetView> &targetView, 
-                                       bool ONScreen = true);
+    static bool createRenderTargetView(ComPtr<ID3D11Device> &device, 
+                                       ComPtr<IDXGISwapChain> &swapChain, 
+                                       int width, int height, 
+                                       ComPtr<ID3D11RenderTargetView>& targetView);
 
     static HRESULT CreateShaderFromFile(const WCHAR * csoFileNameOut,
                                         const WCHAR * hisFileName,
@@ -37,26 +38,32 @@ public:
     // static bool createTextureByFmtType(CSJVideoFormatType fmtType, int width, int height, 
     //                                    ComPtr<ID3D11Texture2D>& tex);
 
-    static bool createD3DTexture(int width, int height, 
-                          DXGI_FORMAT format, 
-                          UINT miplevels, 
-                          UINT arraySize,
-                          D3D11_USAGE usage,
-                          UINT bindFlags,
-                          UINT CPUAccessFlags,
-                          UINT MiscFlags,
-                          ComPtr<ID3D11Texture2D>& tex);
+    static bool createD3DTexture(ComPtr<ID3D11Device> &device,
+                                 bool enable4xMsaa, 
+                                 UINT msaaQuality,
+                                 int width, int height, 
+                                 DXGI_FORMAT format, 
+                                 UINT miplevels, 
+                                 UINT arraySize,
+                                 D3D11_USAGE usage,
+                                 UINT bindFlags,
+                                 UINT CPUAccessFlags,
+                                 UINT MiscFlags,
+                                 ComPtr<ID3D11Texture2D>& tex);
 
-    static bool createD3DTextureWithResourceView(int width, int height, 
-                                          DXGI_FORMAT format, 
-                                          UINT miplevels, 
-                                          UINT arraySize,
-                                          D3D11_USAGE usage,
-                                          UINT bindFlags,
-                                          UINT CPUAccessFlags,
-                                          UINT MiscFlags,
-                                          ComPtr<ID3D11Texture2D>& tex,
-                                          ComPtr<ID3D11ShaderResourceView>& resourceView,
-                                          D3D11_SRV_DIMENSION srvDemension = D3D11_SRV_DIMENSION_TEXTURE2D);
+    static bool createD3DTextureWithResourceView(ComPtr<ID3D11Device> &device,
+                                                 ComPtr<ID3D11Texture2D>& tex,
+                                                 ComPtr<ID3D11ShaderResourceView>& resourceView,
+                                                 bool enable4xMsaa, 
+                                                 UINT msaaQuality,
+                                                 int width, int height, 
+                                                 DXGI_FORMAT format, 
+                                                 UINT miplevels, 
+                                                 UINT arraySize,
+                                                 D3D11_USAGE usage,
+                                                 UINT bindFlags,
+                                                 UINT CPUAccessFlags,
+                                                 UINT MiscFlags,
+                                                 D3D11_SRV_DIMENSION srvDemension = D3D11_SRV_DIMENSION_TEXTURE2D);
 };
 } // namespace csjrenderengine
