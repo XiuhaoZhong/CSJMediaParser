@@ -2,6 +2,7 @@
 #include <wrl/client.h>
 #include <d3d11_1.h>
 #include <directxmath.h>
+#include <string>
 
 template <typename T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;
@@ -35,9 +36,6 @@ public:
                                         LPCSTR shaderModel,
                                         ID3DBlob ** ppBlocbOut);
 
-    // static bool createTextureByFmtType(CSJVideoFormatType fmtType, int width, int height, 
-    //                                    ComPtr<ID3D11Texture2D>& tex);
-
     static bool createD3DTexture(ComPtr<ID3D11Device> &device,
                                  bool enable4xMsaa, 
                                  UINT msaaQuality,
@@ -65,5 +63,17 @@ public:
                                                  UINT CPUAccessFlags,
                                                  UINT MiscFlags,
                                                  D3D11_SRV_DIMENSION srvDemension = D3D11_SRV_DIMENSION_TEXTURE2D);
+
+    static bool createRGBATextureFromImageFile(ComPtr<ID3D11Device> &device, 
+                                               std::wstring &imageFile,
+                                               ComPtr<ID3D11Texture2D> &tex, 
+                                               ComPtr<ID3D11ShaderResourceView> &resourceView,
+                                               int &width, int &height);
+
+    static bool createRGBATextureFromBuffer(ComPtr<ID3D11Device> &device, 
+                                            uint8_t *buffer, 
+                                            int width, int height, int pitch,
+                                            ComPtr<ID3D11Texture2D> &tex, 
+                                            ComPtr<ID3D11ShaderResourceView> &resourceView);
 };
 } // namespace csjrenderengine

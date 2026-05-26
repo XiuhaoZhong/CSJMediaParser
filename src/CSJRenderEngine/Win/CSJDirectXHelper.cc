@@ -1,6 +1,17 @@
 #include "CSJDirectXHelper.h"
 
+#include <d3dcompiler.h>
+
+#include <iostream>
+
+#include "WICTextureLoader11.h"
+#include "DDSTextureLoader11.h"
 #include "DXTrace.h"
+
+#include "CSJUtils/CSJPathTool.h"
+#include "CSJUtils/CSJLogger.h"
+
+using namespace csjutils;
 
 namespace csjrenderengine {
 
@@ -97,15 +108,55 @@ bool CSJDirectXHelper::createRenderTargetView(ComPtr<ID3D11Device> &device,
     return true;
 }
 
-HRESULT CSJDirectXHelper::CreateShaderFromFile(const WCHAR *csoFileNameOut, const WCHAR *hisFileName, LPCSTR entryPoint, LPCSTR shaderModel, ID3DBlob **ppBlocbOut)
-{
-    return E_NOTIMPL;
-}
+HRESULT CSJDirectXHelper::CreateShaderFromFile(const WCHAR *csoFileNameOut, 
+                                               const WCHAR *hisFileName, 
+                                               LPCSTR entryPoint, 
+                                               LPCSTR shaderModel, 
+                                               ID3DBlob **ppBlocbOut) {
+    HRESULT hr = S_OK;
 
-// bool CSJDirectXHelper::createTextureByFmtType(CSJVideoFormatType fmtType, int width, int height, ComPtr<ID3D11Texture2D> &tex)
-// {
-//     return false;
-// }
+    /* Find the vertex shader which already be compiled */
+    if (csoFileNameOut && D3DReadFileToBlob(csoFileNameOut, ppBlocbOut) == S_OK) {
+        return hr;
+    } else {
+        DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
+#ifdef _DEBUG
+        /* Setting D3DCOMPILE_DEBUG flag is to get the shader's debug infomation.
+         * Setting this flag could improve the debug experience.
+         *
+         **/
+        dwShaderFlags |= D3DCOMPILE_DEBUG;
+
+        /* Disable the optimizing under the DEBUG enviroment to avoid some
+           unreasonable case.
+         */
+        dwShaderFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
+#endif
+        ComPtr<ID3DBlob> errorBlob = nullptr;
+        hr = D3DCompileFromFile(hisFileName,
+                                nullptr,
+                                D3D_COMPILE_STANDARD_FILE_INCLUDE,
+                                entryPoint,
+                                shaderModel,
+                                dwShaderFlags,
+                                0,
+                                ppBlocbOut,
+                                &errorBlob);
+        if (FAILED(hr)) {
+            if (errorBlob != nullptr) {
+                OutputDebugString(reinterpret_cast<const WCHAR*>(errorBlob->GetBufferPointer()));
+            }
+
+            return hr;
+        }
+
+        if (csoFileNameOut) {
+            return D3DWriteBlobToFile(*ppBlocbOut, csoFileNameOut, FALSE);
+        }
+    }
+
+    return hr;
+}
 
 bool CSJDirectXHelper::createD3DTexture(ComPtr<ID3D11Device> &device,
                                         bool enable4xMsaa, 
@@ -201,6 +252,57 @@ bool CSJDirectXHelper::createD3DTextureWithResourceView(ComPtr<ID3D11Device> &de
     }
 
     return true;
+}
+
+bool CSJDirectXHelper::createRGBATextureFromImageFile(ComPtr<ID3D11Device> &device, 
+                                                      std::wstring &imageFile, 
+                                                      ComPtr<ID3D11Texture2D> &tex, 
+                                                      ComPtr<ID3D11ShaderResourceView> &resourceView, 
+                                                      int &width, int &height) {
+    if (!device || imageFile.empty()) {
+        return false;
+    }
+
+    if (!CSJPathTool::fileExists(imageFile)) {
+        LOG_Error("image file not exists: %s", imageFile.c_str());
+        return false;
+    }
+
+    HRESULT hr = DirectX::CreateWICTextureFromFile(device.Get(), 
+                                                   imageFile.c_str(), 
+                                                   (ID3D11Resource **)tex.ReleaseAndGetAddressOf(), 
+                                                   resourceView.ReleaseAndGetAddressOf(), 
+                                                   0);
+
+    if (FAILED(hr)) {
+        return false;
+    }
+
+    D3D11_TEXTURE2D_DESC texDesc;
+    tex->GetDesc(&texDesc);
+    width = texDesc.Width;
+    height = texDesc.Height;
+    std::wcout << L"[Log] load image: " << imageFile 
+                << L", with: " << texDesc.Width 
+                << L", height: " << texDesc.Height << std::endl;
+    return true;
+}
+bool CSJDirectXHelper::createRGBATextureFromBuffer(ComPtr<ID3D11Device> &device, 
+                                                   uint8_t *buffer, 
+                                                   int width, int height, int pitch, 
+                                                   ComPtr<ID3D11Texture2D> &tex, 
+                                                   ComPtr<ID3D11ShaderResourceView> &resourceView) {
+    if (!device || !buffer || width <= 0 || height <= 0 || pitch <= 0) {
+        return false;
+    }
+
+    HRESULT hr = DirectX::CreateDDSTextureFromMemory(device.Get(), 
+                                                     buffer, 
+                                                     width * height * pitch,
+                                                     (ID3D11Resource **)tex.ReleaseAndGetAddressOf(), 
+                                                     resourceView.ReleaseAndGetAddressOf(), 
+                                                     0);
+    return !FAILED(hr);
 }
 
 }

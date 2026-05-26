@@ -342,8 +342,7 @@ bool CSJVideoRendererDXImpl::initRenderer() {
     return true;
 }
 
-bool CSJVideoRendererDXImpl::initD3D(int width, int height)
-{
+bool CSJVideoRendererDXImpl::initD3D(int width, int height) {
     if (width == 0 || height == 0) {
         return false;
     }
@@ -452,11 +451,15 @@ bool CSJVideoRendererDXImpl::initShaders(std::string &vertShaderFile,
     std::wstring vertCsoPath = csjutils::CSJStringUtil::string2wstring(vertCso);
 
     /* Create vertex shader */
-    HR(CreateShaderFromFile(vertCsoPath.c_str(),
-                            vertShaderaPath.c_str(),
-                            "main",
-                            "vs_5_0",
-                            blob.ReleaseAndGetAddressOf()));
+    HRESULT hr = CSJDirectXHelper::CreateShaderFromFile(vertCsoPath.c_str(),
+                                                        vertShaderaPath.c_str(),
+                                                        "main",
+                                                        "vs_5_0",
+                                                        blob.ReleaseAndGetAddressOf());
+    if (FAILED(hr)) {
+        // TODO: create shaders failed.
+        return false;
+    }
 
     HR(curDevice->CreateVertexShader(blob->GetBufferPointer(),
                                      blob->GetBufferSize(),
@@ -474,11 +477,15 @@ bool CSJVideoRendererDXImpl::initShaders(std::string &vertShaderFile,
     std::wstring pixelShaderPath = csjutils::CSJStringUtil::string2wstring(pixelShaderFile);
 
     /* Creating Pixel shader */
-    HR(CreateShaderFromFile(pixelCsoPath.c_str(),
-                            pixelShaderPath.c_str(),
-                            "main",
-                            "ps_5_0",
-                            blob.ReleaseAndGetAddressOf()));
+    hr = CSJDirectXHelper::CreateShaderFromFile(pixelCsoPath.c_str(),
+                                                pixelShaderPath.c_str(),
+                                                "main",
+                                                "ps_5_0",
+                                                blob.ReleaseAndGetAddressOf());
+    if (FAILED(hr)) {
+        // TODO: create shaders failed. 
+        return false;
+    }
 
     HR(curDevice->CreatePixelShader(blob->GetBufferPointer(),
                                     blob->GetBufferSize(),
@@ -618,56 +625,6 @@ void CSJVideoRendererDXImpl::setViewPort(int width, int height) {
     curContext->RSSetViewports(1, &m_ScreenViewport);
 }
 
-HRESULT CSJVideoRendererDXImpl::CreateShaderFromFile(const WCHAR *csoFileNameOut,
-                                                     const WCHAR *hisFileName,
-                                                     LPCSTR entryPoint,
-                                                     LPCSTR shaderModel,
-                                                     ID3DBlob **ppBlocbOut) {
-    HRESULT hr = S_OK;
-
-    /* Find the vertex shader which already be compiled */
-    if (csoFileNameOut && D3DReadFileToBlob(csoFileNameOut, ppBlocbOut) == S_OK) {
-        return hr;
-    } else {
-        DWORD dwShaderFlags = D3DCOMPILE_ENABLE_STRICTNESS;
-#ifdef _DEBUG
-        /* Setting D3DCOMPILE_DEBUG flag is to get the shader's debug infomation.
-         * Setting this flag could improve the debug experience.
-         *
-         **/
-        dwShaderFlags |= D3DCOMPILE_DEBUG;
-
-        /* Disable the optimizing under the DEBUG enviroment to avoid some
-           unreasonable case.
-         */
-        dwShaderFlags |= D3DCOMPILE_SKIP_OPTIMIZATION;
-#endif
-        ComPtr<ID3DBlob> errorBlob = nullptr;
-        hr = D3DCompileFromFile(hisFileName,
-                                nullptr,
-                                D3D_COMPILE_STANDARD_FILE_INCLUDE,
-                                entryPoint,
-                                shaderModel,
-                                dwShaderFlags,
-                                0,
-                                ppBlocbOut,
-                                &errorBlob);
-        if (FAILED(hr)) {
-            if (errorBlob != nullptr) {
-                OutputDebugString(reinterpret_cast<const WCHAR*>(errorBlob->GetBufferPointer()));
-            }
-
-            return hr;
-        }
-
-        if (csoFileNameOut) {
-            return D3DWriteBlobToFile(*ppBlocbOut, csoFileNameOut, FALSE);
-        }
-    }
-
-    return hr;
-}
-
 bool CSJVideoRendererDXImpl::createTextureByFmtType(CSJVideoFormatType fmtType, int width, int height) {
     bool res = false;
     switch (fmtType) {
@@ -675,7 +632,7 @@ bool CSJVideoRendererDXImpl::createTextureByFmtType(CSJVideoFormatType fmtType, 
         res = createTexturesForYUV420(width, height);    
         break;
     case CSJVIDEO_FMT_RGB24:
-        res = createTextureForRGBA(width, height);
+        res = createTextureForRGBA();
         break;
     default:
         // TODO: Not supported video fmt;
@@ -685,7 +642,7 @@ bool CSJVideoRendererDXImpl::createTextureByFmtType(CSJVideoFormatType fmtType, 
     return res;
 }
 
-bool CSJVideoRendererDXImpl::createTextureForRGBA(int width, int height) {
+bool CSJVideoRendererDXImpl::createTextureForRGBA() {
     bool res = false;
 
     ComPtr<ID3D11Device> curDevice = getCurrentDevice();
@@ -695,31 +652,26 @@ bool CSJVideoRendererDXImpl::createTextureForRGBA(int width, int height) {
 
     if (m_bShowImage) {
         std::wstring image = CSJStringUtil::string2wstring(m_curImagePath);
-        HRESULT hr = DirectX::CreateWICTextureFromFile(curDevice.Get(), 
-                                                       image.c_str(), 
-                                                       (ID3D11Resource **)m_singleTex.ReleaseAndGetAddressOf(), 
-                                                       m_pShaderResViewRGBA.ReleaseAndGetAddressOf(), 
-                                                       0);
-
-        if (FAILED(hr)) {
-            return res;
+        int width = 0, height = 0;
+        res = CSJDirectXHelper::createRGBATextureFromImageFile(curDevice, 
+                                                               image, 
+                                                               m_singleTex, 
+                                                               m_pShaderResViewRGBA, 
+                                                               width, height);
+        if (!res) {
+            return false;
         }
 
-        D3D11_TEXTURE2D_DESC texDesc;
-        m_singleTex->GetDesc(&texDesc);
-        std::wcout << L"[Log] load image: " << image 
-                   << L", with: " << texDesc.Width 
-                   << L", height: " << texDesc.Height << std::endl;
         m_bShowImage = false;
         res = true;
     } else {
-        HRESULT hr = DirectX::CreateDDSTextureFromMemory(curDevice.Get(), 
-                                                         m_curVideoData->getData(), 
-                                                         m_curVideoData->getWidth() * m_curVideoData->getHeight() * 4,
-                                                         (ID3D11Resource **)m_singleTex.ReleaseAndGetAddressOf(), 
-                                                         m_pShaderResViewRGBA.ReleaseAndGetAddressOf(), 
-                                                         0);
-        res = FAILED(hr) ? false : true;
+        res = CSJDirectXHelper::createRGBATextureFromBuffer(curDevice, 
+                                                            m_curVideoData->getData(), 
+                                                            m_curVideoData->getWidth(), 
+                                                            m_curVideoData->getHeight(), 
+                                                            4, 
+                                                            m_singleTex, 
+                                                            m_pShaderResViewRGBA);
     }
 
     return res;
