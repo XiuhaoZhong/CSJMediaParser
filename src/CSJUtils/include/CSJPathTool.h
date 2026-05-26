@@ -43,6 +43,7 @@ public:
     static std::string getDirName(const std::string& path);
     static std::string join(const std::string& dir, const std::string& name);
     static bool isFileExists(const std::string& path);
+    static bool isFileExists(const std::wstring& path);
     static bool isDirExists(const std::string& path);
 
 protected:

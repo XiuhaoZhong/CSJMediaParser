@@ -66,15 +66,9 @@ protected:
 
     void setViewPort(int width, int height);
 
-    HRESULT CreateShaderFromFile(const WCHAR * csoFileNameOut,
-                                 const WCHAR * hisFileName,
-                                 LPCSTR entryPoint,
-                                 LPCSTR shaderModel,
-                                 ID3DBlob ** ppBlocbOut);
-
     bool createTextureByFmtType(CSJVideoFormatType fmtType, int width, int height);
 
-    bool createTextureForRGBA(int width, int height);
+    bool createTextureForRGBA();
     bool createTexturesForYUV420(int width, int height);
     void createTextureSampler();
 

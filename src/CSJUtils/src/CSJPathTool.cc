@@ -167,7 +167,14 @@ std::string CSJPathTool::getDirName(const std::string & path) {
 }
 
 bool CSJPathTool::isFileExists(const std::string & path) {
-    return false;
+    fs::path filePath(path);
+
+    return fs::exists(filePath);
+}
+
+bool CSJPathTool::isFileExists(const std::wstring &path) {
+    fs::path filePath(path);
+    return fs::exists(filePath);
 }
 
 bool CSJPathTool::isDirExists(const std::string & path) {
