@@ -566,6 +566,8 @@ void CSJVideoRendererDXImpl::renderFunc() {
         return ;
     }
 
+    // static int frame_count = 0;
+
     while (!m_bIsQuitRender.load()) {
         output->WaitForVBlank();
 
@@ -580,6 +582,7 @@ void CSJVideoRendererDXImpl::renderFunc() {
         // TODO: get a new video frame.
 
         drawScene(timeStamp);
+        //LOG_Info("%d th frame rendered! timeStamp: %f", frame_count++, timeStamp);
     }
 }
 
