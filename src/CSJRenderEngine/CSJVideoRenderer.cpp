@@ -1,15 +1,24 @@
 #include "CSJVideoRenderer.h"
 
+#include "CSJUtils/CSJMediaData.h"
+
 #ifdef _WIN32
 #include "Win/CSJVideoRendererDXImpl.h"
 #elif __APPLE__
 #include "Mac/CSJVideoRendererMetalImpl.h"
 #endif
 
+using namespace csjutils;
+
+
 namespace csjrenderengine {
 
 bool CSJVideoRenderer::fillTextureData(uint8_t *buf, int width, int height) {
     return false;
+}
+
+void CSJVideoRenderer::setRenderDelegate(CSJRenderDelegatePtr delegate) {
+    m_pDelegate = delegate;
 }
 
 std::array<float, 2> CSJVideoRenderer::computeVideoArea(int widgetW, int widgetH, int videoW, int videoH) {

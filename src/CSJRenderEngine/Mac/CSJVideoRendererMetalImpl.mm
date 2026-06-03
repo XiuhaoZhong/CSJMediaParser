@@ -84,7 +84,6 @@ void CSJVideoRendererMetalImpl::startRender() {
 
     LOG_Info("Start VSync ...");
     m_pVSyncHandler->start(m_pWinID, [this](double ts) {
-        LOG_Info("Render callback");
         draw(ts);
     });
 }
@@ -145,7 +144,16 @@ void CSJVideoRendererMetalImpl::draw(double timeStamp) {
         // TODO: draw
     }
 
+    auto delegate = m_pDelegate.lock();
+    if (delegate) {
+        delegate->beforeARenderingTick();
+    }
+
     [m_pRenderer drawContent:need_update];
+
+    if (delegate) {
+        delegate->afterARenderingTick();
+    }
 }
 
 } // namespace csjrenderengine

@@ -11,6 +11,7 @@
 
 using csjmediaengine::CSJVideoPresentDelegate;
 using csjrenderengine::CSJVideoRendererPtr;
+using csjrenderengine::CSJRenderDelegatePtr;
 
 /** 
  * The render mode of CSJVideoRendererWidget. 
@@ -79,10 +80,11 @@ protected:
     bool initRenderer();
 
 private:
-    CSJVideoRendererPtr m_pVideoRenderer = nullptr;
-    RenderMode          m_renderType;
-    bool                m_exitRenderThread = false;
-    QString             m_imagePath;
+    CSJVideoRendererPtr  m_pVideoRenderer = nullptr;
+    CSJRenderDelegatePtr m_pRenderDelegate = nullptr;
+    RenderMode           m_renderType;
+    bool                 m_exitRenderThread = false;
+    QString              m_imagePath;
 
     std::unique_ptr<std::thread> m_pRenderThread;
 };

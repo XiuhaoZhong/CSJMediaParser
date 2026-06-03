@@ -6,6 +6,8 @@
 #include <chrono>
 #include <thread>
 
+#include "Controllers/CSJRenderDelegateImpl.h"
+
 #include "CSJUtils/CSJPathTool.h"
 #include "CSJUtils/CSJLogger.h"
 
@@ -22,6 +24,8 @@ CSJVideoRendererWidget::CSJVideoRendererWidget(QWidget *parent)
     setAttribute(Qt::WA_NoSystemBackground);
 
     setAutoFillBackground(false);
+
+    m_pRenderDelegate = createRenderDelegateImpl();
 }
 
 CSJVideoRendererWidget::~CSJVideoRendererWidget() {
@@ -88,6 +92,9 @@ void CSJVideoRendererWidget::showEvent(QShowEvent *event) {
     }
 
     if (m_pVideoRenderer) {
+
+        m_pVideoRenderer->setRenderDelegate(m_pRenderDelegate);
+
         LOG_Info("Starts rendering ... ");
         m_pVideoRenderer->startRender();
         LOG_Info("Rendering started ... ");
