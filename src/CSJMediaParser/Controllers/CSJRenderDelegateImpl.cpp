@@ -22,8 +22,10 @@ void CSJRenderDelegateImpl::beforeARenderingTick() {
 
 void CSJRenderDelegateImpl::afterARenderingTick() {
     // Don't ouput the frame count by default;
-    // static int render_count = 0;
-    // LOG_Info("The %dth frames rendered!", render_count++);
+#if 0 
+    static int render_count = 0;
+    LOG_Info("The %dth frames rendered!", render_count++);
+#endif 
 }
 
 void CSJRenderDelegateImpl::beforeRenderingStart() {
