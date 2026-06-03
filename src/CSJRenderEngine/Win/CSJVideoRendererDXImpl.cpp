@@ -581,8 +581,16 @@ void CSJVideoRendererDXImpl::renderFunc() {
 
         // TODO: get a new video frame.
 
+        auto delegate = m_pDelegate.lock();
+        if (delegate) {
+            delegate->beforeARenderingTick();
+        }
+
         drawScene(timeStamp);
         //LOG_Info("%d th frame rendered! timeStamp: %f", frame_count++, timeStamp);
+        if (delegate) {
+            delegate->afterARenderingTick();
+        }
     }
 }
 

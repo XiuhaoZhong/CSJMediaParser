@@ -17,7 +17,7 @@ enum class CSJPixelFormat {
     CSJPixelFormat_BGRA8888
 };
 
-typedef struct {
+struct CSJVideoFrame {
     uint8_t       *data[4]     = {nullptr};
     int            linesize[4] = {0};
     int            width       = 0;
@@ -25,9 +25,9 @@ typedef struct {
     int64_t        pts         = 0;
     double         duration    = 0.0;
     CSJPixelFormat format      = CSJPixelFormat::CSJPixelFormat_NONE;
-} CSJVideoFrame;
+};
 
-typedef struct {
+struct CSJAudioFrame {
     uint8_t *data          = nullptr;
     int      dataSize      = 0;
     int      channels      = 0;
@@ -35,7 +35,7 @@ typedef struct {
     int      bitsPerSample = 0;
     int64_t  pts           = 0;
     double   duration      = 0.0;
-} CSJAudioFrame;
+};
 
 extern "C" {
 CSJUTILS_API CSJVideoFrame *create_video_frame();
