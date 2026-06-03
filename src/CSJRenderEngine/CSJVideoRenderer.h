@@ -7,7 +7,11 @@
 
 #include "CSJRenderEngine_Export.h"
 
+#include "CSJUtils/CSJMediaData.h"
+
 #include "CSJMediaEngine/CSJMediaRawData.h"
+
+using csjutils::CSJVideoFramePtr;
 
 using csjmediaengine::CSJVideoFormatType;
 using csjmediaengine::CSJVideoData;
@@ -23,6 +27,37 @@ typedef enum {
     CSJRenderType_ONSCREEN = 0,
     CSJRenderType_OFFSCREEN
 } CSJRenderType;
+
+/**
+ * This is the delegate interface for CSJRenderEngine, and the users can implement
+ * the interfaces to provide video data, monitor rendering status, and some customized 
+ * notifications in rendering nodes.
+ */
+class CSJRenderDelegate {
+public:
+    CSJRenderDelegate() = default;
+    virtual ~CSJRenderDelegate() {}
+
+    virtual CSJVideoFramePtr getNextVideoFrame() = 0;
+
+    virtual void beforeARenderingTick() {};
+    virtual void afterARenderingTick() {};
+
+    virtual void beforeRenderingStart() {};
+    virtual void afterRenderingStart() {};
+
+    virtual void beforeRenderingPause() {};
+    virtual void afterRenderingPause() {};
+
+    virtual void beforeRenderingResume() {};
+    virtual void afterRenderingResume() {};
+
+    virtual void beforeRenderingStop() {};
+    virtual void afterRenderingStop() {};
+};
+
+using CSJRenderDelegatePtr = std::shared_ptr<CSJRenderDelegate>;
+using CSJRenderDelegateWeakPtr = std::weak_ptr<CSJRenderDelegate>;
 
 /**
  * This is the base class of video renderer, subclasses which implements
@@ -104,8 +139,13 @@ public:
      */
     virtual void setImage(const std::string& imagePath) = 0;
 
+    virtual void setRenderDelegate(CSJRenderDelegatePtr delegate);
+
     std::array<float, 2> computeVideoArea(int widgetW, int widgetH,
                                           int videoW, int videoH);
+
+protected:
+    CSJRenderDelegateWeakPtr m_pDelegate;
 };
 
 using CSJSpVideoRenderer = std::shared_ptr<CSJVideoRenderer>;
@@ -118,7 +158,9 @@ struct CSJMediaRendererDeleter {
     }
 };
 
-CSJRENDERENGINE_API CSJVideoRenderer* createCSJRenderer(CSJWindowID widgetID, int width, int height, float pixelRatio);
+CSJRENDERENGINE_API CSJVideoRenderer* createCSJRenderer(CSJWindowID widgetID, 
+                                                        int width, int height,
+                                                        float pixelRatio);
 
 using CSJVideoRendererPtr = std::unique_ptr<CSJVideoRenderer>;
 
