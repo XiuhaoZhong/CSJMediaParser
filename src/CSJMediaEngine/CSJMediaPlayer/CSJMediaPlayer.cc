@@ -159,10 +159,6 @@ bool CSJMediaPlayer::isStop() {
     return m_status == CSJPLAYERSTATUS_STOP;
 }
 
-void CSJMediaPlayer::setVideoPresentDelegate(std::shared_ptr<CSJVideoPresentDelegate> delegate) {
-    m_pVideoPresentDelegate = delegate;
-}
-
 bool CSJMediaPlayer::readyForPlay() {
     m_pFormatCtx = avformat_alloc_context();
     m_pFormatCtx->probesize = 50 * 1024;

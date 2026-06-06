@@ -8,6 +8,119 @@
 
 using namespace csjmediaengine;
 
+CSJPlayerController::~CSJPlayerController() {
+    m_funcBeforeARenderingTick  = nullptr;
+    m_funcAfterARenderingTick   = nullptr;
+    m_funcBeforeRenderingStart  = nullptr;
+    m_funcAfterRenderingStart   = nullptr;
+    m_funcBeforeRenderingPause  = nullptr;
+    m_funcAfterRenderingPause   = nullptr;
+    m_funcBeforeRenderingResume = nullptr;
+    m_funcAfterRenderingResume  = nullptr;
+    m_funcBeforeRenderingStop   = nullptr;
+    m_funcAfterRenderingStop    = nullptr;
+}
+
+void CSJPlayerController::setBeforeARenderingTickFunc(RenderCallbackFunc func) {
+    m_funcBeforeARenderingTick = std::move(func);
+}
+
+void CSJPlayerController::setAfterARenderingTickFunc(RenderCallbackFunc func) {
+    m_funcAfterARenderingTick = std::move(func);
+}
+
+void CSJPlayerController::setBeforeRenderingStartFunc(RenderCallbackFunc func) {
+    m_funcBeforeRenderingStart = std::move(func);
+}
+
+void CSJPlayerController::setAfterRenderingStartFunc(RenderCallbackFunc func) {
+    m_funcAfterRenderingStart = std::move(func);
+}
+
+void CSJPlayerController::setBeforeRenderingPauseFunc(RenderCallbackFunc func) {
+    m_funcBeforeRenderingPause = std::move(func);
+}
+
+void CSJPlayerController::setAfterRenderingPauseFunc(RenderCallbackFunc func) {
+    m_funcAfterRenderingPause = std::move(func);
+}
+
+void CSJPlayerController::setBeforeRenderingResumeFunc(RenderCallbackFunc func) {
+    m_funcBeforeRenderingResume = std::move(func);
+}
+
+void CSJPlayerController::setAfterRenderingResumeFunc(RenderCallbackFunc func) {
+    m_funcAfterRenderingResume = std::move(func);
+}
+
+void CSJPlayerController::setBeforeRenderingStopFunc(RenderCallbackFunc func) {
+    m_funcBeforeRenderingStop = std::move(func);
+}
+
+void CSJPlayerController::setAfterRenderingStopFunc(RenderCallbackFunc func) {
+    m_funcAfterRenderingStop = std::move(func);
+}
+
+void CSJPlayerController::beforeARenderingTick() {
+    if (m_funcBeforeARenderingTick) {
+        m_funcBeforeARenderingTick();
+    }
+}
+
+void CSJPlayerController::afterARenderingTick() {
+    if (m_funcAfterARenderingTick) {
+        m_funcAfterARenderingTick();
+    }
+}
+
+void CSJPlayerController::beforeRenderingStart() {
+    if (m_funcBeforeRenderingStart) {
+        m_funcBeforeRenderingStart();
+    }
+}
+
+void CSJPlayerController::afterRenderingStart() {
+    if (m_funcAfterRenderingStart) {
+        m_funcAfterRenderingStart();
+    }
+}
+
+void CSJPlayerController::beforeRenderingPause() {
+    if (m_funcBeforeRenderingPause) {
+        m_funcBeforeRenderingPause();
+    }
+}
+
+void CSJPlayerController::afterRenderingPause() {
+    if (m_funcAfterRenderingPause) {
+        m_funcAfterRenderingPause();
+    }
+}
+
+void CSJPlayerController::beforeRenderingResume() {
+    if (m_funcBeforeRenderingResume) {
+        m_funcBeforeRenderingResume();
+    }
+}
+
+void CSJPlayerController::afterRenderingResume() {
+    if (m_funcAfterRenderingResume) {
+        m_funcAfterRenderingResume();
+    }
+}
+
+void CSJPlayerController::beforeRenderingStop() {
+    if (m_funcBeforeRenderingStop) {
+        m_funcBeforeRenderingStop();
+    }
+}
+
+void CSJPlayerController::afterRenderingStop() {
+    if (m_funcAfterRenderingStop) {
+        m_funcAfterRenderingStop();
+    }
+}
+
 class CSJPlayerControllerImpl : public CSJPlayerController {
 public:
     CSJPlayerControllerImpl();
@@ -25,6 +138,9 @@ public:
     bool isPlaying() override;
     bool isPausing() override;
     bool isStopping() override;
+
+public: // CSJRenderDeleagte interfaces.
+    CSJVideoFramePtr getNextVideoFrame() override;
 
 private:
     CSJMediaPlayerPtr m_pPlayerKernel;
@@ -136,7 +252,15 @@ bool CSJPlayerControllerImpl::isStopping() {
     return m_pPlayerKernel->isStop();
 }
 
+ CSJVideoFramePtr CSJPlayerControllerImpl::getNextVideoFrame() {
+    return nullptr;
+ }
+
 CSJPlayerControllerPtr CSJPlayerController::createPlayerController() {
     return std::make_unique<CSJPlayerControllerImpl>();
+}
+
+CSJPlayerControllerSharedPtr createSharedPlayerController() {
+    return std::make_shared<CSJPlayerControllerImpl>();
 }
 

@@ -39,7 +39,7 @@ CSJMediaPlayerWindow::CSJMediaPlayerWindow(QWidget *parent)
                         curRect.width(),
                         curRect.height()));
 
-    m_playController = CSJPlayerController::createPlayerController();
+    setupDelegate();
 }
 
 CSJMediaPlayerWindow::~CSJMediaPlayerWindow() {
@@ -166,6 +166,12 @@ void CSJMediaPlayerWindow::onFastBackBtnClicked() {
     LOG_Info("Fast backward... ");
 }
 
+void CSJMediaPlayerWindow::onAFrameRendered() {
+#if 0
+    LOG_Info("The %dth frame rendered.", m_iRenderCount++);
+#endif
+}
+
 void CSJMediaPlayerWindow::onSetImage() {
     if (!m_pVideoRenderWidget) {
         return ;
@@ -178,4 +184,16 @@ void CSJMediaPlayerWindow::onWidgetClose() {
     if (m_playController) {
         m_playController->stop();
     }
+}
+
+void CSJMediaPlayerWindow::setupDelegate() {
+    m_playController = createSharedPlayerController();
+    m_pVideoRenderWidget->setRenderDelegate(m_playController);
+
+    connect(this, &CSJMediaPlayerWindow::aFrameRendered, this, 
+            &CSJMediaPlayerWindow::onAFrameRendered);
+
+    m_playController->setAfterARenderingTickFunc([this]() {
+        emit aFrameRendered();
+    });
 }

@@ -6,8 +6,6 @@
 #include <memory>
 #include <string>
 
-#include "CSJVideoPresentDelegate.h"
-
 namespace csjmediaengine {
 
 /**
@@ -83,8 +81,6 @@ public:
     virtual bool isPlaying() = 0;
     virtual bool isPause() = 0;
     virtual bool isStop() = 0;
-
-    virtual void setVideoPresentDelegate(std::shared_ptr<CSJVideoPresentDelegate> delegate) = 0;
 };
 
 struct CSJMediaPlayerDeleter {
