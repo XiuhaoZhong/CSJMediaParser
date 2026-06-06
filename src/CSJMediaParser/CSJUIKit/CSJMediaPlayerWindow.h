@@ -30,6 +30,9 @@ public:
 
     void show(bool bShow);
 
+signals:
+    void aFrameRendered();
+
 public slots:
     void onPlayBtnClicked();
     void onPauseBtnClicked();
@@ -38,16 +41,23 @@ public slots:
     void onFastForwardBtnClicked();
     void onFastBackBtnClicked();
 
+    // slots for rendering states
+    void onAFrameRendered();
+
     void onSetImage();
 
 protected:
     void onWidgetClose();
 
+    void setupDelegate();
+
 private:
-    CSJVideoRendererWidget    *m_pVideoRenderWidget = nullptr;
-    CSJPlayerControllerPtr     m_playController;              /* Player function controller. */
-    CSJPlayerControllerWidget *m_playerCtrlWidget = nullptr;  /* Player controller UI. */
-    PlayStatus                 m_playStatus;
+    CSJVideoRendererWidget       *m_pVideoRenderWidget = nullptr;
+    CSJPlayerControllerSharedPtr  m_playController;              /* Player function controller. */
+    CSJPlayerControllerWidget    *m_playerCtrlWidget = nullptr;  /* Player controller UI. */
+    PlayStatus                    m_playStatus;
+
+    int                           m_iRenderCount = 0;
 
 };
 

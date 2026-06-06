@@ -7,9 +7,7 @@
 #include <QWidget>
 
 #include "CSJRenderEngine/CSJVideoRenderer.h"
-#include "CSJMediaEngine/CSJVideoPresentDelegate.h"
 
-using csjmediaengine::CSJVideoPresentDelegate;
 using csjrenderengine::CSJVideoRendererPtr;
 using csjrenderengine::CSJRenderDelegatePtr;
 
@@ -31,8 +29,7 @@ typedef enum {
     PASSIVE_RENDERING
 } RenderMode;
 
-class CSJVideoRendererWidget : public QWidget
-                             , public CSJVideoPresentDelegate {
+class CSJVideoRendererWidget : public QWidget {
     Q_OBJECT
 public:
     CSJVideoRendererWidget(QWidget *parent = nullptr);
@@ -42,20 +39,14 @@ public:
         return NULL;
     }
 
-    /**********************************************************************
-     * Override interfaces from CSJVideoPresentDelegate.
-     ***********************************************************************/
-    void initializeVideoInfo(CSJVideoFormatType fmtType,
-                             int width, int height) override;
-
-    void updateVideoFrame(CSJVideoData *videoData) override;
-
     /**
      * Set the image path of the widget.
      */
     void setImagePath(QString& image_path);
 
     void setMediaFile(QString& media_file_path);
+
+    void setRenderDelegate(CSJRenderDelegatePtr delegate);
 
 signals:
     void updateFrame();
