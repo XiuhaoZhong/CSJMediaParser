@@ -32,6 +32,8 @@ public:
 
 signals:
     void aFrameRendered();
+    void beforeRenderStart();
+    void afterRenderStop();
 
 public slots:
     void onPlayBtnClicked();
@@ -43,6 +45,8 @@ public slots:
 
     // slots for rendering states
     void onAFrameRendered();
+    void onBeforeRenderStart();
+    void onAfterRenderStop();
 
     void onSetImage();
 

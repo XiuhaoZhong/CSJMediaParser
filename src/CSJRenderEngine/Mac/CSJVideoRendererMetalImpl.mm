@@ -82,6 +82,11 @@ void CSJVideoRendererMetalImpl::startRender() {
         }
     }
 
+    auto delegate = m_pDelegate.lock();
+    if (delegate) {
+        delegate->beforeRenderingStart();
+    }
+
     LOG_Info("Start VSync ...");
     m_pVSyncHandler->start(m_pWinID, [this](double ts) {
         draw(ts);
@@ -89,7 +94,15 @@ void CSJVideoRendererMetalImpl::startRender() {
 }
 
 void CSJVideoRendererMetalImpl::stopRender() {
+    auto delegate = m_pDelegate.lock();
+    if (delegate) {
+        delegate->beforeRenderingStop();
+    }
     m_pVSyncHandler->stop();
+
+    if (delegate) {
+        delegate->afterRenderingStop();
+    }
 }
 
 bool CSJVideoRendererMetalImpl::updateScene(double timeStamp) {

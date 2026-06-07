@@ -172,6 +172,16 @@ void CSJMediaPlayerWindow::onAFrameRendered() {
 #endif
 }
 
+void CSJMediaPlayerWindow::onBeforeRenderStart() {
+    LOG_Info("Render is going to start!");
+    m_iRenderCount = 0;
+}
+
+void CSJMediaPlayerWindow::onAfterRenderStop() {
+    LOG_Info("Render is stopped!");
+    m_iRenderCount = 0;
+}
+
 void CSJMediaPlayerWindow::onSetImage() {
     if (!m_pVideoRenderWidget) {
         return ;
@@ -193,7 +203,26 @@ void CSJMediaPlayerWindow::setupDelegate() {
     connect(this, &CSJMediaPlayerWindow::aFrameRendered, this, 
             &CSJMediaPlayerWindow::onAFrameRendered);
 
+    connect(this, &CSJMediaPlayerWindow::beforeRenderStart, this,
+            &CSJMediaPlayerWindow::onBeforeRenderStart);
+
+    /**
+     * Stop render can be called when close the widget, and use Qt::QueuedConnection
+     * in case the widget is deleted before the slot function called, and there will 
+     * be a crash.
+     */
+    connect(this, &CSJMediaPlayerWindow::afterRenderStop, this,
+            &CSJMediaPlayerWindow::onAfterRenderStop, Qt::DirectConnection);
+
     m_playController->setAfterARenderingTickFunc([this]() {
         emit aFrameRendered();
+    });
+
+    m_playController->setBeforeRenderingStartFunc([this]() {
+        emit beforeRenderStart();
+    });
+
+    m_playController->setAfterRenderingStopFunc([this]() {
+        this->onAfterRenderStop();
     });
 }
