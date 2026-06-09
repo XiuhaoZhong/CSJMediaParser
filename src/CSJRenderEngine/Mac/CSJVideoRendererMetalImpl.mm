@@ -1,6 +1,7 @@
 #include "CSJVideoRendererMetalImpl.h"
 
 #include "CSJUtils/CSJLogger.h"
+#include "CSJUtils/CSJMediaData.h"
 
 #import <Cocoa/Cocoa.h>
 #import <dispatch/dispatch.h>
@@ -121,7 +122,7 @@ void CSJVideoRendererMetalImpl::resize(int width, int height, float pixelRatio) 
     [m_pRenderer updateDrawable:width height:height pixelRatio:pixelRatio];
 }
 
-void CSJVideoRendererMetalImpl::initialRenderComponents(CSJVideoFormatType fmtType,
+void CSJVideoRendererMetalImpl::initialRenderComponents(CSJPixelFormat fmtType,
                                                         int width, int height) {
     if (!m_pRenderer) {
         return ;
@@ -130,12 +131,12 @@ void CSJVideoRendererMetalImpl::initialRenderComponents(CSJVideoFormatType fmtTy
     [m_pRenderer loadVideoComponentWithPixelFmt:fmtType width:width height:height];
 }
 
-void CSJVideoRendererMetalImpl::updateVideoFrame(CSJVideoData *pData) {
+void CSJVideoRendererMetalImpl::updateVideoFrame(CSJVideoFramePtr pData) {
     if (!m_pRenderer) {
         return ;
     }
 
-    [m_pRenderer updateVideoFrameWithData:(void *)pData];
+    [m_pRenderer updateVideoFrameWithData:pData];
 }
 
 void CSJVideoRendererMetalImpl::setImage(const std::string &imagePath) {

@@ -1,3 +1,7 @@
+
+using csjutils::CSJVideoFramePtr;
+using csjutils::CSJPixelFormat;
+
 #import <Cocoa/Cocoa.h>
 #import <Metal/Metal.h>
 #import <MetalKit/MetalKit.h>
@@ -10,9 +14,9 @@
                                 frame:(CGRect)frame 
                            pixelRatio:(float)pixelRatio;
 
-- (void)loadVideoComponentWithPixelFmt:(NSInteger)fmtType width:(NSInteger)width height:(NSInteger)height;
+- (void)loadVideoComponentWithPixelFmt:(CSJPixelFormat)fmtType width:(NSInteger)width height:(NSInteger)height;
 
-- (void)updateVideoFrameWithData:(void *)pData;
+- (void)updateVideoFrameWithData:(CSJVideoFramePtr)videoFrame;
 
 - (void)updateDrawableSizeWithWidth:(NSInteger)width 
                              height:(NSInteger)height 

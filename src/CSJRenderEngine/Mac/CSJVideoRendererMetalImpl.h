@@ -19,10 +19,10 @@ public:
 
     void resize(int width, int height, float pixelRatio) override;
 
-    virtual void initialRenderComponents(CSJVideoFormatType fmtType,
+    virtual void initialRenderComponents(CSJPixelFormat fmtType,
                                          int width, int height) override;
 
-    virtual void updateVideoFrame(CSJVideoData *videoData) override;
+    virtual void updateVideoFrame(CSJVideoFramePtr videoData) override;
 
     virtual void setImage(const std::string& imagePath) override;
 

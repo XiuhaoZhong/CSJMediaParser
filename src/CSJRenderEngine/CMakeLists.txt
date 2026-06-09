@@ -91,7 +91,6 @@ else()
 endif()
 
 target_link_libraries(${TARGET_NAME} PUBLIC CSJUtils)
-target_link_libraries(${TARGET_NAME} PUBLIC CSJMediaEngine)
 
 if(CMAKE_HOST_WIN32)
     add_custom_command(

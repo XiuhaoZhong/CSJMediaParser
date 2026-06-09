@@ -1,5 +1,3 @@
-#include "CSJMediaEngine/CSJMediaRawData.h"
-
 #include <atomic>
 
 #include <Foundation/Foundation.h>
@@ -8,9 +6,8 @@
 #include <objc/NSObjCRuntime.h>
 
 #include "CSJUtils/CSJPathTool.h"
+#include "CSJUtils/CSJMediaData.h"
 
-using csjmediaengine::CSJVideoData;
-using csjmediaengine::CSJVideoFormatType;
 using csjutils::CSJPathTool;
 
 #import "Shaders/CSJMediaShaderTypes.h"
@@ -68,8 +65,8 @@ static uint16_t indices[] = { 0, 1, 2, 2, 1, 3};
 @end
 
 @implementation CSJMetalRenderer {
-    std::atomic<bool>     _contentUpdate;
-    CSJVideoFormatType    _videoFmt;;
+    std::atomic<bool>  _contentUpdate;
+    CSJPixelFormat     _videoFmt;;
 }
 
 - (instancetype)initWithFrameWithView:(NSView *)view 
@@ -302,9 +299,11 @@ static uint16_t indices[] = { 0, 1, 2, 2, 1, 3};
     [command_buffer commit];
 }
 
-- (void)loadVideoComponentWithPixelFmt:(NSInteger)pixelFmt width:(NSInteger)width height:(NSInteger)height {
+- (void)loadVideoComponentWithPixelFmt:(CSJPixelFormat)pixelFmt 
+                                 width:(NSInteger)width 
+                                height:(NSInteger)height {
     switch (pixelFmt) {
-    case csjmediaengine::CSJVIDEO_FMT_YUV420P:
+    case CSJPixelFormat::CSJPixelFormat_YUV420P:
         [self loadYUV420PComponentsWithWidth:width height:height];
         break;
     default:
@@ -313,32 +312,30 @@ static uint16_t indices[] = { 0, 1, 2, 2, 1, 3};
 
     _videoWidth = width;
     _videoHeight = height;
-    _videoFmt = (CSJVideoFormatType)pixelFmt;
+    _videoFmt = (CSJPixelFormat)pixelFmt;
 }
 
-- (void)updateVideoFrameWithData:(void *)pData {
-    CSJVideoData *videoData = static_cast<CSJVideoData *>(pData);
-
+- (void)updateVideoFrameWithData:(CSJVideoFramePtr)videoData {
     if (!videoData) {
         return ;
     }
 
     [_videoDataLock lock];
 
-    if (videoData->getFmtType() != _videoFmt ||
-        videoData->getWidth() != _videoWidth ||
-        videoData->getHeight() != _videoHeight) {
+    if (videoData->format != _videoFmt ||
+        videoData->width != _videoWidth ||
+        videoData->height != _videoHeight) {
 
         // reallocate the video buffers.
         // reallocate the textures.
-        [self loadVideoComponentWithPixelFmt:videoData->getFmtType()
-                                    width:videoData->getWidth()
-                                    height:videoData->getHeight()];
+        [self loadVideoComponentWithPixelFmt:videoData->format
+                                       width:videoData->width
+                                      height:videoData->width];
     }
 
     // opy data to buffer
     switch (_videoFmt) {
-    case csjmediaengine::CSJVIDEO_FMT_YUV420P:
+    case CSJPixelFormat::CSJPixelFormat_YUV420P:
         [self updateDatatoYUV420PWidthData:videoData];
         break;
     default:
@@ -363,14 +360,14 @@ static uint16_t indices[] = { 0, 1, 2, 2, 1, 3};
     _texV = [_device newTextureWithDescriptor:texDesc];
 }
 
-- (void)updateDatatoYUV420PWidthData:(CSJVideoData *)videoData {
+- (void)updateDatatoYUV420PWidthData:(CSJVideoFramePtr)videoData {
     MTLRegion regionY = {{0,0,0}, {(NSUInteger)_videoWidth, (NSUInteger)_videoHeight, 1}};
-    [_texY replaceRegion:regionY mipmapLevel:0 withBytes:videoData->getyuvY() bytesPerRow:_videoWidth];
+    [_texY replaceRegion:regionY mipmapLevel:0 withBytes:videoData->data[0] bytesPerRow:_videoWidth];
 
     MTLRegion regionUV = {{0,0,0}, {(NSUInteger)_videoWidth / 2, (NSUInteger)_videoHeight / 2, 1}};
-    [_texU replaceRegion:regionUV mipmapLevel:0 withBytes:videoData->getyuvU() bytesPerRow:_videoWidth / 4];
+    [_texU replaceRegion:regionUV mipmapLevel:0 withBytes:videoData->data[1] bytesPerRow:_videoWidth / 4];
 
-    [_texV replaceRegion:regionUV mipmapLevel:0 withBytes:videoData->getyuvV() bytesPerRow:_videoWidth / 4];
+    [_texV replaceRegion:regionUV mipmapLevel:0 withBytes:videoData->data[2] bytesPerRow:_videoWidth / 4];
 }
 
 - (void)loadRGBAComponentsWithWidth:(NSInteger)width height:(NSInteger)height {
@@ -382,7 +379,7 @@ static uint16_t indices[] = { 0, 1, 2, 2, 1, 3};
     _texY = [_device newTextureWithDescriptor:texDesc];
 }
 
-- (void)updateVideoDatatoRGBWithData:(CSJVideoData *)data {
+- (void)updateVideoDatatoRGBWithData:(CSJVideoFramePtr)videoData {
 
 }
 

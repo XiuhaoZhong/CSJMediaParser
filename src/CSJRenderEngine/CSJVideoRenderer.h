@@ -12,6 +12,7 @@
 #include "CSJMediaEngine/CSJMediaRawData.h"
 
 using csjutils::CSJVideoFramePtr;
+using csjutils::CSJPixelFormat;
 
 using csjmediaengine::CSJVideoFormatType;
 using csjmediaengine::CSJVideoData;
@@ -122,7 +123,7 @@ public:
      * @param width   the width of the video frame
      * @param height  the height of the video frame
      */
-    virtual void initialRenderComponents(CSJVideoFormatType fmtType,
+    virtual void initialRenderComponents(CSJPixelFormat fmtType,
                                          int width, int height) = 0;
 
     /**
@@ -131,7 +132,7 @@ public:
      *        with the old size, and load new components(mainly textures).
      * @param videoData the video data will be presented.
      */
-    virtual void updateVideoFrame(CSJVideoData *videoData) = 0;
+    virtual void updateVideoFrame(CSJVideoFramePtr videoData) = 0;
 
     /**
      * @brief Set the picture that will be rendered in this widget.
