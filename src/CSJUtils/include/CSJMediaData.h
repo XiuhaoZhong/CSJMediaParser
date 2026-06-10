@@ -13,8 +13,8 @@ enum class CSJPixelFormat {
     CSJPixelFormat_NONE = 0,
     CSJPixelFormat_YUV420P,
     CSJPixelFormat_NV12,
-    CSJPixelFormat_RGBA8888,
-    CSJPixelFormat_BGRA8888
+    CSJPixelFormat_R8G8B8A8,
+    CSJPixelFormat_B8G8R8A8
 };
 
 struct CSJVideoFrame {
