@@ -15,6 +15,9 @@
 template <typename T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;
 
+using csjutils::CSJPixelFormat;
+using csjutils::CSJVideoFramePtr;
+
 namespace csjrenderengine {
 
 class CSJVideoRendererDXImpl : public CSJVideoRenderer {
@@ -39,9 +42,9 @@ public:
     void stopRender() override;
     bool fillTextureData(uint8_t *buf, int width, int height) override;
     void resize(int width, int height, float pixelRatio) override;
-    void initialRenderComponents(CSJVideoFormatType fmtType, 
+    void initialRenderComponents(CSJPixelFormat fmtType, 
                                  int width, int height) override;
-    void updateVideoFrame(CSJVideoData *videoData) override;
+    void updateVideoFrame(CSJVideoFramePtr videoData) override;
 
     void setImage(const std::string& imagePath) override;
 
@@ -66,15 +69,15 @@ protected:
 
     void setViewPort(int width, int height);
 
-    bool createTextureByFmtType(CSJVideoFormatType fmtType, int width, int height);
+    bool createTextureByFmtType(CSJPixelFormat fmtType, int width, int height);
 
     bool createTextureForRGBA();
     bool createTexturesForYUV420(int width, int height);
     void createTextureSampler();
 
     void updateFrameData();
-    void updateRGBAFrame(CSJVideoData* videoData);
-    void updateYUV420Frame(CSJVideoData* videoData);
+    void updateRGBAFrame(CSJVideoFramePtr videoData);
+    void updateYUV420Frame(CSJVideoFramePtr videoData);
 
     bool updateDynamicResource(ComPtr<ID3D11Resource> resource, rsize_t len, uint8_t* data);
 
@@ -134,11 +137,11 @@ private:
     /******************* video frame parameters *******************/
     int                            m_videoWidth;
     int                            m_videoHeight;
-    CSJVideoFormatType             m_pixelFmt;
+    CSJPixelFormat                 m_pixelFmt;
     bool                           m_bShowImage = false;
 
     std::mutex                     m_videoMtx;
-    CSJVideoData*                  m_curVideoData;
+    CSJVideoFramePtr               m_curVideoData;
     std::string                    m_curImagePath;
 
     /*********************************************************

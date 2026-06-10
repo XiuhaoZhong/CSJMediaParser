@@ -12,6 +12,7 @@
 #include "CSJUtils/CSJPathTool.h"
 #include "CSJUtils/CSJLogger.h"
 #include "CSJUtils/CSJStringUtils.h"
+#include "CSJUtils/CSJMediaData.h"
 
 #include "CSJDirectXHelper.h"
 
@@ -26,7 +27,7 @@ const D3D11_INPUT_ELEMENT_DESC CSJVideoRendererDXImpl::VertexPosColor::inputLayo
 };
 
 CSJVideoRendererDXImpl::CSJVideoRendererDXImpl() {
-    m_pixelFmt = CSJVIDEO_FMT_NONE;
+    m_pixelFmt = CSJPixelFormat::CSJPixelFormat_NONE;
     m_bContentNeedUpdate = false;
 }
 
@@ -39,7 +40,7 @@ CSJVideoRendererDXImpl::CSJVideoRendererDXImpl(CSJWindowID widgetID,
     , m_ClientHeight(height)
     , m_PixelRatio(pixelRatio) {
 
-    m_pixelFmt = CSJVIDEO_FMT_NONE;
+    m_pixelFmt = CSJPixelFormat::CSJPixelFormat_NONE;
     m_bContentNeedUpdate = false;
 }
 
@@ -81,7 +82,7 @@ bool CSJVideoRendererDXImpl::updateScene(double timeStamp) {
     }
 
     // when pixel format changed or show a image, need to recreate all the resources.
-    if (m_curVideoData->getFmtType() != m_pixelFmt || m_bShowImage) {
+    if (m_curVideoData->format != m_pixelFmt || m_bShowImage) {
         // Compare pixel format
         //     a) The pixel format changes
         //     1. Set the accordance shader
@@ -89,20 +90,20 @@ bool CSJVideoRendererDXImpl::updateScene(double timeStamp) {
         //     3. Compute the coordinates, and bind to shader
         //     4. Record the new pixel format and picture size into class members. 
         // the pixel format changed, should reallocate all textures, and record the new size and pixel format 
-        loadRenderContent = createTextureByFmtType(m_curVideoData->getFmtType(), 
-                                                   m_curVideoData->getWidth(), 
-                                                   m_curVideoData->getHeight());
-        m_pixelFmt = m_curVideoData->getFmtType();
+        loadRenderContent = createTextureByFmtType(m_curVideoData->format, 
+                                                   m_curVideoData->width, 
+                                                   m_curVideoData->height);
+        m_pixelFmt = m_curVideoData->format;
         if (loadRenderContent) {
             bindRenderComponents();
             bindTextureResources();
         }
-    } else if (m_curVideoData->getWidth() != m_videoWidth || m_curVideoData->getHeight() != m_videoHeight) {
+    } else if (m_curVideoData->width != m_videoWidth || m_curVideoData->height != m_videoHeight) {
         // rendering pixel format is not changed, but the size of rendering content changed, so recreate texture(s).
         // Don't need to re bind shaders.
-        loadRenderContent = createTextureByFmtType(m_curVideoData->getFmtType(), 
-                                                   m_curVideoData->getWidth(), 
-                                                   m_curVideoData->getHeight());
+        loadRenderContent = createTextureByFmtType(m_curVideoData->format, 
+                                                   m_curVideoData->width, 
+                                                   m_curVideoData->height);
 
         if (loadRenderContent) {
             bindTextureResources();
@@ -114,8 +115,8 @@ bool CSJVideoRendererDXImpl::updateScene(double timeStamp) {
         updateFrameData();
     }
 
-    // If load render content failed, set the render pixel format to CSJVIDEO_FMT_NONE, and thus won't render anything.
-    m_pixelFmt = loadRenderContent ? m_pixelFmt : CSJVIDEO_FMT_NONE;
+    // If load render content failed, set the render pixel format to CSJPixelFormat_NONE, and thus won't render anything.
+    m_pixelFmt = loadRenderContent ? m_pixelFmt : CSJPixelFormat::CSJPixelFormat_NONE;
     m_bContentNeedUpdate = false;
 
     return loadRenderContent;
@@ -126,7 +127,6 @@ bool CSJVideoRendererDXImpl::fillTextureData(uint8_t *buf, int width, int height
 }
 
 void CSJVideoRendererDXImpl::resize(int width, int height, float pixelRatio) {
-
     if (width < 1 || height < 1) {
         return ;
     }
@@ -181,12 +181,12 @@ void CSJVideoRendererDXImpl::resize(int width, int height, float pixelRatio) {
     setViewPort(m_ClientWidth, m_ClientHeight);
 }
 
-void CSJVideoRendererDXImpl::initialRenderComponents(CSJVideoFormatType fmtType, 
+void CSJVideoRendererDXImpl::initialRenderComponents(CSJPixelFormat format, 
                                                      int width, int height) {
 }
 
-void CSJVideoRendererDXImpl::updateVideoFrame(CSJVideoData *videoData) {
-    std::lock_guard lock(m_videoMtx);
+void CSJVideoRendererDXImpl::updateVideoFrame(CSJVideoFramePtr videoData) {
+    std::lock_guard<std::mutex> guard(m_videoMtx);
     m_curVideoData = std::move(videoData);
     m_bContentNeedUpdate = true;
 }
@@ -194,8 +194,9 @@ void CSJVideoRendererDXImpl::updateVideoFrame(CSJVideoData *videoData) {
 void CSJVideoRendererDXImpl::setImage(const std::string & imagePath) {
     std::lock_guard lock(m_videoMtx);
     m_curImagePath = std::string(imagePath);
-
-    CSJVideoData *fakeVideoData = new CSJVideoData(CSJVIDEO_FMT_RGB24, nullptr, 0, 0);
+    
+    CSJVideoFramePtr fakeVideoData = csjutils::createVideoFramePtr();
+    csjutils::alloc_video_buffer(fakeVideoData.get(), 0, 0, CSJPixelFormat::CSJPixelFormat_R8G8B8A8);
     m_curVideoData = std::move(fakeVideoData);
 
     m_bShowImage = true;
@@ -349,7 +350,7 @@ bool CSJVideoRendererDXImpl::initD3D(int width, int height) {
 
     m_ClientWidth  = width;
     m_ClientHeight = height;
-    m_pixelFmt     = CSJVIDEO_FMT_NONE;
+    m_pixelFmt     = CSJPixelFormat::CSJPixelFormat_NONE;
 
     HRESULT hr = S_OK;
 
@@ -423,7 +424,7 @@ bool CSJVideoRendererDXImpl::createShaders() {
     std::string pixelShaderFile = CSJPathTool::getShaderDir().append("DXRGBAShader.hlsl").string();
     std::string pixelCso = CSJPathTool::getShaderDir().append("DXRGBAShader.cso").string();
 
-    if (m_pixelFmt == CSJVIDEO_FMT_YUV420P) {
+    if (m_pixelFmt == CSJPixelFormat::CSJPixelFormat_YUV420P) {
         pixelShaderFile = CSJPathTool::getShaderDir().append("DXYUVShader.hlsl").string();
         pixelCso = CSJPathTool::getShaderDir().append("DXYUVShader.cso").string();
     }
@@ -612,7 +613,7 @@ void CSJVideoRendererDXImpl::drawScene(double timeStamp) {
 
     // check shader.  
     bool need_render = updateScene(timeStamp);
-    if (m_pixelFmt != CSJVIDEO_FMT_NONE) {
+    if (m_pixelFmt != CSJPixelFormat::CSJPixelFormat_NONE) {
         curContext->DrawIndexed(6, 0, 0);
     }
 
@@ -636,13 +637,13 @@ void CSJVideoRendererDXImpl::setViewPort(int width, int height) {
     curContext->RSSetViewports(1, &m_ScreenViewport);
 }
 
-bool CSJVideoRendererDXImpl::createTextureByFmtType(CSJVideoFormatType fmtType, int width, int height) {
+bool CSJVideoRendererDXImpl::createTextureByFmtType(CSJPixelFormat fmtType, int width, int height) {
     bool res = false;
     switch (fmtType) {
-    case CSJVIDEO_FMT_YUV420P:
+    case CSJPixelFormat::CSJPixelFormat_YUV420P:
         res = createTexturesForYUV420(width, height);    
         break;
-    case CSJVIDEO_FMT_RGB24:
+    case CSJPixelFormat::CSJPixelFormat_R8G8B8A8:
         res = createTextureForRGBA();
         break;
     default:
@@ -677,9 +678,9 @@ bool CSJVideoRendererDXImpl::createTextureForRGBA() {
         res = true;
     } else {
         res = CSJDirectXHelper::createRGBATextureFromBuffer(curDevice, 
-                                                            m_curVideoData->getData(), 
-                                                            m_curVideoData->getWidth(), 
-                                                            m_curVideoData->getHeight(), 
+                                                            m_curVideoData->data[0], 
+                                                            m_curVideoData->width, 
+                                                            m_curVideoData->height, 
                                                             4, 
                                                             m_singleTex, 
                                                             m_pShaderResViewRGBA);
@@ -743,10 +744,10 @@ void CSJVideoRendererDXImpl::createTextureSampler() {
 
 void CSJVideoRendererDXImpl::updateFrameData() {
     switch (m_pixelFmt) {
-    case CSJVIDEO_FMT_RGB24:
+    case CSJPixelFormat::CSJPixelFormat_R8G8B8A8:
         updateRGBAFrame(m_curVideoData);
         break;
-    case CSJVIDEO_FMT_YUV420P:
+    case CSJPixelFormat::CSJPixelFormat_YUV420P:
         updateYUV420Frame(m_curVideoData);
         break;
     default:
@@ -755,21 +756,21 @@ void CSJVideoRendererDXImpl::updateFrameData() {
     }
 }
 
-void CSJVideoRendererDXImpl::updateRGBAFrame(CSJVideoData *videoData) {
+void CSJVideoRendererDXImpl::updateRGBAFrame(CSJVideoFramePtr videoData) {
     ComPtr<ID3D11DeviceContext> curContext = getCurrentContext();
     if (!curContext) {
         return ;
     }
 
     bool updateState = updateDynamicResource(m_singleTex, 
-                                             videoData->getWidth() * videoData->getHeight(), 
-                                             videoData->getData());
+                                             videoData->width * videoData->height, 
+                                             videoData->data[0]);
     if (!updateState) {
         LOG_Error("Update rgba data failed!");
     }
 }
 
-void CSJVideoRendererDXImpl::updateYUV420Frame(CSJVideoData * videoData) {
+void CSJVideoRendererDXImpl::updateYUV420Frame(CSJVideoFramePtr videoData) {
     ComPtr<ID3D11DeviceContext> curContext = getCurrentContext();
     if (!curContext) {
         return ;
@@ -778,19 +779,19 @@ void CSJVideoRendererDXImpl::updateYUV420Frame(CSJVideoData * videoData) {
     LOG_Info("Update yuv data");
 
     rsize_t len = m_videoWidth * m_videoHeight;
-    bool updateState = updateDynamicResource(m_texYUV[0], len, videoData->getyuvY());
+    bool updateState = updateDynamicResource(m_texYUV[0], len, videoData->data[0]);
     if (!updateState) {
         LOG_Error("Update Y plane data failed!");
         return ;
     }
 
-    updateState = updateDynamicResource(m_texYUV[1], len / 4, videoData->getyuvU());
+    updateState = updateDynamicResource(m_texYUV[1], len / 4, videoData->data[1]);
     if (!updateState) {
         LOG_Error("Update U plane data failed!");
         return ;
     }
 
-    updateState = updateDynamicResource(m_texYUV[2], len / 4, videoData->getyuvV());
+    updateState = updateDynamicResource(m_texYUV[2], len / 4, videoData->data[2]);
     if (!updateState) {
         LOG_Error("Update V plane data failed!");
         return ;
@@ -831,7 +832,7 @@ void CSJVideoRendererDXImpl::bindRenderComponents() {
     auto curContext = getCurrentContext();
 
     switch(m_pixelFmt) {
-    case CSJVIDEO_FMT_RGB24: {
+    case CSJPixelFormat::CSJPixelFormat_R8G8B8A8: {
         UINT stride = sizeof(VertexPosColor);
         UINT offset = 0;
 
@@ -845,8 +846,8 @@ void CSJVideoRendererDXImpl::bindRenderComponents() {
         curContext->PSSetSamplers(0, 1, m_pSamplerState.GetAddressOf());
     }
     break;
-    case CSJVIDEO_FMT_NV12:
-    case CSJVIDEO_FMT_YUV420P:
+    case CSJPixelFormat::CSJPixelFormat_NV12:
+    case CSJPixelFormat::CSJPixelFormat_YUV420P:
         // TODO: Bind yuv rendering shaders.
         break;
         
@@ -874,13 +875,13 @@ void CSJVideoRendererDXImpl::bindRGBATextureResources() {
         curContext->PSSetShaderResources(3, 1, m_pShaderResViewRGBA.GetAddressOf());
     }                                      
 }
-
+        
 void CSJVideoRendererDXImpl::bindTextureResources() {
     switch (m_pixelFmt) {
-    case CSJVIDEO_FMT_YUV420P:
+    case CSJPixelFormat::CSJPixelFormat_YUV420P:
         bindYUV420TextureResources();
         break;
-    case CSJVIDEO_FMT_RGB24:
+    case CSJPixelFormat::CSJPixelFormat_R8G8B8A8:
         bindRGBATextureResources();
         break;
     default:
