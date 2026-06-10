@@ -47,8 +47,8 @@ bool alloc_video_buffer(CSJVideoFrame *frame, int width, int height, CSJPixelFor
 
         frame->data[0] = (uint8_t*)malloc(width * height);
         frame->data[1] = (uint8_t*)malloc(width * height / 2);
-    } else if (format == CSJPixelFormat::CSJPixelFormat_RGBA8888 || 
-                format == CSJPixelFormat::CSJPixelFormat_BGRA8888) {
+    } else if (format == CSJPixelFormat::CSJPixelFormat_R8G8B8A8 || 
+                format == CSJPixelFormat::CSJPixelFormat_B8G8R8A8) {
         frame->linesize[0] = width * 4;
         frame->data[0] = (uint8_t*)malloc(width * height * 4);
     } else {
