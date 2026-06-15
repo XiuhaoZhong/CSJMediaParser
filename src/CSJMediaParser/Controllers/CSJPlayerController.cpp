@@ -253,7 +253,11 @@ bool CSJPlayerControllerImpl::isStopping() {
 }
 
  CSJVideoFramePtr CSJPlayerControllerImpl::getNextVideoFrame() {
-    return nullptr;
+    if (!m_pPlayerKernel) {
+        return nullptr;
+    }
+
+    return m_pPlayerKernel->getNextVideoFrame();
  }
 
 CSJPlayerControllerPtr CSJPlayerController::createPlayerController() {
