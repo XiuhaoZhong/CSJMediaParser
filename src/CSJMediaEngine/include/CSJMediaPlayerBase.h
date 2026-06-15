@@ -6,6 +6,10 @@
 #include <memory>
 #include <string>
 
+#include "CSJUtils/CSJMediaData.h"
+
+using csjutils::CSJVideoFramePtr;
+
 namespace csjmediaengine {
 
 /**
@@ -81,6 +85,8 @@ public:
     virtual bool isPlaying() = 0;
     virtual bool isPause() = 0;
     virtual bool isStop() = 0;
+
+    virtual CSJVideoFramePtr getNextVideoFrame() = 0;
 };
 
 struct CSJMediaPlayerDeleter {

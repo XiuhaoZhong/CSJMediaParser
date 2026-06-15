@@ -74,6 +74,10 @@ CSJFrameWrapper::operator bool() const {
     return m_pFrame != nullptr;
 }
 
+AVFrame *CSJFrameWrapper::getRawFrame() const {
+    return m_pFrame;
+}
+
 AVFrame* CSJFrameWrapper::operator->() const {
     return m_pFrame;
 }
@@ -94,6 +98,38 @@ void CSJFrameWrapper::reset() {
 void CSJFrameWrapper::swap(CSJFrameWrapper & other) {
     std::swap(m_pFrame, other.m_pFrame);
     std::swap(m_seqNumber, other.m_seqNumber);
+}
+
+void CSJFrameWrapper::setSeqNumber(int seqNumber) {
+    m_seqNumber = seqNumber;
+}
+
+int CSJFrameWrapper::getSeqNumber() const {
+    return m_seqNumber;
+}
+
+int CSJFrameWrapper::getWidth() const {
+    if (!m_pFrame) {
+        return 0;
+    }
+
+    return m_pFrame->width;
+}
+
+int CSJFrameWrapper::getHeight() const {
+    if (!m_pFrame) {
+        return 0;
+    }
+
+    return m_pFrame->height;
+}
+
+double CSJFrameWrapper::getDuration() const {
+    return m_dDuration;
+}
+
+double CSJFrameWrapper::getTimeStamp() const {
+    return m_dTimeStamp;
 }
 
 AVFrame * CSJFrameWrapper::release() {

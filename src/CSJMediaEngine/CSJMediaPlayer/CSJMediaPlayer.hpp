@@ -6,8 +6,10 @@
 
 #include "CSJMediaPlayerBase.h"
 #include "CSJUtils/CSJRingQueue.h"
+#include "CSJUtils/CSJMediaData.h"
 
 using csjutils::CSJRingQueue;
+using csjutils::CSJVideoFramePtr;
 
 struct AVFormatContext;
 struct AVCodecContext;
@@ -48,6 +50,8 @@ public:
     bool isPlaying() override;
     bool isPause() override;
     bool isStop() override;
+
+    CSJVideoFramePtr getNextVideoFrame() override;
 
 protected:
     /**
@@ -106,6 +110,8 @@ private:
     CSJRingQueue<CSJPacketWrapperPtr>       m_pVideoPacketsQueue;
     CSJRingQueue<CSJFrameWrapperPtr>        m_pAudioFramesQueue;
     CSJRingQueue<CSJFrameWrapperPtr>        m_pVideoFramesQueue;
+
+    CSJRingQueue<CSJVideoFramePtr>          m_videoFrameQueue;
 
     // TODO:
     /*

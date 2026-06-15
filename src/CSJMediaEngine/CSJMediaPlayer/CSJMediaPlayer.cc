@@ -17,7 +17,8 @@ CSJMediaPlayer::CSJMediaPlayer()
     : m_pAudioPacketsQueue(g_audio_queue_len)
     , m_pVideoPacketsQueue(g_video_queue_len)
     , m_pAudioFramesQueue(g_audio_queue_len)
-    , m_pVideoFramesQueue(g_video_queue_len) {
+    , m_pVideoFramesQueue(g_video_queue_len)
+    , m_videoFrameQueue(g_video_queue_len) {
     
 }
 
@@ -157,6 +158,21 @@ bool CSJMediaPlayer::isPause() {
 
 bool CSJMediaPlayer::isStop() {
     return m_status == CSJPLAYERSTATUS_STOP;
+}
+
+CSJVideoFramePtr CSJMediaPlayer::getNextVideoFrame() {
+    if (m_videoFrameQueue.is_empty()) {
+        return nullptr;
+    }
+
+    /**
+     * Currently, I'll return a video frame immediately. In fact, the returned
+     * video frame should be checked timestamp with main clock.
+     */
+
+    auto videoFrame = m_videoFrameQueue.deBuffer();
+
+    return videoFrame.has_value() ? videoFrame.value() : nullptr;
 }
 
 bool CSJMediaPlayer::readyForPlay() {
@@ -301,9 +317,28 @@ void CSJMediaPlayer::videoDecodeFunc() {
         } else {
             frameWrapper->setSeqNumber(seqNum);
             LOG_Info("The %dth video frame has been decoded.", frameWrapper->getSeqNumber());
+
+            int width = frameWrapper->getWidth();
+            int height = frameWrapper->getHeight();
+
+            CSJVideoFramePtr videoFrame = csjutils::createVideoFramePtr();
+            csjutils::alloc_video_buffer(videoFrame.get(),
+                                         width,
+                                         height, 
+                                         csjutils::CSJPixelFormat::CSJPixelFormat_YUV420P);
+            
+            AVFrame *rawFrame = frameWrapper->getRawFrame();
+            memcpy(videoFrame->data[0], rawFrame->buf[0]->data, width * height);
+            memcpy(videoFrame->data[1], rawFrame->buf[1]->data, width * height / 4);
+            memcpy(videoFrame->data[2], rawFrame->buf[2]->data, width * height / 4);
+
+            videoFrame->pts = rawFrame->pts * av_q2d(m_pFormatCtx->streams[m_iVideoFrmSeqNum]->time_base);
+            videoFrame->duration = rawFrame->duration * av_q2d(m_pFormatCtx->streams[m_iAudioFrmSeqNum]->time_base);
+        
+            m_videoFrameQueue.enBuffer(videoFrame);
         }
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        //std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
         //m_pVideoFramesQueue.enBuffer(frameWrapper);
     }
@@ -351,7 +386,7 @@ void CSJMediaPlayer::audioDecodeFunc() {
             LOG_Info("The %dth audio frame has been decoded.", frameWrapper->getSeqNumber());
         }
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        //std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
         //m_pAudioFramesQueue.enBuffer(frameWrapper);
     }

@@ -579,6 +579,7 @@ void CSJVideoRendererDXImpl::renderFunc() {
         LARGE_INTEGER counter;
         QueryPerformanceCounter(&counter);
         double timeStamp = counter.QuadPart / (double)m_timeFreq.QuadPart;
+        LOG_Info("Current time stamp: %f", timeStamp);
 
         // TODO: get a new video frame.
 
