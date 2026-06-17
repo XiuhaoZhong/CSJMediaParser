@@ -417,81 +417,54 @@ bool CSJVideoRendererDXImpl::initD3D(int width, int height) {
 }
 
 bool CSJVideoRendererDXImpl::createShaders() {
-    std::string vertshaderFile = CSJPathTool::getShaderDir().append("DXVertexShader.hlsl").string();
-    std::string vertCso = CSJPathTool::getShaderDir().append("DXVertexShader.cso").string();
-
-    // Create pixel shader with video pixel type, and default is rgba.
-    std::string pixelShaderFile = CSJPathTool::getShaderDir().append("DXRGBAShader.hlsl").string();
-    std::string pixelCso = CSJPathTool::getShaderDir().append("DXRGBAShader.cso").string();
-
-    if (m_pixelFmt == CSJPixelFormat::CSJPixelFormat_YUV420P) {
-        pixelShaderFile = CSJPathTool::getShaderDir().append("DXYUVShader.hlsl").string();
-        pixelCso = CSJPathTool::getShaderDir().append("DXYUVShader.cso").string();
-    }
-    
-    if (!initShaders(vertshaderFile, vertCso, pixelShaderFile, pixelCso)) {
-        LOG_Error("Shader initialize failed!");
-        return false;
-    }
-
-    return true;
-}
-
-bool CSJVideoRendererDXImpl::initShaders(std::string &vertShaderFile,
-                                         std::string &vertCso,
-                                         std::string &pixelShaderFile,
-                                         std::string &pixelCso) {
     ComPtr<ID3D11Device> curDevice = getCurrentDevice();
     if (!curDevice) {
         return false;
     }
 
-    ComPtr<ID3DBlob> blob;
+    bool res = true;
 
-    std::wstring vertShaderaPath = csjutils::CSJStringUtil::string2wstring(vertShaderFile);
-    std::wstring vertCsoPath = csjutils::CSJStringUtil::string2wstring(vertCso);
-
-    /* Create vertex shader */
-    HRESULT hr = CSJDirectXHelper::CreateShaderFromFile(vertCsoPath.c_str(),
-                                                        vertShaderaPath.c_str(),
-                                                        "main",
-                                                        "vs_5_0",
-                                                        blob.ReleaseAndGetAddressOf());
-    if (FAILED(hr)) {
-        // TODO: create shaders failed.
-        return false;
+    /* Create Vertex Shader. */
+    std::string vertshaderFile = CSJPathTool::getShaderDir().append("DXVertexShader.hlsl").string();
+    std::string vertCso = CSJPathTool::getShaderDir().append("DXVertexShader.cso").string();
+    res = CSJDirectXHelper::createVertexShader(curDevice, 
+                                               vertshaderFile, 
+                                               vertCso, 
+                                               "main", 
+                                               "vs_5_0", 
+                                               VertexPosColor::inputLayout,
+                                               ARRAYSIZE(VertexPosColor::inputLayout),
+                                               m_pVertexShader,
+                                               m_pVertexLayout);
+    if (!res) {
+        LOG_Warn("Create Vertex Shader failed!");
     }
 
-    HR(curDevice->CreateVertexShader(blob->GetBufferPointer(),
-                                     blob->GetBufferSize(),
-                                     nullptr,
-                                     m_pVertexShader.ReleaseAndGetAddressOf()));
-
-    /* Creating and Binding layout */
-    HR(curDevice->CreateInputLayout(VertexPosColor::inputLayout,
-                                    ARRAYSIZE(VertexPosColor::inputLayout),
-                                    blob->GetBufferPointer(),
-                                    blob->GetBufferSize(),
-                                    m_pVertexLayout.ReleaseAndGetAddressOf()));
-
-    std::wstring pixelCsoPath = csjutils::CSJStringUtil::string2wstring(pixelCso);
-    std::wstring pixelShaderPath = csjutils::CSJStringUtil::string2wstring(pixelShaderFile);
-
-    /* Creating Pixel shader */
-    hr = CSJDirectXHelper::CreateShaderFromFile(pixelCsoPath.c_str(),
-                                                pixelShaderPath.c_str(),
-                                                "main",
-                                                "ps_5_0",
-                                                blob.ReleaseAndGetAddressOf());
-    if (FAILED(hr)) {
-        // TODO: create shaders failed. 
-        return false;
+    /* Creating RGBA Pixel shader */
+    std::string RGBAPixelShaderFile = CSJPathTool::getShaderDir().append("DXRGBAShader.hlsl").string();
+    std::string RGBAPixelCso = CSJPathTool::getShaderDir().append("DXRGBAShader.cso").string();
+    res = CSJDirectXHelper::createPixelShader(curDevice, 
+                                              RGBAPixelShaderFile, 
+                                              RGBAPixelCso, 
+                                              "main", 
+                                              "ps_5_0", 
+                                              m_pPixelShader);
+    if (!res) {
+        LOG_Warn("Create RGBA Pixel Shader failed!");
     }
 
-    HR(curDevice->CreatePixelShader(blob->GetBufferPointer(),
-                                    blob->GetBufferSize(),
-                                    nullptr,
-                                    m_pPixelShader.ReleaseAndGetAddressOf()));
+    /* Creating YUV Pixel shader */
+    std::string YUVPixelShaderFile = CSJPathTool::getShaderDir().append("DXYUVShader.hlsl").string();
+    std::string YUVPixelCso = CSJPathTool::getShaderDir().append("DXYUVShader.cso").string();
+    HR(CSJDirectXHelper::createPixelShader(curDevice, 
+                                              YUVPixelShaderFile, 
+                                              YUVPixelCso, 
+                                              "main", 
+                                              "ps_5_0", 
+                                              m_pYuvPixelShader));
+    if (!res) {
+        LOG_Warn("Create YUV Pixel Shader failed!");
+    }
 
     return true;
 }

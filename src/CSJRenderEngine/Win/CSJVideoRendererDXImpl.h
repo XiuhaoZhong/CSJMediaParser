@@ -55,11 +55,6 @@ protected:
 
     bool createShaders();
 
-    bool initShaders(std::string & vertShaderFile,
-                     std::string & vertCso,
-                     std::string & pixelShaderFile,
-                     std::string & pixelCso);
-
     bool initRenderData();
 
     void renderFunc();

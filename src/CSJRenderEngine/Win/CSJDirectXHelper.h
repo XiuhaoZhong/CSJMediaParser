@@ -36,6 +36,23 @@ public:
                                         LPCSTR shaderModel,
                                         ID3DBlob ** ppBlocbOut);
 
+    static bool createVertexShader(ComPtr<ID3D11Device> &device,
+                                   std::string &csoFileNameOut,
+                                   std::string &hisFileName,
+                                   LPCSTR entryPoint,
+                                   LPCSTR shaderModel,
+                                   const D3D11_INPUT_ELEMENT_DESC *layoutDesc,
+                                   int layoutDescNum,
+                                   ComPtr<ID3D11VertexShader> &shader,
+                                   ComPtr<ID3D11InputLayout> &layout);
+
+    static bool createPixelShader(ComPtr<ID3D11Device> &device,
+                                  std::string &csoFileNameOut,
+                                  std::string &hisFileName,
+                                  LPCSTR entryPoint,
+                                  LPCSTR shaderModel,
+                                  ComPtr<ID3D11PixelShader> &shader);
+
     static bool createD3DTexture(ComPtr<ID3D11Device> &device,
                                  bool enable4xMsaa, 
                                  UINT msaaQuality,
