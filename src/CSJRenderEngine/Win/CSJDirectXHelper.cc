@@ -10,6 +10,7 @@
 
 #include "CSJUtils/CSJPathTool.h"
 #include "CSJUtils/CSJLogger.h"
+#include "CSJUtils/CSJStringUtils.h"
 
 using namespace csjutils;
 
@@ -144,7 +145,10 @@ HRESULT CSJDirectXHelper::CreateShaderFromFile(const WCHAR *csoFileNameOut,
                                 &errorBlob);
         if (FAILED(hr)) {
             if (errorBlob != nullptr) {
-                OutputDebugString(reinterpret_cast<const WCHAR*>(errorBlob->GetBufferPointer()));
+                const char *errMsg = (const char *)errorBlob->GetBufferPointer();
+                if (errMsg) {
+                    LOG_Info("Compile shader failed: %s", errMsg);
+                }
             }
 
             return hr;
@@ -156,6 +160,92 @@ HRESULT CSJDirectXHelper::CreateShaderFromFile(const WCHAR *csoFileNameOut,
     }
 
     return hr;
+}
+
+bool CSJDirectXHelper::createVertexShader(ComPtr<ID3D11Device> &device,
+                                          std::string &vertShaderFile, 
+                                          std::string &vertCso, 
+                                          LPCSTR entryPoint, 
+                                          LPCSTR shaderModel, 
+                                          const D3D11_INPUT_ELEMENT_DESC *layoutDesc,
+                                          int layoutDescNum,
+                                          ComPtr<ID3D11VertexShader> &shader,
+                                          ComPtr<ID3D11InputLayout> &layout) {
+    if (!device) {
+        return false;
+    }
+
+    ComPtr<ID3DBlob> blob;
+
+    std::wstring vertShaderaPath = csjutils::CSJStringUtil::string2wstring(vertShaderFile);
+    std::wstring vertCsoPath = csjutils::CSJStringUtil::string2wstring(vertCso);
+
+    /* Create vertex shader */
+    HRESULT hr = CSJDirectXHelper::CreateShaderFromFile(vertCsoPath.c_str(),
+                                                        vertShaderaPath.c_str(),
+                                                        entryPoint,
+                                                        shaderModel,
+                                                        blob.ReleaseAndGetAddressOf());
+    if (FAILED(hr)) {
+        // TODO: create shaders failed.
+        return false;
+    }
+
+    hr = device->CreateVertexShader(blob->GetBufferPointer(),
+                                    blob->GetBufferSize(),
+                                    nullptr,
+                                    shader.ReleaseAndGetAddressOf());
+    if (FAILED(hr)) {
+        return false;
+    }
+
+    hr = device->CreateInputLayout(layoutDesc,
+                                   layoutDescNum,
+                                   blob->GetBufferPointer(),
+                                   blob->GetBufferSize(),
+                                   layout.ReleaseAndGetAddressOf());
+    if (FAILED(hr)) {
+        return false;
+    }
+    
+    return true;
+}
+
+bool CSJDirectXHelper::createPixelShader(ComPtr<ID3D11Device> &device, 
+                                         std::string &pixelShaderFile, 
+                                         std::string &pixelCso, 
+                                         LPCSTR entryPoint, 
+                                         LPCSTR shaderModel, 
+                                         ComPtr<ID3D11PixelShader> &shader) {
+    if (!device) {
+        return false;
+    }
+
+    ComPtr<ID3DBlob> blob;
+
+    std::wstring pixelShaderPath = csjutils::CSJStringUtil::string2wstring(pixelShaderFile);
+    std::wstring pixelCsoPath = csjutils::CSJStringUtil::string2wstring(pixelCso);
+
+    /* Creating Pixel shader */
+    HRESULT hr = CSJDirectXHelper::CreateShaderFromFile(pixelCsoPath.c_str(),
+                                                        pixelShaderPath.c_str(),
+                                                        entryPoint,
+                                                        shaderModel,
+                                                        blob.ReleaseAndGetAddressOf());
+    if (FAILED(hr)) {
+        // TODO: create shaders failed. 
+        return false;
+    }
+
+    hr = device->CreatePixelShader(blob->GetBufferPointer(),
+                                    blob->GetBufferSize(),
+                                    nullptr,
+                                    shader.ReleaseAndGetAddressOf());
+    if (FAILED(hr)) {
+        return false;
+    }
+
+    return true;
 }
 
 bool CSJDirectXHelper::createD3DTexture(ComPtr<ID3D11Device> &device,
