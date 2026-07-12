@@ -25,6 +25,7 @@ struct CSJVideoFrame {
     int64_t        pts         = 0;
     double         duration    = 0.0;
     CSJPixelFormat format      = CSJPixelFormat::CSJPixelFormat_NONE;
+    bool           isFile      = false; // If rendering with an image file, this field is true.
 
     CSJVideoFrame() {
         

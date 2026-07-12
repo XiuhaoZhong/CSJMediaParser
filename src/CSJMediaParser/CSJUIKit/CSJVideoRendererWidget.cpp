@@ -56,7 +56,7 @@ void CSJVideoRendererWidget::showDefaultImage() {
 #if defined(__APPLE__)
     m_pVideoRenderer->setImage(imagePath);
 #else
-    m_pVideoRenderer->setImage("resources/Images/cross_street.jpeg");
+    m_pVideoRenderer->setImage(imagePath);// "resources/Images/cross_street.jpeg"
 #endif
 }
 

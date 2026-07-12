@@ -29,6 +29,15 @@ typedef enum {
     CSJRenderType_OFFSCREEN
 } CSJRenderType;
 
+enum CSJRenderContentType : uint8_t {
+    CSJRenderContentType_None = 0,
+    CSJRenderContentType_RGB,
+    CSJRenderContentType_RGBA,
+    CSJRenderContentType_ImageFile,
+    CSJRenderContentType_I420,
+    CSJRenderContentType_NV12
+};
+
 /**
  * This is the delegate interface for CSJRenderEngine, and the users can implement
  * the interfaces to provide video data, monitor rendering status, and some customized 
@@ -147,6 +156,7 @@ public:
 
 protected:
     CSJRenderDelegateWeakPtr m_pDelegate;
+    CSJRenderContentType     m_renderContentType = CSJRenderContentType_None;
 };
 
 using CSJSpVideoRenderer = std::shared_ptr<CSJVideoRenderer>;

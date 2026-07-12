@@ -92,5 +92,14 @@ public:
                                             int width, int height, int pitch,
                                             ComPtr<ID3D11Texture2D> &tex, 
                                             ComPtr<ID3D11ShaderResourceView> &resourceView);
+
+    static bool createConstBuffer(ComPtr<ID3D11Device> &device, 
+                                  ComPtr<ID3D11Buffer> &constBuffer,
+                                  UINT bufferSize, 
+                                  D3D11_USAGE usage = D3D11_USAGE_DEFAULT, 
+                                  UINT bindFlags = D3D11_BIND_CONSTANT_BUFFER,
+                                  UINT CPUAccessFlags = 0,
+                                  UINT MiscFlags = 0, 
+                                  UINT structByteStride = 0);
 };
 } // namespace csjrenderengine

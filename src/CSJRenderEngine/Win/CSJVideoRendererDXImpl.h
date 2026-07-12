@@ -11,6 +11,9 @@
 #include <memory>
 
 #include "CSJRenderEngine/CSJVideoRenderer.h"
+#include "Renderables/CSJRenderableBase.h"
+
+constexpr int g_YUVTexNum = 2;
 
 template <typename T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;
@@ -22,25 +25,13 @@ namespace csjrenderengine {
 
 class CSJVideoRendererDXImpl : public CSJVideoRenderer {
 public:
-    struct VertexPosColor {
-        DirectX::XMFLOAT3 pos;
-        DirectX::XMFLOAT2 texCoord;
-        static const D3D11_INPUT_ELEMENT_DESC inputLayout[2];
-    };
-
-    struct ConstantBuffer {
-        DirectX::XMFLOAT4X4A world;
-        DirectX::XMFLOAT4X4A view;
-        DirectX::XMFLOAT4X4A proj;
-    };
-
     CSJVideoRendererDXImpl();
     CSJVideoRendererDXImpl(CSJWindowID widgetID, int width, int height, float pixelRatio);
     ~CSJVideoRendererDXImpl();
     
     void startRender() override;
     void stopRender() override;
-    bool fillTextureData(uint8_t *buf, int width, int height) override;
+    bool fillTextureData(uint8_t *buf, int width, int height) override {return false;};
     void resize(int width, int height, float pixelRatio) override;
     void initialRenderComponents(CSJPixelFormat fmtType, 
                                  int width, int height) override;
@@ -53,33 +44,17 @@ protected:
 
     bool initD3D(int width, int height);
 
-    bool createShaders();
-
-    bool initRenderData();
-
     void renderFunc();
 
     void drawScene(double timeStamp);
     bool updateScene(double timeStamp);
 
+    /* Render I420 video frames. */
+    bool updateRenderDataForI420(double timeStamp);
+
     void setViewPort(int width, int height);
 
-    bool createTextureByFmtType(CSJPixelFormat fmtType, int width, int height);
-
-    bool createTextureForRGBA();
-    bool createTexturesForYUV420(int width, int height);
-    void createTextureSampler();
-
-    void updateFrameData();
-    void updateRGBAFrame(CSJVideoFramePtr videoData);
-    void updateYUV420Frame(CSJVideoFramePtr videoData);
-
     bool updateDynamicResource(ComPtr<ID3D11Resource> resource, rsize_t len, uint8_t* data);
-
-    void bindRenderComponents();
-    void bindYUV420TextureResources();
-    void bindRGBATextureResources();
-    void bindTextureResources();
 
     ComPtr<ID3D11DeviceContext> getCurrentContext();
     ComPtr<ID3D11Device>        getCurrentDevice();
@@ -101,15 +76,6 @@ private:
     HANDLE                       m_pInitEvent = NULL;     // 初始化成功之后的通知
     std::mutex                   m_renderMtx;
 
-    ComPtr<ID3D11VertexShader>  m_pVertexShader;
-    ComPtr<ID3D11PixelShader>   m_pPixelShader;
-    ComPtr<ID3D11PixelShader>   m_pYuvPixelShader;
-
-    ComPtr<ID3D11InputLayout>   m_pVertexLayout;   // input vertex layout;
-    ComPtr<ID3D11Buffer>        m_pVertexBuffer;
-    ComPtr<ID3D11Buffer>        m_pIndexBuffer;
-    ComPtr<ID3D11Buffer>        m_ConstantBuffer;
-
     /* Direct3D 11 */
     ComPtr<ID3D11Device>          m_pd3dDevice;            // D3D11设备
     ComPtr<ID3D11DeviceContext>   m_pd3dImmediateContext;  // D3D11设备上下文
@@ -129,41 +95,15 @@ private:
     ComPtr<ID3D11DepthStencilView> m_pDepthStencilView;    // 深度模板视图
     D3D11_VIEWPORT                 m_ScreenViewport;       // 视口
 
-    /******************* video frame parameters *******************/
-    int                            m_videoWidth;
-    int                            m_videoHeight;
-    CSJPixelFormat                 m_pixelFmt;
-    bool                           m_bShowImage = false;
-
+    double                         m_dVideoUpdateTimeStamp = 0.0;
     std::mutex                     m_videoMtx;
-    CSJVideoFramePtr               m_curVideoData;
+    CSJVideoFramePtr               m_pCurVideoData = nullptr;
     std::string                    m_curImagePath;
 
-    /*********************************************************
-     * Textures for YUV
-     ********************************************************/
-    ComPtr<ID3D11Texture2D>        m_texY;
-    ComPtr<ID3D11Texture2D>        m_texU;
-    ComPtr<ID3D11Texture2D>        m_texV;
-
-    std::array<ComPtr<ID3D11Texture2D>, 3>          m_texYUV;
-    std::array<ComPtr<ID3D11ShaderResourceView>, 3> m_resourceViewYUV;
-
-    ComPtr<ID3D11ShaderResourceView> m_pShaderResViewY;
-    ComPtr<ID3D11ShaderResourceView> m_pShaderResViewU;
-    ComPtr<ID3D11ShaderResourceView> m_pShaderResViewV;
-
-    /*********************************************************
-     * Texture for single fmt, such as rgba and so on.
-     *********************************************************/
-    ComPtr<ID3D11Texture2D>          m_singleTex;
-    ComPtr<ID3D11Resource>           m_imageTex;
-    ComPtr<ID3D11ShaderResourceView> m_pShaderResViewRGBA;
-
-    bool                           m_bContentNeedUpdate = false;
-
-    // sampler state
-    ComPtr<ID3D11SamplerState>     m_pSamplerState;
+    // Rendering RGB/RGBA buffer and image file.
+    CSJRenderablePtr m_pRGBARenderable = nullptr;
+    // Rendering YUV frame.
+    CSJRenderablePtr m_pYUVRenderable  = nullptr;
 };
 
 } //namespace csjrenderengine
