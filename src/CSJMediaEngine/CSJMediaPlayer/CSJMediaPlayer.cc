@@ -171,14 +171,17 @@ CSJVideoFramePtr CSJMediaPlayer::getNextVideoFrame() {
      */
 
     auto videoFrame = m_videoFrameQueue.deBuffer();
-
+    if (videoFrame.has_value()) {
+        LOG_Info("A video frame out from the queue, pts: %f, duration: %f", videoFrame.value()->pts, videoFrame.value()->duration);
+    }
+    
     return videoFrame.has_value() ? videoFrame.value() : nullptr;
 }
 
 bool CSJMediaPlayer::readyForPlay() {
     m_pFormatCtx = avformat_alloc_context();
-    m_pFormatCtx->probesize = 50 * 1024;
-    m_pFormatCtx->max_analyze_duration = 75000;
+    m_pFormatCtx->probesize = 1000000;
+    m_pFormatCtx->max_analyze_duration = 1000000;
 
     int res = avformat_open_input(&m_pFormatCtx, m_file.c_str(), NULL, NULL);
     if (res != 0) {
@@ -332,8 +335,12 @@ void CSJMediaPlayer::videoDecodeFunc() {
             memcpy(videoFrame->data[1], rawFrame->buf[1]->data, width * height / 4);
             memcpy(videoFrame->data[2], rawFrame->buf[2]->data, width * height / 4);
 
+            LOG_Info("rawFrame, pts: %ld, duration: %ld", rawFrame->pts, rawFrame->duration);
+
             videoFrame->pts = rawFrame->pts * av_q2d(m_pFormatCtx->streams[m_iVideoFrmSeqNum]->time_base);
             videoFrame->duration = rawFrame->duration * av_q2d(m_pFormatCtx->streams[m_iAudioFrmSeqNum]->time_base);
+
+            LOG_Info("A video frame into the queue, pts: %f, duration: %f, time_base: %f", videoFrame->pts, videoFrame->duration, av_q2d(m_pFormatCtx->streams[m_iVideoFrmSeqNum]->time_base));
         
             m_videoFrameQueue.enBuffer(videoFrame);
         }

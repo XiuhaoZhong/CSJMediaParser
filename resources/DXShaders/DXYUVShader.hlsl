@@ -1,5 +1,10 @@
 #include "Shader.hlsli"
 
+cbuffer FrameParams : register(b0) {
+    int IsI420;
+    float pad[3]; // help align 16 bytes memory.
+};
+
 float3 NV12ToRGB_BT601(float y, float2 uv);
 float3 NV12ToRGB_BT709(float y, float2 uv);
 

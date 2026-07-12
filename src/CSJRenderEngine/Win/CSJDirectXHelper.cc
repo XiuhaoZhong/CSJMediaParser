@@ -377,6 +377,7 @@ bool CSJDirectXHelper::createRGBATextureFromImageFile(ComPtr<ID3D11Device> &devi
                 << L", height: " << texDesc.Height << std::endl;
     return true;
 }
+
 bool CSJDirectXHelper::createRGBATextureFromBuffer(ComPtr<ID3D11Device> &device, 
                                                    uint8_t *buffer, 
                                                    int width, int height, int pitch, 
@@ -395,4 +396,27 @@ bool CSJDirectXHelper::createRGBATextureFromBuffer(ComPtr<ID3D11Device> &device,
     return !FAILED(hr);
 }
 
+bool CSJDirectXHelper::createConstBuffer(ComPtr<ID3D11Device> &device, 
+                                         ComPtr<ID3D11Buffer> &constBuffer,
+                                         UINT bufferSize, 
+                                         D3D11_USAGE usage, 
+                                         UINT bindFlags, 
+                                         UINT CPUAccessFlags, 
+                                         UINT MiscFlags, 
+                                         UINT structByteStride) {
+    if (!device) {
+        return false;
+    }
+
+    D3D11_BUFFER_DESC cbDesc{};
+    cbDesc.ByteWidth = bufferSize;
+    cbDesc.Usage = usage;
+    cbDesc.BindFlags = bindFlags;
+    cbDesc.CPUAccessFlags = CPUAccessFlags;
+    cbDesc.MiscFlags = MiscFlags;
+    cbDesc.StructureByteStride = structByteStride;
+
+    HRESULT hr = device->CreateBuffer(&cbDesc, NULL, constBuffer.ReleaseAndGetAddressOf());
+    return SUCCEEDED(hr);
+}
 }
