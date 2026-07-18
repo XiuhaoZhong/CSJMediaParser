@@ -434,18 +434,7 @@ void CSJVideoRendererDXImpl::renderFunc() {
         return ;
     }
 
-    ComPtr<IDXGIOutput> output = nullptr;
-    HRESULT hr = swapChain->GetContainingOutput(&output);
-    if (FAILED(hr) || !output) {
-        LOG_Error("Failed to get containing output.");
-        return ;
-    }
-
-    // static int frame_count = 0;
-
     while (!m_bIsQuitRender.load()) {
-        //output->WaitForVBlank();
-
         if (m_bIsQuitRender.load()) {
             break;
         }
@@ -470,7 +459,7 @@ void CSJVideoRendererDXImpl::renderFunc() {
         LARGE_INTEGER counter;
         QueryPerformanceCounter(&counter);
         double timeStamp = counter.QuadPart / (double)m_timeFreq.QuadPart;
-        LOG_Info("Current time stamp: %f", timeStamp);
+        //LOG_Info("Current time stamp: %f", timeStamp);
 
         // TODO: get a new video frame.
         auto delegate = m_pDelegate.lock();
@@ -505,12 +494,25 @@ void CSJVideoRendererDXImpl::drawScene(double timeStamp) {
     // check shader.  
     bool need_render = updateScene(timeStamp);
 
-    if (m_renderContentType == CSJRenderContentType_ImageFile && m_pRGBARenderable) {
-        auto device = getCurrentDevice();
-        m_pRGBARenderable->drawRenderable(timeStamp);
+    CSJRenderablePtr currentRenderable = nullptr;
+    switch (m_renderContentType) {
+    case CSJRenderContentType_ImageFile:
+        currentRenderable = m_pRGBARenderable;
+    break;
+    case CSJRenderContentType_I420:
+        currentRenderable = m_pYUVRenderable;
+        updateRenderDataForI420(timeStamp);
+        currentRenderable->setFreshVideoData(m_pCurVideoData);
+    break;
+    default:
+    break;
     }
 
-    // TODO: Using Present(1,0), and then use double textures to render
+    if (currentRenderable) {
+        currentRenderable->drawRenderable(timeStamp);
+    }
+
+    // Present(1,0), and then use double textures to render
     HR(curSwapChain->Present(1, 0));
 }
 
@@ -527,36 +529,8 @@ void CSJVideoRendererDXImpl::setViewPort(int width, int height) {
     m_ScreenViewport.MinDepth = 0.0f;
     m_ScreenViewport.MaxDepth = 1.0f;
 
-    /* 设置视口尺寸 */
+    /* set the size of viewPort. */
     curContext->RSSetViewports(1, &m_ScreenViewport);
-}
-
-bool CSJVideoRendererDXImpl::updateDynamicResource(ComPtr<ID3D11Resource> resource, 
-                                                   rsize_t len, 
-                                                   uint8_t * data) {
-    
-    ComPtr<ID3D11DeviceContext> curContext = getCurrentContext();
-    if (!curContext) {
-        LOG_Error("Current context is null!");
-        return false;
-    }
-
-    if (!resource || !data) {
-        LOG_Error("Resource or data is null!");
-        return false;
-    }
-
-    D3D11_MAPPED_SUBRESOURCE mappedData;
-    HRESULT hr = curContext->Map(resource.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData);
-    if (FAILED(hr)) {
-        // TODO: map texture failed.
-        return false;
-    }
-
-    memcpy_s(mappedData.pData, len, data, len);
-    curContext->Unmap(resource.Get(), 0);
-
-    return true;
 }
 
 ComPtr<ID3D11DeviceContext> CSJVideoRendererDXImpl::getCurrentContext() {

@@ -108,10 +108,7 @@ private:
     /* Media data. */
     CSJRingQueue<CSJPacketWrapperPtr>       m_pAudioPacketsQueue;
     CSJRingQueue<CSJPacketWrapperPtr>       m_pVideoPacketsQueue;
-    CSJRingQueue<CSJFrameWrapperPtr>        m_pAudioFramesQueue;
-    CSJRingQueue<CSJFrameWrapperPtr>        m_pVideoFramesQueue;
-
-    CSJRingQueue<CSJVideoFramePtr>          m_videoFrameQueue;
+    CSJRingQueue<CSJVideoFramePtr>          m_pVideoFrameQueue;
 
     // TODO:
     /*

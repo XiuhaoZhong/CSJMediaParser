@@ -18,11 +18,14 @@ SamplerState linearSampler {
 };
 
 float4 main(VertexOut pIn) : SV_Target {
-    float y = texY.Sample(linearSampler, pIn.texCoord);
-    float u = texU.Sample(linearSampler, pIn.texCoord);
-    float v = texV.Sample(linearSampler, pIn.texCoord);
+    float3 rgb = float3(0, 0, 0);
+    if (IsI420 == 1) {
+        float y = texY.Sample(linearSampler, pIn.texCoord);
+        float u = texU.Sample(linearSampler, pIn.texCoord);
+        float v = texV.Sample(linearSampler, pIn.texCoord);
 
-    float3 rgb = I420ToRGB_BT709(y, u, v);
+        rgb = I420ToRGB_BT709(y, u, v);
+    }
 
     return float4(saturate(rgb), 1.0f);
 }

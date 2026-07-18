@@ -327,10 +327,10 @@ bool CSJDirectXHelper::createD3DTextureWithResourceView(ComPtr<ID3D11Device> &de
     if (!res) {
         return false;
     }
-    
+
     D3D11_SHADER_RESOURCE_VIEW_DESC   srvDesc{};
     srvDesc.Format                    = format;
-    srvDesc.ViewDimension             = srvDemension;
+    srvDesc.ViewDimension             = enable4xMsaa ? D3D_SRV_DIMENSION_TEXTURE2DMS : srvDemension;
     srvDesc.Texture2D.MipLevels       = miplevels;
     srvDesc.Texture2D.MostDetailedMip = 0;
 

@@ -59,8 +59,24 @@ bool CSJYUVRenderable::fillRenderrableData() {
 }
 
 bool CSJYUVRenderable::bindRenderableComponents() {
+    auto context = m_directxParams.context;
+    if (!context) {
+        return false;
+    }
 
-    return false;
+    UINT stride = sizeof(YUVRenderInputData);
+    UINT offset = 0;
+
+    context->VSSetShader(m_pVertexShader.Get(), nullptr, 0);
+    context->PSSetShader(m_pPixelShader.Get(), nullptr, 0);
+    context->IASetInputLayout(m_pVertexLayout.Get());
+    context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    context->IASetVertexBuffers(0, 1, m_pVertexBuffer.GetAddressOf(), &stride, &offset);
+    context->IASetIndexBuffer(m_pIndexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+    context->PSSetConstantBuffers(0, 1, m_pVideoParamBuffer.GetAddressOf());
+    //context->PSSetSamplers(0, 1, m_pSamplerState.GetAddressOf());
+
+    return true;
 }
 
 void CSJYUVRenderable::setFreshImage( const std::string &imageFile) {
@@ -77,6 +93,10 @@ void CSJYUVRenderable::setFreshVideoData( CSJVideoFramePtr &frame) {
         return ;
     }
 
+    if (!frame) {
+        return ;
+    }
+
     // TODO:
     /**
      * 1. Choose the render context array with frame->format.
@@ -88,12 +108,6 @@ void CSJYUVRenderable::setFreshVideoData( CSJVideoFramePtr &frame) {
     int updateSlot = m_iUpdateSlot.load(std::memory_order_acquire);
 
     bool res = false;
-    int planes = 0;
-    SpYuvSizeArrayPtr sizeArrPtr;
-    res = getFramePlanesAndSizeArr(frame, planes, sizeArrPtr);
-    if (!res) {
-        return ;
-    }
     SpYUVRenderCtxPtr renderCtx = m_renderCtxArr[updateSlot];
     if (!renderCtx) {
         // If the renderContext is null at the updateSlot, create a new one.
@@ -122,13 +136,20 @@ void CSJYUVRenderable::setFreshVideoData( CSJVideoFramePtr &frame) {
     }
 
     YUVSizeArray *sizeArr = renderCtx->sizeArr.get();
-    for (size_t i = 0; i < planes; i++) {
+    for (size_t i = 0; i < renderCtx->planes; i++) {
         ComPtr<ID3D11Resource> texResource = renderCtx->texArr[i];
         copyDataFromBufferToTex(texResource, (*sizeArr)[i].first * (*sizeArr)[i].second, frame->data[i]);
     }
 
+    renderCtx->texValid = true;
+
     int oldSlot = m_iUpdateSlot.exchange(m_iRenderSlot, std::memory_order_relaxed);
     m_iRenderSlot.store(oldSlot, std::memory_order_release);
+
+    auto backRenderCtx = m_renderCtxArr[updateSlot];
+    if (!backRenderCtx) {
+        backRenderCtx->texValid = false;
+    }
 }
 
 bool CSJYUVRenderable::updateRenderable(double timeStamp) {
@@ -137,17 +158,13 @@ bool CSJYUVRenderable::updateRenderable(double timeStamp) {
         return false;
     }
 
-    if (!m_pVideoFrame) {
+    int renderSlot = m_iRenderSlot.load(std::memory_order_acquire);
+    auto curRenderCtx = m_renderCtxArr[renderSlot];
+    if (!curRenderCtx || !curRenderCtx->texValid) {
         return false;
     }
 
-    int planes = getFramePlanes(m_pVideoFrame);
-    if (planes != 3 || planes != 2) {
-        return false;
-    }
-    int renderSlot = m_iRenderSlot.load(std::memory_order_acquire);
-    auto curRenderCtx = m_renderCtxArr[renderSlot];
-    for (size_t i = 0; i < planes; i++) {
+    for (size_t i = 0; i < curRenderCtx->planes; i++) {
         context->PSSetShaderResources(i, 1, curRenderCtx->texRVArr[i].GetAddressOf());
     }
 
@@ -173,9 +190,19 @@ void CSJYUVRenderable::drawRenderable(double timeStamp) {
         return ;
     }
 
-    context->PSSetConstantBuffers(0, 1, m_pVideoParamBuffer.GetAddressOf());
-    // TODO: When rendering yuv data, there will set more render components.
+    bool res = updateRenderable(timeStamp);
+    if (!res) {
+        LOG_Warn("udpate yuv renderable failed!");
+        return ;
+    }
 
+    res = bindRenderableComponents();
+    if (!res) {
+        LOG_Warn("bind renderable components failed!");
+        return ;
+    }
+
+    context->DrawIndexed(6, 0, 0);
 }
 
 int CSJYUVRenderable::getFramePlanes(CSJVideoFramePtr videoFrame) {
@@ -196,8 +223,7 @@ int CSJYUVRenderable::getFramePlanes(CSJVideoFramePtr videoFrame) {
     return 0;
 }
 
-bool CSJYUVRenderable::getFramePlanesAndSizeArr(CSJVideoFramePtr &frame, int &planes, SpYuvSizeArrayPtr sizeArrayPtr)
-{
+bool CSJYUVRenderable::getFramePlanesAndSizeArr(CSJVideoFramePtr &frame, int &planes, SpYuvSizeArrayPtr sizeArrayPtr) {
     if (!frame) {
         return false;
     }
@@ -391,10 +417,10 @@ bool CSJYUVRenderable::createTexResourceForRenderContext(SpYUVRenderCtxPtr &ctx)
                                                                  DXGI_FORMAT_R8_UNORM,
                                                                  1,
                                                                  1,
-                                                                 D3D11_USAGE_DEFAULT, 
+                                                                 D3D11_USAGE_DYNAMIC, 
                                                                  D3D11_BIND_SHADER_RESOURCE, 
                                                                  D3D11_CPU_ACCESS_WRITE,
-                                                                 D3D11_RESOURCE_MISC_GENERATE_MIPS);
+                                                                 0);
 
         if (!res) {
             LOG_Warn("In YUV Renderable, create %dth tex failed!");
