@@ -13,8 +13,6 @@
 #include "CSJRenderEngine/CSJVideoRenderer.h"
 #include "Renderables/CSJRenderableBase.h"
 
-constexpr int g_YUVTexNum = 2;
-
 template <typename T>
 using ComPtr = Microsoft::WRL::ComPtr<T>;
 
@@ -54,56 +52,52 @@ protected:
 
     void setViewPort(int width, int height);
 
-    bool updateDynamicResource(ComPtr<ID3D11Resource> resource, rsize_t len, uint8_t* data);
-
     ComPtr<ID3D11DeviceContext> getCurrentContext();
     ComPtr<ID3D11Device>        getCurrentDevice();
     ComPtr<IDXGISwapChain>      getCurrentSwapChain();
 
 private:
     std::atomic<bool>            m_bIsQuitRender = false;
-    std::atomic<bool>            m_bInitSuccess = false;   // whether Direct3D is initialized or not.
+    std::atomic<bool>            m_bInitSuccess = false;    // whether Direct3D is initialized or not.
     LARGE_INTEGER                m_timeFreq;
     std::unique_ptr<std::thread> m_pRenderThread = nullptr;
-    bool                         m_bOnScreenRender = true;// OnScreen rendering or offscreen renderding, default is onscreen rendering.
-    HWND                         m_hMainWnd;              // 主窗口句柄
-    int                          m_renderFPS;             // 渲染帧率
-    int                          m_ClientWidth;           // 视口宽度
-    int                          m_ClientHeight;          // 视口高度
-    float                        m_PixelRatio;            // 像素比率
-    bool                         m_Enable4xMsaa;          // 是否开启4倍多重采样
-    UINT                         m_4xMsaaQuality;         // MSAA支持的质量等级             
-    HANDLE                       m_pInitEvent = NULL;     // 初始化成功之后的通知
+    bool                         m_bOnScreenRender = true;  // OnScreen rendering or offscreen renderding, default is onscreen rendering.
+    HWND                         m_hMainWnd;                // Main window handle.
+    int                          m_renderFPS;               // FPS of rendering.
+    int                          m_ClientWidth;             // width of viewport.
+    int                          m_ClientHeight;            // height of viewport.
+    float                        m_PixelRatio;              // pixel ratio.
+    bool                         m_Enable4xMsaa;            // enable msaa
+    UINT                         m_4xMsaaQuality;           // level of msaa
+    HANDLE                       m_pInitEvent = NULL;       // notify of initialize success.
     std::mutex                   m_renderMtx;
 
     /* Direct3D 11 */
-    ComPtr<ID3D11Device>          m_pd3dDevice;            // D3D11设备
-    ComPtr<ID3D11DeviceContext>   m_pd3dImmediateContext;  // D3D11设备上下文
-    ComPtr<IDXGISwapChain>        m_pSwapChain;            // D3D11交换链
+    ComPtr<ID3D11Device>          m_pd3dDevice;            // D3D11 device.
+    ComPtr<ID3D11DeviceContext>   m_pd3dImmediateContext;  // D3D11 context.
+    ComPtr<IDXGISwapChain>        m_pSwapChain;            // D3D11 swapchain.
 
     /* Direct3D 11.1 */
-    ComPtr<ID3D11Device1>          m_pd3dDevice1;           // D3D11.1设备
-    ComPtr<ID3D11DeviceContext1>   m_pd3dImmediateContext1; // D3D11.1设备上下文
-    ComPtr<IDXGISwapChain1>        m_pSwapChain1;           // D3D11.1交换链
+    ComPtr<ID3D11Device1>          m_pd3dDevice1;           // D3D11.1 device.
+    ComPtr<ID3D11DeviceContext1>   m_pd3dImmediateContext1; // D3D11.1 context.
+    ComPtr<IDXGISwapChain1>        m_pSwapChain1;           // D3D11.1 swapchian.
 
     ComPtr<ID3D11Texture2D>        m_pOffScreenTex;         // D3D11Texture of offscreen render. 
     ComPtr<ID3D11RenderTargetView> m_pOffScreenTargetView;  // 
 
     /* 常用资源 */
-    ComPtr<ID3D11Texture2D>        m_pDepthStencilBuffer;  // 深度模板缓冲区
-    ComPtr<ID3D11RenderTargetView> m_pRenderTargetView;    // 渲染目标视图
-    ComPtr<ID3D11DepthStencilView> m_pDepthStencilView;    // 深度模板视图
-    D3D11_VIEWPORT                 m_ScreenViewport;       // 视口
+    ComPtr<ID3D11Texture2D>        m_pDepthStencilBuffer;  // depth stencil buffer.
+    ComPtr<ID3D11RenderTargetView> m_pRenderTargetView;    // rendering target view. 
+    ComPtr<ID3D11DepthStencilView> m_pDepthStencilView;    // depth stencil view.
+    D3D11_VIEWPORT                 m_ScreenViewport;       // screen viewport.
 
     double                         m_dVideoUpdateTimeStamp = 0.0;
     std::mutex                     m_videoMtx;
     CSJVideoFramePtr               m_pCurVideoData = nullptr;
     std::string                    m_curImagePath;
 
-    // Rendering RGB/RGBA buffer and image file.
-    CSJRenderablePtr m_pRGBARenderable = nullptr;
-    // Rendering YUV frame.
-    CSJRenderablePtr m_pYUVRenderable  = nullptr;
+    CSJRenderablePtr m_pRGBARenderable = nullptr; // Rendering RGB/RGBA buffer and image file.
+    CSJRenderablePtr m_pYUVRenderable  = nullptr; // Rendering YUV frame.
 };
 
 } //namespace csjrenderengine

@@ -103,6 +103,13 @@ public:
     virtual void stopRender() = 0;
 
     /**
+     * @brief Set the render type
+     * 
+     * @param renderType the render type, default is CSJRenderContentType_None
+     */
+    virtual void setRenderType(CSJRenderContentType renderType);
+
+    /**
      * @brief Fill TextData, output the offscreen texture data to caller.
      *        the @param width and @param height are used to check the size
      *        of the current render area to avoid the error as the render 

@@ -10,10 +10,16 @@
 
 using namespace csjutils;
 
-
 namespace csjrenderengine {
+void CSJVideoRenderer::setRenderType(CSJRenderContentType renderType) {
+    m_renderContentType = renderType;
+}
 
 bool CSJVideoRenderer::fillTextureData(uint8_t *buf, int width, int height) {
+    if (!buf || width == 0 || height == 0) {
+        return false;
+    }
+
     return false;
 }
 

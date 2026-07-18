@@ -16,9 +16,7 @@ namespace csjmediaengine {
 CSJMediaPlayer::CSJMediaPlayer()
     : m_pAudioPacketsQueue(g_audio_queue_len)
     , m_pVideoPacketsQueue(g_video_queue_len)
-    , m_pAudioFramesQueue(g_audio_queue_len)
-    , m_pVideoFramesQueue(g_video_queue_len)
-    , m_videoFrameQueue(g_video_queue_len) {
+    , m_pVideoFrameQueue(g_video_queue_len) {
     
 }
 
@@ -81,6 +79,7 @@ void CSJMediaPlayer::resume() {
 }
 
 void CSJMediaPlayer::stop() {
+    LOG_Info("CSJMediaPlayer stopped!");
     m_status = CSJPLAYERSTATUS_STOP;
     /* In case current status is pause. */
     m_pauseCond.notify_all();
@@ -103,20 +102,10 @@ void CSJMediaPlayer::releaseCodecCtx(AVCodecContext **codecCtx) {
 }
 
 void CSJMediaPlayer::clearComponents() {
-    // TODO: the stop logic: must join all threads, then clear queues.
-    /**
-     * 1. Stop render thread, including video and audio
-     * 2. Stop the reading thread
-     * 3. Stop decoder thread
-     * 4. Clear video and audio packets queue.
-     * 5. Clear video and audio frames queue.
-     */
-
     m_pVideoPacketsQueue.wakeUpToExit();
     m_pAudioPacketsQueue.wakeUpToExit();
 
-    m_pVideoFramesQueue.wakeUpToExit();
-    m_pAudioFramesQueue.wakeUpToExit();
+    m_pVideoFrameQueue.wakeUpToExit();
 
     if (m_readThread && m_readThread->joinable()) {
         m_readThread->join();
@@ -161,7 +150,7 @@ bool CSJMediaPlayer::isStop() {
 }
 
 CSJVideoFramePtr CSJMediaPlayer::getNextVideoFrame() {
-    if (m_videoFrameQueue.is_empty()) {
+    if (m_pVideoFrameQueue.is_empty()) {
         return nullptr;
     }
 
@@ -170,7 +159,7 @@ CSJVideoFramePtr CSJMediaPlayer::getNextVideoFrame() {
      * video frame should be checked timestamp with main clock.
      */
 
-    auto videoFrame = m_videoFrameQueue.deBuffer();
+    auto videoFrame = m_pVideoFrameQueue.deBuffer();
     if (videoFrame.has_value()) {
         LOG_Info("A video frame out from the queue, pts: %f, duration: %f", videoFrame.value()->pts, videoFrame.value()->duration);
     }
@@ -307,8 +296,8 @@ void CSJMediaPlayer::videoDecodeFunc() {
 
         auto opt = m_pVideoPacketsQueue.deBuffer();
         if (!opt) {
-            LOG_Info("The video packet queue is empty, exit decoding!");
-            break;
+            LOG_Info("The video packet queue is empty, next round!");
+            continue;
         }
 
         CSJPacketWrapperPtr packetWrapper = opt.value();
@@ -342,12 +331,8 @@ void CSJMediaPlayer::videoDecodeFunc() {
 
             LOG_Info("A video frame into the queue, pts: %f, duration: %f, time_base: %f", videoFrame->pts, videoFrame->duration, av_q2d(m_pFormatCtx->streams[m_iVideoFrmSeqNum]->time_base));
         
-            m_videoFrameQueue.enBuffer(videoFrame);
+            m_pVideoFrameQueue.enBuffer(videoFrame);
         }
-
-        //std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-        //m_pVideoFramesQueue.enBuffer(frameWrapper);
     }
 }
 
@@ -378,8 +363,8 @@ void CSJMediaPlayer::audioDecodeFunc() {
 
         auto opt = m_pAudioPacketsQueue.deBuffer();
         if (!opt) {
-            LOG_Info("The video packet queue is empty, exit decoding!");
-            break;
+            LOG_Info("The video packet queue is empty, next round!");
+            continue;
         }
 
         CSJPacketWrapperPtr packetWrapper = opt.value();
@@ -392,10 +377,6 @@ void CSJMediaPlayer::audioDecodeFunc() {
             frameWrapper->setSeqNumber(seqNum);
             LOG_Info("The %dth audio frame has been decoded.", frameWrapper->getSeqNumber());
         }
-
-        //std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-        //m_pAudioFramesQueue.enBuffer(frameWrapper);
     }
 }
 
@@ -446,8 +427,7 @@ void CSJMediaPlayer::clearMediaPackets() {
 }
 
 void CSJMediaPlayer::clearMediaFrames() {
-   m_pVideoFramesQueue.reset();
-   m_pAudioFramesQueue.reset();
+   m_pVideoFrameQueue.reset();
 }
 
 void CSJMediaPlayer::clearPacketsQueue(CSJRingQueue<CSJPacketWrapperPtr> &queue) {
