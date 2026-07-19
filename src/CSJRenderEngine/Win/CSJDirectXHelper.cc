@@ -43,7 +43,7 @@ bool CSJDirectXHelper::createDepthStencilViewResources(ComPtr<ID3D11Device> &dev
     /** DXGI_FORMAT_D24_UNORM_S8_UINT: 32bit z-buffer, 24 bits to depth and 8 bits
      *  for stencil.
      */
-    depthStencilDesc.Format = format;//DXGI_FORMAT_D24_UNORM_S8_UINT;
+    depthStencilDesc.Format = format;
 
     /* Using 4x MSAA, need to set MASS params to swap chain. */
     if (enable4xMsaa) {

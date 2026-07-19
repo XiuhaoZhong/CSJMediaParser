@@ -67,8 +67,9 @@ private:
     int                          m_ClientWidth;             // width of viewport.
     int                          m_ClientHeight;            // height of viewport.
     float                        m_PixelRatio;              // pixel ratio.
-    bool                         m_Enable4xMsaa;            // enable msaa
-    UINT                         m_4xMsaaQuality;           // level of msaa
+    // Video player doesn't need to use msaa to render video frames.
+    bool                         m_Enable4xMsaa = false;    // enable msaa.
+    UINT                         m_4xMsaaQuality;           // level of msaa.
     HANDLE                       m_pInitEvent = NULL;       // notify of initialize success.
     std::mutex                   m_renderMtx;
 
@@ -85,7 +86,7 @@ private:
     ComPtr<ID3D11Texture2D>        m_pOffScreenTex;         // D3D11Texture of offscreen render. 
     ComPtr<ID3D11RenderTargetView> m_pOffScreenTargetView;  // 
 
-    /* 常用资源 */
+    /* Regular resources. */
     ComPtr<ID3D11Texture2D>        m_pDepthStencilBuffer;  // depth stencil buffer.
     ComPtr<ID3D11RenderTargetView> m_pRenderTargetView;    // rendering target view. 
     ComPtr<ID3D11DepthStencilView> m_pDepthStencilView;    // depth stencil view.
